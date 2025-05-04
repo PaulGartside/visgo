@@ -25,6 +25,7 @@ func (m *Vis) InitViewFuncs() {
   m.view_funcs[ 'x' ] = Handle_x
   m.view_funcs[ 's' ] = Handle_s
   m.view_funcs[ 'c' ] = Handle_c
+  m.view_funcs[ 'C' ] = Handle_C
   m.view_funcs[ 'Q' ] = Handle_Q
   m.view_funcs[ 'H' ] = Handle_H
   m.view_funcs[ 'L' ] = Handle_L
@@ -323,6 +324,17 @@ func Handle_c( m *Vis ) {
       if( !m_key.get_from_dot_buf_n ) {
         m_key.save_2_dot_buf_n = false
       }
+    }
+  }
+}
+
+func Handle_C( m *Vis ) {
+
+  kr := m_key.In()
+
+  if( kr.IsKeyRune() ) {
+    if       ( kr.R == 'C' ) { m_console.copy_paste_buf_2_system_clipboard()
+    } else if( kr.R == 'P' ) { m_console.copy_system_clipboard_2_paste_buf()
     }
   }
 }

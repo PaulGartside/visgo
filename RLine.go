@@ -5,6 +5,7 @@ import (
 //"bytes"
 //"fmt"
   "slices"
+//"unicode/utf8"
 )
 
 type RLine struct {
@@ -139,6 +140,33 @@ func (m *RLine) EqualStr( S string ) bool {
 func (m *RLine) to_str() string {
   return string(m.data)
 }
+
+func (m *RLine) from_str( S string ) {
+  m.data = []rune(S)
+}
+
+// Not sure if this method is need.  Just use to_str().
+//
+//func (m *RLine) to_bytes() []byte {
+//  return []byte( m.to_str() )
+//}
+
+// Longer version of to_bytes().
+// Not sure if this method is need.  Just use to_str().
+//
+//func (m *RLine) to_bytes() []byte {
+//  num_bytes := 0
+//  for _, R := range m.data {
+//    num_bytes += utf8.RuneLen( R )
+//  }
+//  s_b := make( []byte, num_bytes )
+//
+//  byte_offset := 0
+//  for _, R := range m.data {
+//    byte_offset += utf8.EncodeRune( s_b[byte_offset:], R )
+//  }
+//  return s_b
+//}
 
 func (m *RLine) RemoveSpaces() {
 

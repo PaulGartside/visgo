@@ -1099,10 +1099,14 @@ func (m *Vis) Update_Change_Statuses() bool {
         (pV.external_change_sts != pV.p_fb.changed_externally) ) {
 
       pV.PrintBorders()
+
       pV.un_saved_change_sts = pV.p_fb.Changed()
       pV.external_change_sts = pV.p_fb.changed_externally
+
       updated_change_sts = true;
     }
+  }
+  if( updated_change_sts ) { m_console.Show()
   }
   return updated_change_sts;
 }
@@ -1158,7 +1162,7 @@ func (m *Vis) Run() {
       }
     }
     m.CheckFileModTime()
-    m.Update_Change_Statuses()
+  //m.Update_Change_Statuses()
   //updated_chg_sts := m.Update_Change_Statuses()
   }
 }
