@@ -333,8 +333,8 @@ func Handle_C( m *Vis ) {
   kr := m_key.In()
 
   if( kr.IsKeyRune() ) {
-    if       ( kr.R == 'C' ) { m_console.copy_paste_buf_2_system_clipboard()
-    } else if( kr.R == 'P' ) { m_console.copy_system_clipboard_2_paste_buf()
+    if       ( kr.R == 'C' ) { Copy_paste_buf_2_system_clipboard()
+    } else if( kr.R == 'P' ) { Copy_system_clipboard_2_paste_buf()
     }
   }
 }
