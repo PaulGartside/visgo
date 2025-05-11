@@ -151,6 +151,9 @@ func (m *FileBuf) AddView( p_fv *FileView ) {
 func (m *FileBuf) ReadFile() {
   if       ( m.is_dir     ) { m.ReadExistingDir( m.path_name )
   } else if( m.is_regular ) { m.ReadExistingFile( m.path_name )
+  } else {
+    // File does not exist, so add an empty line:
+    m.PushLE()
   }
   m.mod_time = ModificationTime( m.path_name )
 }
@@ -179,9 +182,12 @@ func (m *FileBuf) ReReadFile() {
 func (m *FileBuf) ReadExistingDir( dir_path string ) {
 
   var dir_fs fs.FS = os.DirFS( dir_path )
+
   var de_s []fs.DirEntry
   var err  error
+
   de_s, err = fs.ReadDir( dir_fs, "." )
+
   if err != nil {
     log.Fatal( err )
   } else {
@@ -192,6 +198,43 @@ func (m *FileBuf) ReadExistingDir( dir_path string ) {
         de_name = AppendDirDelim( de_name )
       }
       m.PushLSR( []rune(de_name) )
+    }
+  }
+  m.ReadExistingDir_Sort()
+}
+
+func (m *FileBuf) ReadExistingDir_Sort() {
+
+  var NUM_LINES int = m.NumLines()
+
+  // Sort lines (file names), least to greatest:
+  for i:=NUM_LINES-1; 0<i; i-- {
+    for k:=0; k<i; k++ {
+
+      var p_l_0 *FLine = m.lines.GetLP( k   )
+      var p_l_1 *FLine = m.lines.GetLP( k+1 )
+
+      // *p_l_0 is greater then *p_l_1:
+      if( 1 < p_l_0.Compare( p_l_1 ) ) { m.lines.Swap( k, k+1 )
+      }
+    }
+  }
+
+  // Move non-directory files to end:
+  for i:=NUM_LINES-1; 0<i; i-- {
+    for k:=0; k<i; k++ {
+
+      var p_l_0 *FLine = m.lines.GetLP( k   )
+
+      if( ! p_l_0.EqualStr("..") ) {
+        var p_l_1 *FLine = m.lines.GetLP( k+1 )
+
+        S_DIR_DELIM := string(DIR_DELIM)
+
+        if( !p_l_0.ends_with( S_DIR_DELIM ) &&
+             p_l_1.ends_with( S_DIR_DELIM ) ) { m.lines.Swap( k, k+1 )
+        }
+      }
     }
   }
 }

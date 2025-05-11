@@ -5,6 +5,7 @@ import (
 //"bytes"
 //"fmt"
   "slices"
+  "strings"
 //"unicode/utf8"
 )
 
@@ -145,6 +146,11 @@ func (m *RLine) from_str( S string ) {
   m.data = []rune(S)
 }
 
+func (m *RLine) Compare( ln RLine ) int {
+
+  return strings.Compare( m.to_str(), ln.to_str() )
+}
+
 // Not sure if this method is need.  Just use to_str().
 //
 //func (m *RLine) to_bytes() []byte {
@@ -178,5 +184,13 @@ func (m *RLine) RemoveSpaces() {
       k--;
     }
   }
+}
+
+func (m *RLine) ends_with( suffix string ) bool {
+  S := m.to_str()
+  len_S := len(S)
+  len_suffix := len(suffix)
+  ends_w := len_suffix <= len_S && S[ len_S - len_suffix: ] == suffix
+  return ends_w
 }
 

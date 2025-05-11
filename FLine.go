@@ -132,6 +132,11 @@ func (m *FLine) to_str() string {
   return m.runes.to_str()
 }
 
+func (m *FLine) Compare( pln *FLine ) int {
+
+  return m.runes.Compare( pln.runes )
+}
+
 // Convert to slice of bytes
 func (m *FLine) to_SB( st int ) []byte {
   return m.runes.to_SB( st )
@@ -179,5 +184,10 @@ func (m *FLine) ClearStarAndInFileStyles() {
 func (m *FLine) Set__StarInFStyle( idx int ) {
 
   m.styles.SetB( idx, m.styles.GetB( idx ) | HI_STAR_IN_F );
+}
+
+func (m *FLine) ends_with( suffix string ) bool {
+
+  return m.runes.ends_with( suffix )
 }
 
