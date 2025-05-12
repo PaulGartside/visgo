@@ -5,6 +5,7 @@ import (
   "bytes"
   "fmt"
   "github.com/gdamore/tcell/v2"
+  "regexp"
   "unicode"
 )
 
@@ -2034,6 +2035,7 @@ func ( m *FileView ) Set_Context( p_fv *FileView ) {
 }
 
 func ( m *FileView ) Set_Cmd_Line_Msg( msg string ) {
+  // FIXME
 }
 
 func ( m *FileView ) SetViewPos() {
@@ -3144,11 +3146,11 @@ func (m *FileView) Do_v_Handle_g() {
 
   kr := m_key.In()
 
-  if       ( kr.K == 'g' ) { m.GoToTopOfFile()
-  } else if( kr.K == '0' ) { m.GoToStartOfRow()
-  } else if( kr.K == '$' ) { m.GoToEndOfRow()
-  } else if( kr.K == 'f' ) { m.Do_v_Handle_gf()
-  } else if( kr.K == 'p' ) { m.Do_v_Handle_gp()
+  if       ( kr.R == 'g' ) { m.GoToTopOfFile()
+  } else if( kr.R == '0' ) { m.GoToStartOfRow()
+  } else if( kr.R == '$' ) { m.GoToEndOfRow()
+  } else if( kr.R == 'f' ) { m.Do_v_Handle_gf()
+  } else if( kr.R == 'p' ) { m.Do_v_Handle_gp()
   }
 }
 
@@ -3304,16 +3306,19 @@ func (m *FileView) Do_v_Handle_gp() {
   if( m.v_st_line == m.v_fn_line ) {
     m.Swap_Visual_St_Fn_If_Needed()
 
-    pattern := make( []rune, m.v_fn_char - m.v_st_char + 1 )
+    r_pattern := make( []rune, m.v_fn_char - m.v_st_char + 1 )
 
     for P := m.v_st_char; P<=m.v_fn_char; P++ {
-      pattern[P-m.v_st_char] = m.p_fb.GetR( m.v_st_line, P  )
+      r_pattern[P-m.v_st_char] = m.p_fb.GetR( m.v_st_line, P  )
     }
-    m_vis.Handle_Slash_GotPattern( string(pattern) );
+    s_pattern := string(r_pattern)
+    s_pattern_literal := regexp.QuoteMeta( s_pattern )
 
     m.inVisualMode = false
     m.Undo_v()
     m.Remove_Banner()
+
+    m_vis.Handle_Slash_GotPattern( s_pattern_literal );
   }
 }
 
