@@ -67,9 +67,9 @@ func (m *FileBuf) Init_FB( path_name string, FT File_Type ) {
 
   m.Init_FB_Common( path_name, FT )
 
-  m.ReadFile()
-
-  if( m_USER_FILE <= m_vis.Buf2FileNum( m ) ) { m.save_history = true
+  if( m_USER_FILE <= m_vis.Buf2FileNum( m ) ) {
+    m.ReadFile()
+    m.save_history = true
   }
 }
 

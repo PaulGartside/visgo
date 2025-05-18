@@ -39,6 +39,25 @@ var TS_RV_CONTROL   tcell.Style
 var TS_RV_VARTYPE   tcell.Style
 var TS_RV_NONASCII  tcell.Style
 
+// Windows is limited to the following colors:
+//
+// ColorBlack,
+// ColorMaroon,
+// ColorGreen,
+// ColorNavy,
+// ColorOlive,
+// ColorPurple,
+// ColorTeal,
+// ColorSilver,
+// ColorGray,
+// ColorRed,
+// ColorLime,
+// ColorBlue,
+// ColorYellow,
+// ColorFuchsia,
+// ColorAqua,
+// ColorWhite,
+
 func init() {
   TS_NORMAL    = tcell.StyleDefault
   TS_BORDER    = TS_BORDER   .Background( tcell.ColorBlue  ).Foreground( tcell.ColorWhite ).Bold(true)
@@ -47,8 +66,8 @@ func init() {
   TS_EOF       = TS_EOF      .Background( tcell.ColorGray  ).Foreground( tcell.ColorRed ).Bold(true)
   TS_BANNER    = TS_BANNER   .Background( tcell.ColorRed   ).Foreground( tcell.ColorWhite ).Bold(true)
   TS_CONST     = TS_CONST    .Background( tcell.ColorBlack ).Foreground( tcell.ColorAqua ).Bold(true)
-//TS_DEFINE    = TS_DEFINE   .Background( tcell.ColorBlack ).Foreground( tcell.ColorDarkMagenta ).Bold(true)
-  TS_DEFINE    = TS_DEFINE   .Background( tcell.ColorBlack ).Foreground( tcell.ColorPurple ).Bold(true)
+//TS_DEFINE    = TS_DEFINE   .Background( tcell.ColorBlack ).Foreground( tcell.ColorPurple ).Bold(true)
+  TS_DEFINE    = TS_DEFINE   .Background( tcell.ColorBlack ).Foreground( tcell.ColorMaroon ).Bold(true)
   TS_CONTROL   = TS_CONTROL  .Background( tcell.ColorBlack ).Foreground( tcell.ColorYellow ).Bold(true)
 //TS_EMPTY     = TS_EMPTY    .Background( tcell.ColorBlack ).Foreground( tcell.ColorRed ).Bold(true)
   TS_EMPTY     = tcell.StyleDefault
@@ -58,7 +77,8 @@ func init() {
   TS_STAR_IN_F = TS_STAR_IN_F.Background( tcell.ColorBlue  ).Foreground( tcell.ColorWhite ).Bold(true)
   TS_COMMENT   = TS_COMMENT  .Background( tcell.ColorBlack ).Foreground( tcell.ColorBlue ).Bold(true)
   TS_VARTYPE   = TS_VARTYPE  .Background( tcell.ColorBlack ).Foreground( tcell.ColorLime ).Bold(true)
-  TS_NONASCII  = TS_NONASCII .Background( tcell.ColorBlack ).Foreground( tcell.ColorAqua ).Bold(true)
+//TS_NONASCII  = TS_NONASCII .Background( tcell.ColorBlack ).Foreground( tcell.ColorAqua ).Bold(true)
+  TS_NONASCII  = TS_NONASCII .Background( tcell.ColorPurple).Foreground( tcell.ColorAqua ).Bold(true)
 
   TS_RV_NORMAL    = TS_RV_NORMAL   .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlack ).Bold(true)
   TS_RV_STAR      = TS_RV_STAR     .Background( tcell.ColorWhite ).Foreground( tcell.ColorRed   ).Bold(true)

@@ -31,40 +31,40 @@ func (m *Highlight_Go) Run_Range( st CrsPos, fn int ) {
 func (m *Highlight_Go) Hi_In_None( l, p int ) (int,int) {
   m.state = nil;
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l );
+    LL := m.p_fb.LineLen( l )
 
     for ; p<LL; p++ {
-      m.p_fb.ClearSyntaxStyles( l, p );
+      m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
       var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
       var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
       var c0 rune =                     m.p_fb.GetR( l, p )
 
-      if       ( c1=='/' && c0 == '/' ) { p--; m.state = m.Hi_BegCPP_Comment;
-      } else if( c1=='/' && c0 == '*' ) { p--; m.state = m.Hi_BegC_Comment;
+      if       ( c1=='/' && c0 == '/' ) { p--; m.state = m.Hi_BegCPP_Comment
+      } else if( c1=='/' && c0 == '*' ) { p--; m.state = m.Hi_BegC_Comment
 
-      } else if( Quote_Start('\'',c2,c1,c0) ) { m.state = m.Hi_In_SingleQuote;
-      } else if( Quote_Start('"' ,c2,c1,c0) ) { m.state = m.Hi_In_DoubleQuote;
-      } else if( Quote_Start('`' ,c2,c1,c0) ) { m.state = m.Hi_In_Back__Quote;
+      } else if( Quote_Start('\'',c2,c1,c0) ) { m.state = m.Hi_In_SingleQuote
+      } else if( Quote_Start('"' ,c2,c1,c0) ) { m.state = m.Hi_In_DoubleQuote
+      } else if( Quote_Start('`' ,c2,c1,c0) ) { m.state = m.Hi_In_Back__Quote
 
-      } else if( !IsIdent( c1 ) && IsDigit(c0) ) { m.state = m.Hi_NumberBeg;
+      } else if( !IsIdent( c1 ) && IsDigit(c0) ) { m.state = m.Hi_NumberBeg
       } else if( (c1==':' && c0==':') || (c1=='-' && c0=='>') ) {
-        m.p_fb.SetSyntaxStyle( l, p-1, HI_VARTYPE );
-        m.p_fb.SetSyntaxStyle( l, p  , HI_VARTYPE );
+        m.p_fb.SetSyntaxStyle( l, p-1, HI_VARTYPE )
+        m.p_fb.SetSyntaxStyle( l, p  , HI_VARTYPE )
       } else if( TwoControl( c1, c0 ) ) {
-        m.p_fb.SetSyntaxStyle( l, p-1, HI_CONTROL );
-        m.p_fb.SetSyntaxStyle( l, p  , HI_CONTROL );
+        m.p_fb.SetSyntaxStyle( l, p-1, HI_CONTROL )
+        m.p_fb.SetSyntaxStyle( l, p  , HI_CONTROL )
       } else if( OneVarType( c0 ) ) {
-        m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE );
+        m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
       } else if( OneControl( c0 ) ) {
-        m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL );
+        m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
       } else if( c0 < 32 || 126 < c0 ) {
-        m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII );
+        m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII )
       }
       if( nil != m.state ) { return l,p }
     }
-    p = 0;
+    p = 0
   }
   return l,p
 }
