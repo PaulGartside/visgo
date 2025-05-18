@@ -75,6 +75,14 @@ func (m *FLine) RemoveR( idx int ) rune {
   return R
 }
 
+// Push byte
+func (m *FLine) PushB( B byte ) {
+
+  m.runes.PushB( B )
+  m.styles.PushB( 0 )
+  m.star_styles_valid = false
+} 
+
 // Push rune
 func (m *FLine) PushR( R rune ) {
 

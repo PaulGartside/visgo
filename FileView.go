@@ -1944,7 +1944,7 @@ func ( m *FileView ) Do_dd_BufferEditor( ONL int ) {
 
     var lp *FLine = m.p_fb.GetLP( OCL );
 
-    var fname = lp.to_str()
+    fname := lp.to_str()
 
     if( !m_vis.FileName_Is_Displayed( fname ) ) {
       m_vis.ReleaseFileName( fname );

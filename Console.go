@@ -61,8 +61,8 @@ var TS_RV_NONASCII  tcell.Style
 func init() {
   TS_NORMAL    = tcell.StyleDefault
   TS_BORDER    = TS_BORDER   .Background( tcell.ColorBlue  ).Foreground( tcell.ColorWhite ).Bold(true)
-  TS_BORDER_HI = TS_BORDER_HI.Background( tcell.ColorAqua  ).Foreground( tcell.ColorWhite ).Bold(true)
-//TS_BORDER_HI = TS_BORDER_HI.Background( tcell.ColorFuchsia ).Foreground( tcell.ColorWhite )
+//TS_BORDER_HI = TS_BORDER_HI.Background( tcell.ColorAqua  ).Foreground( tcell.ColorWhite ).Bold(true)
+  TS_BORDER_HI = TS_BORDER_HI.Background( tcell.ColorAqua  ).Foreground( tcell.ColorBlue ).Bold(true)
   TS_EOF       = TS_EOF      .Background( tcell.ColorGray  ).Foreground( tcell.ColorRed ).Bold(true)
   TS_BANNER    = TS_BANNER   .Background( tcell.ColorRed   ).Foreground( tcell.ColorWhite ).Bold(true)
   TS_CONST     = TS_CONST    .Background( tcell.ColorBlack ).Foreground( tcell.ColorAqua ).Bold(true)

@@ -305,7 +305,7 @@ func (m *FileBuf) add_infile_bytes( p_fl *FLine, infile_bytes []byte ) *FLine {
       p_fl = nil
       m.lines.LF_at_EOF = true;
     } else {
-      p_fl.PushR( rune(B) )
+      p_fl.PushB( B )
       m.lines.LF_at_EOF = false;
     }
   }
