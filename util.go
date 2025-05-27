@@ -137,26 +137,72 @@ func FileExists( file_name string ) bool {
   return true
 }
 
+//func IsDir( file_name string ) bool {
+//  // var info FileInfo
+//  info, err := os.Stat( file_name )
+//  if os.IsNotExist( err ) {
+//    return false
+//  }
+//  var file_mode fs.FileMode = info.Mode()
+//
+//  return file_mode.IsDir()
+//}
+
+//func IsDir( file_name string ) bool {
+//  // var info FileInfo
+//  info, err := os.Stat( file_name )
+//  if( err != nil ) {
+//    return false
+//  }
+//  var file_mode fs.FileMode = info.Mode()
+//
+//  return file_mode.IsDir()
+//}
+
 func IsDir( file_name string ) bool {
+  is_dir := false
   // var info FileInfo
   info, err := os.Stat( file_name )
-  if os.IsNotExist( err ) {
-    return false
-  }
-  var file_mode fs.FileMode = info.Mode()
+  if( err == nil ) {
+    var file_mode fs.FileMode = info.Mode()
 
-  return file_mode.IsDir()
+    is_dir = file_mode.IsDir()
+  }
+  return is_dir
 }
 
+//func IsReg( file_name string ) bool {
+//  // var info FileInfo
+//  info, err := os.Stat( file_name )
+//  if os.IsNotExist( err ) {
+//    return false
+//  }
+//  var file_mode fs.FileMode = info.Mode()
+//
+//  return file_mode.IsRegular()
+//}
+
+//func IsReg( file_name string ) bool {
+//  // var info FileInfo
+//  info, err := os.Stat( file_name )
+//  if( err != nil ) {
+//    return false
+//  }
+//  var file_mode fs.FileMode = info.Mode()
+//
+//  return file_mode.IsRegular()
+//}
+
 func IsReg( file_name string ) bool {
+  is_reg := false
   // var info FileInfo
   info, err := os.Stat( file_name )
-  if os.IsNotExist( err ) {
-    return false
-  }
-  var file_mode fs.FileMode = info.Mode()
+  if( err == nil ) {
+    var file_mode fs.FileMode = info.Mode()
 
-  return file_mode.IsRegular()
+    is_reg = file_mode.IsRegular()
+  }
+  return is_reg
 }
 
 func AppendDirDelim( s string ) string {

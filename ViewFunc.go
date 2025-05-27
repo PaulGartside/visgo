@@ -401,7 +401,7 @@ func Handle_Return( m *Vis ) {
       // In search buffer, search for pattern on current line:
       var lp *FLine = p_cv.p_fb.GetLP( p_cv.CrsLine() );
 
-      m.Handle_Slash_GotPattern( lp.to_str() );
+      m.Handle_Slash_GotPattern( lp.to_str(), true );
     } else {
       // Normal case:
       p_cv.GoToEndOfNextLine();

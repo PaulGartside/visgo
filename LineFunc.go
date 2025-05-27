@@ -68,7 +68,7 @@ func L_Handle_Return( m *Vis ) {
   } else if( m.slash_mode ) {
     m.slash_mode = false;
     m.slash_view.HandleReturn();
-    m.Handle_Slash_GotPattern( m_rbuf.to_str() );
+    m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
   }
 //Log("Bot: L_Handle_Return()")
 }
@@ -87,7 +87,7 @@ func L_Handle_a( m *Vis ) {
 
     if( end_of_line_delim ) {
       m.slash_mode = false;
-      m.Handle_Slash_GotPattern( m_rbuf.to_str() );
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
     }
   }
 }
@@ -106,7 +106,7 @@ func L_Handle_A( m *Vis ) {
 
     if( end_of_line_delim ) {
       m.slash_mode = false;
-      m.Handle_Slash_GotPattern( m_rbuf.to_str() );
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
     }
   }
 }
@@ -234,7 +234,7 @@ func L_Handle_i( m *Vis ) {
       m.slash_mode = false;
 
 //Log( fmt.Sprintf("m_rbuf.to_str()=%v", m_rbuf.to_str()) )
-      m.Handle_Slash_GotPattern( m_rbuf.to_str() );
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
     }
   }
 //Log("Bot: L_Handle_i()")
@@ -287,7 +287,7 @@ func L_Handle_o( m *Vis ) {
     if( end_of_line_delim ) {
       m.slash_mode = false;
 
-      m.Handle_Slash_GotPattern( m_rbuf.to_str() );
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
     }
   }
 }
@@ -336,7 +336,7 @@ func L_Handle_R( m *Vis ) {
     if( end_of_line_delim ) {
       m.slash_mode = false;
 
-      m.Handle_Slash_GotPattern( m_rbuf.to_str() );
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
     }
   }
 }

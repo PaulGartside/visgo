@@ -437,14 +437,12 @@ func (m *Vis) InitUserFiles_AddFile( relative_name string ) {
 }
 
 func (m *Vis) InitUserFiles() {
-  var ARGC int = len( os.Args )
-  if ARGC < 2 {
-    m.InitUserFiles_AddFile(".");
-  } else {
-    for k:=1; k<ARGC; k++ {
-      m.InitUserFiles_AddFile( os.Args[k] );
-    }
+
+  ARGC := len( os.Args )
+  for k:=1; k<ARGC; k++ {
+    m.InitUserFiles_AddFile( os.Args[k] );
   }
+  m.InitUserFiles_AddFile(".");
 }
 
 func (m *Vis) InitFileHistory() {
@@ -768,17 +766,35 @@ func ( m *Vis ) Handle_Colon_Cmd() {
   }
 }
 
-func ( m *Vis ) Handle_Slash_GotPattern( pattern string ) {
+//func ( m *Vis ) Handle_Slash_GotPattern( pattern string ) {
+//
+//  m.regex_str = pattern;
+//
+//  if( 0<len(m.regex_str) ) {
+//    m.Do_Star_Update_Search_Editor();
+//
+//    var p_cv *FileView = m.CV();
+//
+//    if( p_cv.in_diff_mode ) { m.diff.Do_n();
+//    } else                  {   p_cv.Do_n();
+//    }
+//  }
+//  // Show new slash pattern for all windows currently displayed:
+//  m.UpdateViews( true );
+//}
+
+func ( m *Vis ) Handle_Slash_GotPattern( pattern string, goto_pattern bool ) {
 
   m.regex_str = pattern;
 
   if( 0<len(m.regex_str) ) {
     m.Do_Star_Update_Search_Editor();
 
-    var p_cv *FileView = m.CV();
-
-    if( p_cv.in_diff_mode ) { m.diff.Do_n();
-    } else                  {   p_cv.Do_n();
+    if( goto_pattern ) {
+      var p_cv *FileView = m.CV();
+      if( p_cv.in_diff_mode ) { m.diff.Do_n();
+      } else                  {   p_cv.Do_n();
+      }
     }
   }
   // Show new slash pattern for all windows currently displayed:

@@ -1099,11 +1099,11 @@ func ( m *FileView ) GoToStartOfRow() {
 
 func ( m *FileView ) GoToEndOfRow() {
 
-  if( 0<m.p_fb.NumLines() ) {
+  if( 0 < m.p_fb.NumLines() ) {
     var OCL int = m.CrsLine(); // Old cursor line
 
     var LL int = m.p_fb.LineLen( OCL );
-    if( 0<LL ) {
+    if( 0 < LL ) {
       var NCP int = Min_i( LL-1, m.leftChar + m.WorkingCols() - 1 );
 
       m.GoToCrsPos_Write( OCL, NCP );
@@ -1275,21 +1275,21 @@ func ( m *FileView ) Do_A() {
 
 func ( m *FileView ) Do_o() {
 
-  var ONL int = m.p_fb.NumLines(); //< Old number of lines
-  var OCL int = m.CrsLine();       //< Old cursor line
+  var ONL int = m.p_fb.NumLines() //< Old number of lines
+  var OCL int = m.CrsLine()       //< Old cursor line
 
   // New cursor line
-  var NCL = 0;
-  if( 0 < ONL ) { NCL = OCL+1; }
+  var NCL = 0
+  if( 0 < ONL ) { NCL = OCL+1 }
 
   // Add the new line:
   m.p_fb.InsertLE( NCL );
 
-  m.GoToCrsPos_NoWrite( NCL, 0 );
+  m.GoToCrsPos_NoWrite( NCL, 0 )
 
-  m.p_fb.Update();
+  m.p_fb.Update()
 
-  m.Do_i();
+  m.Do_i()
 }
 
 func ( m *FileView ) Do_O() {
@@ -1399,9 +1399,9 @@ func ( m *FileView ) Do_dw_get_fn( st_line, st_char int,
 // Else return 1.
 func ( m *FileView ) Do_dw() int {
 
-  var NUM_LINES int = m.p_fb.NumLines();
+  NUM_LINES := m.p_fb.NumLines()
 
-  if( 0< NUM_LINES ) {
+  if( 0 < NUM_LINES ) {
     var st_line int = m.CrsLine();
     var st_char int = m.CrsChar();
 
@@ -2803,7 +2803,6 @@ func (m *FileView) Do_p_block() {
 func (m *FileView) Do_p_line() {
 
   OCL := m.CrsLine()  // Old cursor line
-
   NUM_LINES := m_vis.reg.Len()
 
   for k:=0; k<NUM_LINES; k++ {
@@ -2818,6 +2817,7 @@ func (m *FileView) Do_p_line() {
 }
 
 func (m *FileView) Do_P() {
+
   var PM Paste_Mode = m_vis.paste_mode
 
   if       ( PM_ST_FN == PM ) { m.Do_p_or_P_st_fn( PP_Before )
@@ -3318,7 +3318,7 @@ func (m *FileView) Do_v_Handle_gp() {
     m.Undo_v()
     m.Remove_Banner()
 
-    m_vis.Handle_Slash_GotPattern( s_pattern_literal );
+    m_vis.Handle_Slash_GotPattern( s_pattern_literal, false );
   }
 }
 

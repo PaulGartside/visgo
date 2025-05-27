@@ -45,7 +45,6 @@ func (m *FileBuf) Init_FB_Common( path_name string, FT File_Type ) {
 
   m.is_dir     = IsDir( m.path_name )
   m.is_regular = IsReg( m.path_name )
-
   if( m.is_dir ) {
     m.dir_name = m.path_name
   } else {
@@ -63,11 +62,29 @@ func (m *FileBuf) Init_FB_Common( path_name string, FT File_Type ) {
   m.history.Init( m )
 }
 
+//func (m *FileBuf) Init_FB( path_name string, FT File_Type ) {
+//
+//  m.Init_FB_Common( path_name, FT )
+//
+//  if( m_USER_FILE <= m_vis.Buf2FileNum( m ) ) {
+//    m.ReadFile()
+//    m.save_history = true
+//  }
+//}
+
 func (m *FileBuf) Init_FB( path_name string, FT File_Type ) {
 
   m.Init_FB_Common( path_name, FT )
 
-  if( m_USER_FILE <= m_vis.Buf2FileNum( m ) ) {
+  file_num := m_vis.Buf2FileNum( m )
+
+  if( file_num < m_USER_FILE ) {
+    if( m_BE_FILE < file_num ) {
+      // Do this for now:
+      m.PushLE()
+      m.lines.LF_at_EOF = true;
+    }
+  } else {
     m.ReadFile()
     m.save_history = true
   }
@@ -78,7 +95,6 @@ func (m *FileBuf) Init_FB_2( path_name string, FT File_Type, p_other *FileBuf ) 
   m.Init_FB_Common( path_name, FT )
 
   m.lines.CopyP( &p_other.lines )
-//m.LF_at_EOF = p_other.LF_at_EOF
 }
 
 func (m *FileBuf) Find_File_Type_CPP() bool {
@@ -153,7 +169,9 @@ func (m *FileBuf) ReadFile() {
   } else if( m.is_regular ) { m.ReadExistingFile( m.path_name )
   } else {
     // File does not exist, so add an empty line:
+    m.save_history = true //< Gets turned back on in ReadFile()
     m.PushLE()
+    m.lines.LF_at_EOF = true
   }
   m.mod_time = ModificationTime( m.path_name )
 }
