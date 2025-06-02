@@ -15,13 +15,14 @@ type FileView struct {
   nRows,nCols int        // Number of rows and columns in view, including border
   topLine, leftChar int  // View current top line and left character position
   crsRow, crsCol int     // View current cursor row and column in file
-  tile_pos Tile_Pos
 
   inInsertMode, inReplaceMode bool
   inVisualMode, inVisualBlock bool
-  v_st_line, v_st_char int
-  v_fn_line, v_fn_char int
 
+  v_st_line, v_st_char int // Visual start line number, and char number on line
+  v_fn_line, v_fn_char int // Visual ending line number, and char number on line
+
+  tile_pos Tile_Pos
   in_diff_mode bool
 
   un_saved_change_sts bool
@@ -111,22 +112,15 @@ func ( m *FileView ) SetTilePos( tp Tile_Pos ) {
 // Translates zero based file line number to zero based global row
 func (m *FileView) Line_2_GL( file_line int ) int {
 
-  return m.y + top___border + file_line - m.topLine
+  return m.y + 1 + file_line - m.topLine
 }
 
 // Translates zero based file line char position to zero based global column
+//
 func (m *FileView) Char_2_GL( line_char int ) int {
 
-  return m.x + left__border + line_char - m.leftChar
+  return m.x + 1 + line_char - m.leftChar
 }
-
-//func ( m *FileView ) GetTopLine() int {
-//  return m.topLine;
-//}
-
-//func ( m *FileView ) SetTopLine( val int )  {
-//  m.topLine  = val;
-//}
 
 func ( m *FileView ) PrintCursor() {
 
@@ -299,22 +293,6 @@ func ( m *FileView ) PrintWorkingView_Set( LL, G_ROW, G_COL, i int, ru rune, p_T
     m_console.SetR( G_ROW, G_COL, ru, p_TS )
   }
 }
-
-//func ( m *FileView ) Get_Style( line, pos int ) *tcell.Style {
-//
-//  var p_TS *tcell.Style = &TS_NORMAL
-//
-//  if       ( m.InStar    ( line, pos ) ) { p_TS = &TS_STAR
-//  } else if( m.InStarInF ( line, pos ) ) { p_TS = &TS_STAR_IN_F
-//  } else if( m.InDefine  ( line, pos ) ) { p_TS = &TS_DEFINE
-//  } else if( m.InComment ( line, pos ) ) { p_TS = &TS_COMMENT
-//  } else if( m.InConst   ( line, pos ) ) { p_TS = &TS_CONST
-//  } else if( m.InControl ( line, pos ) ) { p_TS = &TS_CONTROL
-//  } else if( m.InVarType ( line, pos ) ) { p_TS = &TS_VARTYPE
-//  } else if( m.InNonAscii( line, pos ) ) { p_TS = &TS_NONASCII
-//  }
-//  return p_TS
-//}
 
 func ( m *FileView ) Get_Style( line, pos int ) *tcell.Style {
 
@@ -497,13 +475,6 @@ func ( m *FileView ) PrintFileLine() {
   }
 }
 
-//func ( m *FileView ) PrintCmdLine() {
-//  var WC int = m.WorkingCols()
-//  for k:=0; k<WC; k++ {
-//    m_console.SetR( m.Cmd__Line_Row(), m.Col_Win_2_GL( k ), ' ', &TS_NORMAL )
-//  }
-//}
-
 func ( m *FileView ) PrintCmdLine() {
 
   var WC int = m.WorkingCols()
@@ -597,20 +568,6 @@ func (m *FileView) Update_and_PrintCursor() {
   m.PrintCursor()
 }
 
-//func ( m *FileView ) GoToLine( user_line_num int ) {
-//
-//  // Internal line number is 1 less than user line number:
-//  var NCL int = user_line_num - 1; // New cursor line number
-//
-//  if( NCL < 0 ) { NCL = 0 }
-//
-//  if( m.p_fb.NumLines() <= NCL ) {
-//    m.PrintCursor();
-//  } else {
-//    m.GoToCrsPos_Write( NCL, 0 );
-//  }
-//}
-
 func ( m *FileView ) GoToLine( user_line_num int ) {
 
   var NL int = m.p_fb.NumLines()
@@ -626,20 +583,6 @@ func ( m *FileView ) GoToLine( user_line_num int ) {
     m.GoToCrsPos_Write( NCL, 0 );
   }
 }
-
-//func ( m *FileView ) GoDown() {
-//  var NUM_LINES int = m.p_fb.NumLines()
-//  var OCL       int = m.CrsLine();
-//
-//  if 0<NUM_LINES && OCL < NUM_LINES-1 {
-//    var num int = 1
-//    var NCL int = OCL+num; // New cursor line
-//
-//    if( NUM_LINES-1 < NCL ) { NCL = NUM_LINES-1; }
-//
-//    m.GoToCrsPos_Write( NCL, m.CrsChar() );
-//  }
-//}
 
 func ( m *FileView ) GoDown( num int ) {
   var NUM_LINES int = m.p_fb.NumLines()
@@ -3547,7 +3490,6 @@ func (m *FileView) Do_D_v_line() {
   if( removed_line ) {
     // Figure out and move to new cursor position:
     NUM_LINES := m.p_fb.NumLines()
-  //OCL       := m.CrsLine() // Old cursor line
 
     ncl := m.v_st_line;
     if( NUM_LINES-1 < ncl ) {
