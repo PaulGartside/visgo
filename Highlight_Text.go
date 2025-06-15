@@ -18,8 +18,8 @@ func (m *Highlight_Text) Run_Range( st CrsPos, fn int ) {
 
   m.state = m.Hi_In_None
 
-  l := st.crsLine;
-  p := st.crsChar;
+  l := st.crsLine
+  p := st.crsChar
 
   for nil != m.state && l<fn {
     l,p = m.state( l, p )
@@ -27,7 +27,7 @@ func (m *Highlight_Text) Run_Range( st CrsPos, fn int ) {
 }
 
 func (m *Highlight_Text) Hi_In_None( l, p int ) (int,int) {
-  m.state = nil;
+  m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
     LL := m.p_fb.LineLen( l )
 
@@ -55,7 +55,7 @@ func (m *Highlight_Text) Hi_In_Define( l, p int ) (int,int) {
   for ; p<LL; p++ {
     m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
   }
-  p=0; l++;
+  p=0; l++
   m.state = m.Hi_In_None
 
   return l,p

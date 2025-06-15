@@ -100,7 +100,7 @@ func (m *RLine) GetR( R_num int ) rune {
       R_t, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
       if( R_num == R_offset_data ) {
         R = R_t
-        break;
+        break
       }
       B_offset_data += R_size_data
     }
@@ -148,7 +148,7 @@ func (m *RLine) SetR( R_num int, R rune ) {
             copy( m.data[(R_offset_data+R_size_in):], m.data[(R_offset_data+R_size_data):] )
             utf8.EncodeRune( m.data[R_offset_data:], R )
           }
-          break;
+          break
         }
         B_offset_data += R_size_data
       }
@@ -171,7 +171,7 @@ func (m *RLine) RemoveR( R_num int ) rune {
         R = R_t
         copy( m.data[R_offset_data:], m.data[R_offset_data+R_size_data:] )
         m.data = m.data[:len(m.data)-R_size_data]
-        break;
+        break
       }
       B_offset_data += R_size_data
     }
@@ -233,7 +233,7 @@ func (m *RLine) InsertR( R_num int, R rune ) {
           m.PushR( R ) //< This will increase m.data cap if needed
           copy( m.data[R_offset_data+R_size_in:], m.data[R_offset_data:] )
           utf8.EncodeRune( m.data[R_offset_data:], R )
-          break;
+          break
         }
         B_offset_data += R_size_data
       }
@@ -295,7 +295,7 @@ func (m *RLine) RemoveSpaces() {
     if( IsSpace( rune(m.data[k]) ) ) {
       copy( m.data[k:], m.data[k+1:] )
       m.data = m.data[:len(m.data)-1]
-      k--;
+      k--
     }
   }
 }

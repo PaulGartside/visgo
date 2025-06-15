@@ -216,17 +216,17 @@ func AppendDirDelim( s string ) string {
 
 func IsSpace( R rune ) bool {
 
-  return R == ' ' || R == '\t' || R == '\n' || R == '\r';
+  return R == ' ' || R == '\t' || R == '\n' || R == '\r'
 }
 
 func NotSpace( R rune ) bool {
 
-  return !IsSpace( R );
+  return !IsSpace( R )
 }
 
 func IsDigit( R rune ) bool {
 
-  return '0' <= R && R <= '9';
+  return '0' <= R && R <= '9'
 }
 
 func IsXDigit( R rune ) bool {
@@ -243,7 +243,7 @@ func IsXDigit( R rune ) bool {
 //    if( IsSpace( s_b[k] ) ) {
 //      copy( s_b[k:], s_b[k+1:] )
 //      s_b = s_b[:len(s_b)-1]
-//      k--;
+//      k--
 //    }
 //  }
 //  return s_b
@@ -272,19 +272,19 @@ func LLM1( k int ) int {
 func True_1_else_2( condition bool, v1, v2 int ) int {
 
   if( condition ) { return v1; }
-  return v2;
+  return v2
 }
 
 func True_1_else_2_b( condition bool, v1, v2 byte ) byte {
 
   if( condition ) { return v1; }
-  return v2;
+  return v2
 }
 
 func True_1_else_2_r( condition bool, v1, v2 rune ) rune {
 
   if( condition ) { return v1; }
-  return v2;
+  return v2
 }
 
 func IsAlnum( R rune ) bool {
@@ -294,19 +294,19 @@ func IsAlnum( R rune ) bool {
 
 func IsWord_Ident( R rune ) bool {
 
-  return IsAlnum( R ) || R == '_';
+  return IsAlnum( R ) || R == '_'
 }
 
 func IsWord_NonIdent( R rune ) bool {
 
-  return !IsSpace( R ) && !IsWord_Ident( R );
+  return !IsSpace( R ) && !IsWord_Ident( R )
 }
 
 func Swap( A, B *int ) {
 
-  var T int = *B;
-  *B = *A;
-  *A = T;
+  var T int = *B
+  *B = *A
+  *A = T
 }
 
 func IsFileNameChar( R rune ) bool {
@@ -325,22 +325,22 @@ func IsFileNameChar( R rune ) bool {
 
 // Remove leading and trailing white space
 func Trim( ln RLine ) {
-  Trim_Beg( ln );
-  Trim_End( ln );
+  Trim_Beg( ln )
+  Trim_End( ln )
 }
 
 // Remove leading white space
 func Trim_Beg( ln RLine ) {
 
-  var done bool = false;
+  var done bool = false
   for k:=0; !done && k<ln.Len(); k++ {
 
     if( IsSpace( ln.GetR( k ) ) ) {
-      ln.RemoveR( k );
+      ln.RemoveR( k )
       // Since we just shifted down over current char, re-check current char
-      k--;
+      k--
     } else {
-      done = true;
+      done = true
     }
   }
 }
@@ -350,13 +350,13 @@ func Trim_End( ln RLine ) {
 
   var LEN int = ln.Len()
   if( 0 < LEN ) {
-    var done bool = false;
+    var done bool = false
     for k:=LEN-1; !done && -1<k; k-- {
 
       if( IsSpace( ln.GetR( k ) ) ) {
-        ln.RemoveR( k );
+        ln.RemoveR( k )
       } else {
-        done = true;
+        done = true
       }
     }
   }
@@ -371,7 +371,7 @@ func Trim_End( ln RLine ) {
 
 func IsIdent( R rune ) bool {
 
-  return IsAlnum( R ) || R == '_';
+  return IsAlnum( R ) || R == '_'
 }
 
 func line_start_or_prev_C_non_ident( line RLine, p int ) bool {
@@ -448,20 +448,20 @@ func TwoControl( c1, c0 rune ) bool {
 
 //func GetFnameHead( string in_full_fname ) string {
 //
-//  string head;
+//  string head
 //
 //  // This const_cast is okay because we are not changing in_fname_cp:
-//  char* in_fname_cp = CCast<char*>(in_full_fname);
-//  char* const last_slash = strrchr( in_fname_cp, DIR_DELIM );
+//  char* in_fname_cp = CCast<char*>(in_full_fname)
+//  char* const last_slash = strrchr( in_fname_cp, DIR_DELIM )
 //  if( last_slash )
 //  {
-//    for( const char* cp = last_slash + 1; *cp; cp++ ) head.push( *cp );
+//    for( const char* cp = last_slash + 1; *cp; cp++ ) head.push( *cp )
 //  }
 //  else {
 //    // No tail, all head:
-//    for( const char* cp = in_full_fname; *cp; cp++ ) head.push( *cp );
+//    for( const char* cp = in_full_fname; *cp; cp++ ) head.push( *cp )
 //  }
-//  return head;
+//  return head
 //}
 
 // Here Head is file name.
@@ -480,7 +480,7 @@ func GetFnameHead( in_full_fname string ) string {
     // No tail, all head:
     head = in_full_fname
   }
-  return head;
+  return head
 }
 
 // Here Tail is directory.
@@ -497,7 +497,7 @@ func GetFnameTail( in_full_fname string ) string {
   if( -1 < index_of_last_slash ) {
     tail = in_full_fname[0:index_of_last_slash]
   }
-  return tail;
+  return tail
 }
 
 func Bytes_Has_Regex( s_b []byte, p_regex_obj *regexp.Regexp ) bool {

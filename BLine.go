@@ -113,7 +113,7 @@ func (m *BLine) RemoveSpaces() {
     if( IsSpace( rune(m.data[k]) ) ) {
       copy( m.data[k:], m.data[k+1:] )
       m.data = m.data[:len(m.data)-1]
-      k--;
+      k--
     }
   }
 }

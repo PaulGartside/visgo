@@ -25,7 +25,7 @@ func Hi_FindKey_In_Range( p_fb *FileBuf, HiPairs []HiKeyVal, st CrsPos, fn int )
     var fn_pos int = LLM1( LL )
 
     for p:=st_pos; p<=fn_pos && p<LL; p++ {
-      var key_st bool = 0==sr.GetB(p) && line_start_or_prev_C_non_ident( lr, p );
+      var key_st bool = 0==sr.GetB(p) && line_start_or_prev_C_non_ident( lr, p )
 
       for h:=0; key_st && ""!=HiPairs[h].key; h++ {
         var matches bool = true

@@ -47,7 +47,7 @@ func Copy_paste_buf_2_system_clipboard() {
                          reg_len, S_len )
       m_vis.CmdLineMessage( msg )
     } else {
-      m_vis.CmdLineMessage("Cleared system clipboard");
+      m_vis.CmdLineMessage("Cleared system clipboard")
     }
   }
 }
@@ -62,7 +62,7 @@ func Copy_system_clipboard_2_paste_buf() {
     cb_str_len := len( cb_str )
 
     if( cb_str_len == 0 ) {
-      m_vis.CmdLineMessage("Cleared paste buffer");
+      m_vis.CmdLineMessage("Cleared paste buffer")
     } else {
       var cb_lines []string = strings.Split( cb_str, "\n" )
       cb_lines_len := len( cb_lines )

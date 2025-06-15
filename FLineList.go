@@ -43,7 +43,7 @@ func (m *FLineList) GetSize() int {
     OLOL := len( m.offsets )
 
     // New line offsets length:
-    m.SetOffsetsLen( NUM_LINES );
+    m.SetOffsetsLen( NUM_LINES )
 
     for k:=OLOL; k<NUM_LINES; k++ {
       m.offsets[ k ] = m.offsets[ k-1 ] + m.lines[ k-1 ].Len() + 1 //< Add 1 for '\n'
@@ -75,7 +75,7 @@ func (m *FLineList) GetCursorByte( CL, CC int ) int {
         m.offsets[ k ] = m.offsets[ k-1 ] + m.LineLen( k-1 ) + 1 //< Add 1 for '\n'
       }
     }
-    crs_byte = m.offsets[ CL ] + CC;
+    crs_byte = m.offsets[ CL ] + CC
   }
   return crs_byte
 }
@@ -242,6 +242,6 @@ func (m *FLineList) ChangedLine( line_num int ) {
   if( 0<=line_num && line_num<len(m.offsets) ) {
     m.SetOffsetsLen( line_num )
   }
-  m.hi_touched_line = Min_i( m.hi_touched_line, line_num );
+  m.hi_touched_line = Min_i( m.hi_touched_line, line_num )
 }
 

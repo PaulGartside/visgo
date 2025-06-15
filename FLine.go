@@ -157,7 +157,7 @@ func (m *FLine) to_SB( st int ) []byte {
 //    if( IsSpace( m.data[k] ) ) {
 //      copy( m.data[k:], m.data[k+1:] )
 //      m.data = m.data[:len(m.data)-1]
-//      k--;
+//      k--
 //    }
 //  }
 //}
@@ -167,8 +167,8 @@ func (m *FLine) to_SB( st int ) []byte {
 //  for k:=0; k<styles.Len(); k++ {
 //    var S byte = styles.data[k]
 //
-//    S &= ~HI_STAR;
-//    S &= ~HI_STAR_IN_F;
+//    S &= ~HI_STAR
+//    S &= ~HI_STAR_IN_F
 //
 //    styles.data[k] = S
 //  }
@@ -191,7 +191,7 @@ func (m *FLine) ClearStarAndInFileStyles() {
 // Leave syntax m.styles unchanged, and set star-in-file style
 func (m *FLine) Set__StarInFStyle( idx int ) {
 
-  m.styles.SetB( idx, m.styles.GetB( idx ) | HI_STAR_IN_F );
+  m.styles.SetB( idx, m.styles.GetB( idx ) | HI_STAR_IN_F )
 }
 
 func (m *FLine) ends_with( suffix string ) bool {

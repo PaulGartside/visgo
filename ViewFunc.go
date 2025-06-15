@@ -71,25 +71,25 @@ func (m *Vis) InitViewFuncs() {
 func Handle_Colon( m *Vis ) {
 
   if( 0 == m.colon_file.NumLines() ) {
-    m.colon_file.PushLE();
+    m.colon_file.PushLE()
   }
-  var p_cv *FileView = m.CV();
-  var NUM_COLS int = p_cv.WinCols();
-  var X        int = p_cv.X();
-  var Y        int = p_cv.Cmd__Line_Row();
+  var p_cv *FileView = m.CV()
+  var NUM_COLS int = p_cv.WinCols()
+  var X        int = p_cv.X()
+  var Y        int = p_cv.Cmd__Line_Row()
 
-  m.colon_view.SetContext( NUM_COLS, X, Y );
-  m.colon_mode = true;
+  m.colon_view.SetContext( NUM_COLS, X, Y )
+  m.colon_mode = true
 
-  var CL int = m.colon_view.CrsLine();
-  var LL int = m.colon_file.LineLen( CL );
+  var CL int = m.colon_view.CrsLine()
+  var LL int = m.colon_file.LineLen( CL )
 
   if( 0<LL ) {
     // Something on current line, so goto command line in escape mode
-    m.colon_view.Update();
+    m.colon_view.Update()
   } else {
     // Nothing on current line, so goto command line in insert mode
-    L_Handle_i( m );
+    L_Handle_i( m )
   }
 }
 
@@ -160,10 +160,10 @@ func Handle_v( m *Vis ) {
   } else                  { copy_vis_buf_2_dot_buf_n = p_cv.Do_v()
   }
   if( !m_key.get_from_dot_buf_n ) {
-    m_key.save_2_vis_buf = false;
+    m_key.save_2_vis_buf = false
 
     if( copy_vis_buf_2_dot_buf_n ) {
-      m_key.dot_buf_n.Copy( m_key.vis_buf );
+      m_key.dot_buf_n.Copy( m_key.vis_buf )
     }
   }
 }
@@ -182,7 +182,7 @@ func Handle_V( m *Vis ) {
   } else                  { copy_vis_buf_2_dot_buf_n = p_cv.Do_V()
   }
   if( !m_key.get_from_dot_buf_n ) {
-    m_key.save_2_vis_buf = false;
+    m_key.save_2_vis_buf = false
 
     if( copy_vis_buf_2_dot_buf_n ) {
       m_key.dot_buf_n.Copy( m_key.vis_buf )
@@ -214,7 +214,7 @@ func Handle_A( m *Vis ) {
     m_key.dot_buf_n.Push( make_Key_rune('A') )
     m_key.save_2_dot_buf_n = true
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_A()
   } else                  { p_cv.Do_A()
@@ -231,7 +231,7 @@ func Handle_o( m *Vis ) {
     m_key.dot_buf_n.Push( make_Key_rune('o') )
     m_key.save_2_dot_buf_n = true
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_o()
   } else                  { p_cv.Do_o()
@@ -248,7 +248,7 @@ func Handle_O( m *Vis ) {
     m_key.dot_buf_n.Push( make_Key_rune('O') )
     m_key.save_2_dot_buf_n = true
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_O()
   } else                  { p_cv.Do_O()
@@ -264,7 +264,7 @@ func Handle_x( m *Vis ) {
     m_key.dot_buf_n.Clear()
     m_key.dot_buf_n.Push( make_Key_rune('x') )
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_x()
   } else                  { p_cv.Do_x()
@@ -278,7 +278,7 @@ func Handle_s( m *Vis ) {
     m_key.dot_buf_n.Push( make_Key_rune('s') )
     m_key.save_2_dot_buf_n = true
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_s()
   } else                  { p_cv.Do_s()
@@ -301,7 +301,7 @@ func Handle_c( m *Vis ) {
         m_key.dot_buf_n.Push( make_Key_rune('w') )
         m_key.save_2_dot_buf_n = true
       }
-      var p_cv *FileView = m.CV();
+      var p_cv *FileView = m.CV()
 
       if( p_cv.in_diff_mode ) { m.diff.Do_cw()
       } else                  { p_cv.Do_cw()
@@ -316,7 +316,7 @@ func Handle_c( m *Vis ) {
         m_key.dot_buf_n.Push( make_Key_rune('$') )
         m_key.save_2_dot_buf_n = true
       }
-      var p_cv *FileView = m.CV();
+      var p_cv *FileView = m.CV()
 
       if( p_cv.in_diff_mode ) { m.diff.Do_D(); m.diff.Do_a()
       } else                  { p_cv.Do_D();     p_cv.Do_a()
@@ -348,7 +348,7 @@ func Handle_Q( m *Vis ) {
 
 func Handle_H( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToTopLineInView()
   } else                  {   p_cv.GoToTopLineInView()
@@ -357,7 +357,7 @@ func Handle_H( m *Vis ) {
 
 func Handle_L( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToBotLineInView()
   } else                  {   p_cv.GoToBotLineInView()
@@ -366,7 +366,7 @@ func Handle_L( m *Vis ) {
 
 func Handle_M( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToMidLineInView()
   } else                  {   p_cv.GoToMidLineInView()
@@ -375,7 +375,7 @@ func Handle_M( m *Vis ) {
 
 func Handle_0( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToBegOfLine()
   } else                  {   p_cv.GoToBegOfLine()
@@ -384,7 +384,7 @@ func Handle_0( m *Vis ) {
 
 func Handle_Dollar( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToEndOfLine()
   } else                  {   p_cv.GoToEndOfLine()
@@ -393,25 +393,25 @@ func Handle_Dollar( m *Vis ) {
 
 func Handle_Return( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToEndOfNextLine()
   } else {
     if( m_SLASH_FILE == m.Curr_FileNum() ) {
       // In search buffer, search for pattern on current line:
-      var lp *FLine = p_cv.p_fb.GetLP( p_cv.CrsLine() );
+      var lp *FLine = p_cv.p_fb.GetLP( p_cv.CrsLine() )
 
-      m.Handle_Slash_GotPattern( lp.to_str(), true );
+      m.Handle_Slash_GotPattern( lp.to_str(), true )
     } else {
       // Normal case:
-      p_cv.GoToEndOfNextLine();
+      p_cv.GoToEndOfNextLine()
     }
   }
 }
 
 func Handle_G( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToEndOfFile()
   } else                  {   p_cv.GoToEndOfFile()
@@ -420,7 +420,7 @@ func Handle_G( m *Vis ) {
 
 func Handle_b( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToPrevWord()
   } else                  {   p_cv.GoToPrevWord()
@@ -429,7 +429,7 @@ func Handle_b( m *Vis ) {
 
 func Handle_w( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToNextWord()
   } else                  {   p_cv.GoToNextWord()
@@ -438,7 +438,7 @@ func Handle_w( m *Vis ) {
 
 func Handle_e( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToEndOfWord()
   } else                  {   p_cv.GoToEndOfWord()
@@ -450,9 +450,9 @@ func Handle_f( m *Vis ) {
   kr := m_key.In()
 
   if( kr.IsKeyRune() ) {
-    m.fast_rune = kr.R;
+    m.fast_rune = kr.R
 
-    var p_cv *FileView = m.CV();
+    var p_cv *FileView = m.CV()
 
     if( p_cv.in_diff_mode ) { m.diff.Do_f( m.fast_rune )
     } else                  {   p_cv.Do_f( m.fast_rune )
@@ -464,7 +464,7 @@ func Handle_SemiColon( m *Vis ) {
 
   if( 0 <= m.fast_rune ) {
 
-    var p_cv *FileView = m.CV();
+    var p_cv *FileView = m.CV()
 
     if( p_cv.in_diff_mode ) { m.diff.Do_f( m.fast_rune )
     } else                  {   p_cv.Do_f( m.fast_rune )
@@ -474,7 +474,7 @@ func Handle_SemiColon( m *Vis ) {
 
 func Handle_Percent( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToOppositeBracket()
   } else                  {   p_cv.GoToOppositeBracket()
@@ -483,7 +483,7 @@ func Handle_Percent( m *Vis ) {
 
 func Handle_LeftSquigglyBracket( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToLeftSquigglyBracket()
   } else                  {   p_cv.GoToLeftSquigglyBracket()
@@ -492,7 +492,7 @@ func Handle_LeftSquigglyBracket( m *Vis ) {
 
 func Handle_RightSquigglyBracket( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.GoToRightSquigglyBracket()
   } else                  {   p_cv.GoToRightSquigglyBracket()
@@ -501,7 +501,7 @@ func Handle_RightSquigglyBracket( m *Vis ) {
 
 func Handle_F( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.PageDown()
   } else                  {   p_cv.PageDown()
@@ -510,7 +510,7 @@ func Handle_F( m *Vis ) {
 
 func Handle_B( m *Vis ) {
 
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.PageUp()
   } else                  {   p_cv.PageUp()
@@ -520,25 +520,25 @@ func Handle_B( m *Vis ) {
 func Handle_Slash( m *Vis ) {
 
   if( 0 == m.slash_file.NumLines() ) {
-    m.slash_file.PushLE();
+    m.slash_file.PushLE()
   }
-  var p_cv *FileView = m.CV();
-  var NUM_COLS int = p_cv.WinCols();
-  var X        int = p_cv.X();
-  var Y        int = p_cv.Cmd__Line_Row();
+  var p_cv *FileView = m.CV()
+  var NUM_COLS int = p_cv.WinCols()
+  var X        int = p_cv.X()
+  var Y        int = p_cv.Cmd__Line_Row()
 
-  m.slash_view.SetContext( NUM_COLS, X, Y );
-  m.slash_mode = true;
+  m.slash_view.SetContext( NUM_COLS, X, Y )
+  m.slash_mode = true
 
-  var CL int = m.slash_view.CrsLine();
-  var LL int = m.slash_file.LineLen( CL );
+  var CL int = m.slash_view.CrsLine()
+  var LL int = m.slash_file.LineLen( CL )
 
   if( 0<LL ) {
     // Something on current line, so goto command line in escape mode
-    m.slash_view.Update();
+    m.slash_view.Update()
   } else {
     // Nothing on current line, so goto command line in insert mode
-    L_Handle_i( m );
+    L_Handle_i( m )
   }
 }
 
@@ -552,13 +552,13 @@ func Handle_Star( m *Vis ) {
   }
   if( pattern != m.regex_str ) {
 
-    m.regex_str = pattern;
+    m.regex_str = pattern
 
     if( 0 < len(m.regex_str) ) {
       m.Do_Star_Update_Search_Editor()
     }
     // Show new star pattern for all windows currently displayed:
-    m.UpdateViews( true );
+    m.UpdateViews( true )
   }
 }
 
@@ -574,7 +574,7 @@ func Handle_Dot( m *Vis ) {
       // will be saved to m_key.map_buf.
       m_key.map_buf.Pop()
     }
-    m_key.get_from_dot_buf_n = true;
+    m_key.get_from_dot_buf_n = true
 
     for m_key.get_from_dot_buf_n {
       kr := m_key.In()
@@ -582,7 +582,7 @@ func Handle_Dot( m *Vis ) {
       var cf CmdFunc = m.GetCmdFunc( kr )
       if( nil != cf ) { cf(m) }
     }
-    var p_cv *FileView = m.CV();
+    var p_cv *FileView = m.CV()
 
     if( p_cv.in_diff_mode ) {
       // Diff does its own update every time a command is run
@@ -603,7 +603,7 @@ func Handle_g( m *Vis ) {
     kr := m_key.In()
 
     if( kr.IsKeyRune() ) {
-      p_cv := m.CV();
+      p_cv := m.CV()
 
       if( p_cv.in_diff_mode ) {
         if       ( kr.R == 'g' ) { m.diff.GoToTopOfFile()
@@ -649,7 +649,7 @@ func Handle_d( m *Vis ) {
         m_key.dot_buf_n.Push( make_Key_rune('d') )
         m_key.dot_buf_n.Push( make_Key_rune('d') )
       }
-      var p_cv *FileView = m.CV();
+      var p_cv *FileView = m.CV()
       if( p_cv.in_diff_mode ) { m.diff.Do_dd()
       } else                  {   p_cv.Do_dd()
       }
@@ -659,7 +659,7 @@ func Handle_d( m *Vis ) {
         m_key.dot_buf_n.Push( make_Key_rune('d') )
         m_key.dot_buf_n.Push( make_Key_rune('w') )
       }
-      var p_cv *FileView = m.CV();
+      var p_cv *FileView = m.CV()
       if( p_cv.in_diff_mode ) { m.diff.Do_dw()
       } else                  {   p_cv.Do_dw()
       }
@@ -673,7 +673,7 @@ func Handle_y( m *Vis ) {
 
   if( kr.IsKeyRune() ) {
 
-    var p_cv *FileView = m.CV();
+    var p_cv *FileView = m.CV()
     if( p_cv.in_diff_mode ) {
       if       ( kr.R == 'y' ) { m.diff.Do_yy()
       } else if( kr.R == 'w' ) { m.diff.Do_yw()
@@ -692,7 +692,7 @@ func Handle_D( m *Vis ) {
     m_key.dot_buf_n.Clear()
     m_key.dot_buf_n.Push( make_Key_rune('D') )
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_D()
   } else                  {   p_cv.Do_D()
@@ -705,7 +705,7 @@ func Handle_p( m *Vis ) {
     m_key.dot_buf_n.Clear()
     m_key.dot_buf_n.Push( make_Key_rune('p') )
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_p()
   } else                  {   p_cv.Do_p()
@@ -718,7 +718,7 @@ func Handle_P( m *Vis ) {
     m_key.dot_buf_n.Clear()
     m_key.dot_buf_n.Push( make_Key_rune('P') )
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_P()
   } else                  {   p_cv.Do_P()
@@ -731,7 +731,7 @@ func Handle_r( m *Vis ) {
     m_key.dot_buf_n.Clear()
     m_key.dot_buf_n.Push( make_Key_rune('r') )
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_r()
   } else                  {   p_cv.Do_r()
@@ -745,7 +745,7 @@ func Handle_R( m *Vis ) {
     m_key.dot_buf_n.Push( make_Key_rune('R') )
     m_key.save_2_dot_buf_n = true
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_R()
   } else                  {   p_cv.Do_R()
@@ -761,7 +761,7 @@ func Handle_J( m *Vis ) {
     m_key.dot_buf_n.Clear()
     m_key.dot_buf_n.Push( make_Key_rune('J') )
   }
-  var p_cv *FileView = m.CV();
+  var p_cv *FileView = m.CV()
 
   if( p_cv.in_diff_mode ) { m.diff.Do_J()
   } else                  {   p_cv.Do_J()

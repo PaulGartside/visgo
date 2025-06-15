@@ -50,7 +50,7 @@ func (m *ChangeHist) Undo( p_V *FileView ) {
 func (m *ChangeHist) UndoAll( p_V *FileView ) {
 
   for 0 < m.changes.Len() {
-    m.Undo( p_V );
+    m.Undo( p_V )
   }
 }
 
@@ -62,7 +62,7 @@ func (m *ChangeHist) Save_Set( l_num, c_pos int,
 
   if( continue_last_update ) {
 
-    NUM_CHANGES := m.changes.Len();
+    NUM_CHANGES := m.changes.Len()
     if( 0<NUM_CHANGES && 0<c_pos ) {
 
       plc := m.changes.GetP( NUM_CHANGES-1 )
@@ -168,81 +168,81 @@ func (m *ChangeHist) Save_RemoveRune( l_num, c_pos int, old_R rune ) {
 
 func (m *ChangeHist) Undo_InsertLine( plc *LineChange, p_V *FileView ) {
   // Undo an inserted line by removing the inserted line
-  m.p_fb.RemoveLP( plc.lnum );
+  m.p_fb.RemoveLP( plc.lnum )
 
   // If last line of file was just removed, plc.lnum is out of range,
   // so go to NUM_LINES-1 instead:
-  NUM_LINES := m.p_fb.NumLines();
+  NUM_LINES := m.p_fb.NumLines()
   LINE_NUM  := Min_i( plc.lnum, NUM_LINES-1 )
 
-  p_V.GoToCrsPos_NoWrite( LINE_NUM, plc.cpos );
+  p_V.GoToCrsPos_NoWrite( LINE_NUM, plc.cpos )
 
-  m.p_fb.Update();
+  m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_RemoveLine( plc *LineChange, p_V *FileView ) {
   // Undo a removed line by inserting the removed line
-  m.p_fb.InsertRLP( plc.lnum, &plc.line );
+  m.p_fb.InsertRLP( plc.lnum, &plc.line )
 
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos );
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
 
-  m.p_fb.Update();
+  m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_InsertChar( plc *LineChange, p_V *FileView ) {
-  LINE_LEN := plc.line.Len();
+  LINE_LEN := plc.line.Len()
 
   // Undo inserted chars by removing the inserted chars
   for k:=0; k<LINE_LEN; k++ {
-    m.p_fb.RemoveR( plc.lnum, plc.cpos );
+    m.p_fb.RemoveR( plc.lnum, plc.cpos )
   }
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos );
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
 
-  m.p_fb.Update();
+  m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_RemoveChar( plc *LineChange, p_V *FileView ) {
-  LINE_LEN := plc.line.Len();
+  LINE_LEN := plc.line.Len()
 
   // Undo removed chars by inserting the removed chars
   for k:=0; k<LINE_LEN; k++ {
-    R := plc.line.GetR(k);
+    R := plc.line.GetR(k)
 
-    m.p_fb.InsertR( plc.lnum, plc.cpos+k, R );
+    m.p_fb.InsertR( plc.lnum, plc.cpos+k, R )
   }
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos );
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
 
-  m.p_fb.Update();
+  m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_Set( plc *LineChange, p_V *FileView ) {
-  LINE_LEN := plc.line.Len();
+  LINE_LEN := plc.line.Len()
 
   for k:=0; k<LINE_LEN; k++ {
-    R := plc.line.GetR(k);
+    R := plc.line.GetR(k)
 
-    m.p_fb.SetR( plc.lnum, plc.cpos+k, R, false );
+    m.p_fb.SetR( plc.lnum, plc.cpos+k, R, false )
   }
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos );
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
 
-  m.p_fb.Update();
+  m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_Set_Diff( plc *LineChange, p_V *FileView ) {
 // FIXME:
-//  LINE_LEN := plc.line.Len();
+//  LINE_LEN := plc.line.Len()
 //
 //  for k:=0; k<LINE_LEN; k++ {
-//    R := plc.line.GetR(k);
+//    R := plc.line.GetR(k)
 //
-//    m.p_fb.SetR( plc.lnum, plc.cpos+k, R, false );
+//    m.p_fb.SetR( plc.lnum, plc.cpos+k, R, false )
 //  }
 //  p_Diff := &m_vis.diff
 //
-//  DL := p_Diff.DiffLine( p_V, plc.lnum );
-//  p_Diff.Patch_Diff_Info_Changed( p_V, DL );
+//  DL := p_Diff.DiffLine( p_V, plc.lnum )
+//  p_Diff.Patch_Diff_Info_Changed( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos );
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
@@ -250,20 +250,20 @@ func (m *ChangeHist) Undo_Set_Diff( plc *LineChange, p_V *FileView ) {
 func (m *ChangeHist) Undo_InsertLine_Diff( plc *LineChange, p_V *FileView ) {
 // FIXME:
 //  // Undo an inserted line by removing the inserted line
-//  m.p_fb.RemoveLP( plc.lnum );
+//  m.p_fb.RemoveLP( plc.lnum )
 //
 //  // If last line of file was just removed, plc.lnum is out of range,
 //  // so go to NUM_LINES-1 instead:
-//  NUM_LINES := m.p_fb.NumLines();
+//  NUM_LINES := m.p_fb.NumLines()
 //  LINE_NUM  := Min_i( plc.lnum, NUM_LINES-1 )
 //
 //  p_Diff = &m_vis.diff
 //
-//  DL := p_Diff.DiffLine( p_V, LINE_NUM );
+//  DL := p_Diff.DiffLine( p_V, LINE_NUM )
 //
-//  p_Diff.Patch_Diff_Info_Deleted( p_V, DL );
+//  p_Diff.Patch_Diff_Info_Deleted( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos );
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
@@ -271,54 +271,54 @@ func (m *ChangeHist) Undo_InsertLine_Diff( plc *LineChange, p_V *FileView ) {
 func (m *ChangeHist) Undo_RemoveLine_Diff( plc *LineChange, p_V *FileView ) {
 // FIXME:
 //  // Undo a removed line by inserting the removed line
-//  m.p_fb.InsertRLP( plc.lnum, &plc.line );
+//  m.p_fb.InsertRLP( plc.lnum, &plc.line )
 //
 //  p_Diff = &m_vis.diff
 //
-//  DL    := p_Diff.DiffLine( p_V, plc.lnum );
-//  ODVL0 := p_Diff.On_Deleted_View_Line_Zero( DL );
+//  DL    := p_Diff.DiffLine( p_V, plc.lnum )
+//  ODVL0 := p_Diff.On_Deleted_View_Line_Zero( DL )
 //
-//  p_Diff.Patch_Diff_Info_Inserted( p_V, DL, ODVL0 );
+//  p_Diff.Patch_Diff_Info_Inserted( p_V, DL, ODVL0 )
 //
-//  p_Diff.GoToCrsPos_NoWrite( plc.lnum, plc.cpos );
+//  p_Diff.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
 
 func (m *ChangeHist) Undo_InsertChar_Diff( plc *LineChange, p_V *FileView ) {
 // FIXME:
-//  LINE_LEN := plc.line.Len();
+//  LINE_LEN := plc.line.Len()
 //
 //  // Undo inserted chars by removing the inserted chars
 //  for k:=0; k<LINE_LEN; k++ {
-//    m.p_fb.RemoveR( plc.lnum, plc.cpos );
+//    m.p_fb.RemoveR( plc.lnum, plc.cpos )
 //  }
 //  p_Diff = &m_vis.diff
 //
-//  DL := p_Diff.DiffLine( p_V, plc.lnum );
-//  p_Diff.Patch_Diff_Info_Changed( p_V, DL );
+//  DL := p_Diff.DiffLine( p_V, plc.lnum )
+//  p_Diff.Patch_Diff_Info_Changed( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos );
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
 
 func (m *ChangeHist) Undo_RemoveChar_Diff( plc *LineChange, p_V *FileView ) {
 // FIXME:
-//  LINE_LEN := plc.line.len();
+//  LINE_LEN := plc.line.len()
 //
 //  // Undo removed chars by inserting the removed chars
 //  for k:=0; k<LINE_LEN; k++ {
-//    R := plc.line.GetR(k);
+//    R := plc.line.GetR(k)
 //
-//    m.p_fb.InsertR( plc.lnum, plc.cpos+k, R );
+//    m.p_fb.InsertR( plc.lnum, plc.cpos+k, R )
 //  }
 //  p_Diff = &m_vis.diff
 //
-//  DL := p_Diff.DiffLine( p_V, plc.lnum );
-//  p_Diff.Patch_Diff_Info_Changed( p_V, DL );
+//  DL := p_Diff.DiffLine( p_V, plc.lnum )
+//  p_Diff.Patch_Diff_Info_Changed( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos );
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }

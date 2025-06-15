@@ -30,12 +30,12 @@ var m_COLON_FILE int = 4;    // Colon command file
 var m_SLASH_FILE int = 5;    // Slash command file
 var m_USER_FILE  int = 6;    // First user file
 
-var  m_EDIT_BUF_NAME string = "BUFFER_EDITOR";
-var  m_HELP_BUF_NAME string = "VIS_HELP";
-var  m_MSG__BUF_NAME string = "MESSAGE_BUFFER";
-var m_SHELL_BUF_NAME string = "SHELL_BUFFER";
-var m_COLON_BUF_NAME string = "COLON_BUFFER";
-var m_SLASH_BUF_NAME string = "SLASH_BUFFER";
+var  m_EDIT_BUF_NAME string = "BUFFER_EDITOR"
+var  m_HELP_BUF_NAME string = "VIS_HELP"
+var  m_MSG__BUF_NAME string = "MESSAGE_BUFFER"
+var m_SHELL_BUF_NAME string = "SHELL_BUFFER"
+var m_COLON_BUF_NAME string = "COLON_BUFFER"
+var m_SLASH_BUF_NAME string = "SLASH_BUFFER"
 
 var m_bb bytes.Buffer  // bytes Buffer
 
@@ -64,6 +64,7 @@ const (
   FT_UNKNOWN File_Type = iota
   FT_BUFFER_EDITOR
   FT_DIR
+  FT_BASH
   FT_CPP
   FT_GO
   FT_TEXT
@@ -136,7 +137,7 @@ func cut_file_name( path string ) string {
 
 func die( msg string ) {
   fmt.Println( m_prog_name +" : "+ msg )
-  os.Exit( 1 );
+  os.Exit( 1 )
 }
 
 func print_log() {

@@ -51,12 +51,12 @@ func (m *FileBuf) Init_FB_Common( path_name string, FT File_Type ) {
     m.dir_name = GetFnameTail( m.path_name )
   }
   if( FT == FT_BUFFER_EDITOR ) {
-    m.file_type = FT_BUFFER_EDITOR;
+    m.file_type = FT_BUFFER_EDITOR
     m.Hi = new( Highlight_BufferEditor )
     m.Hi.Init( m )
 
   } else if( FT_UNKNOWN == m.file_type ) {
-    m.Find_File_Type_Suffix();
+    m.Find_File_Type_Suffix()
   }
   m_vis.Add_FileBuf_2_Lists_Create_Views( m )
   m.history.Init( m )
@@ -82,7 +82,7 @@ func (m *FileBuf) Init_FB( path_name string, FT File_Type ) {
     if( m_BE_FILE < file_num ) {
       // Do this for now:
       m.PushLE()
-      m.lines.LF_at_EOF = true;
+      m.lines.LF_at_EOF = true
     }
   } else {
     m.ReadFile()
@@ -95,6 +95,28 @@ func (m *FileBuf) Init_FB_2( path_name string, FT File_Type, p_other *FileBuf ) 
   m.Init_FB_Common( path_name, FT )
 
   m.lines.CopyP( &p_other.lines )
+}
+
+func (m *FileBuf) Find_File_Type_Bash() bool {
+
+  if( strings.HasSuffix(m.path_name, ".sh") ||
+      strings.HasSuffix(m.path_name, ".sh.new") ||
+      strings.HasSuffix(m.path_name, ".sh.old") ||
+      strings.HasSuffix(m.path_name, ".bash") ||
+      strings.HasSuffix(m.path_name, ".bash.new") ||
+      strings.HasSuffix(m.path_name, ".bash.old") ||
+      strings.HasSuffix(m.path_name, ".alias") ||
+      strings.HasSuffix(m.path_name, ".bashrc") ||
+      strings.HasSuffix(m.path_name, ".profile") ||
+      strings.HasSuffix(m.path_name, ".bash_profile") ||
+      strings.HasSuffix(m.path_name, ".bash_logout") ) {
+
+    m.file_type = FT_BASH
+    m.Hi = new( Highlight_Bash )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
 }
 
 func (m *FileBuf) Find_File_Type_CPP() bool {
@@ -121,12 +143,12 @@ func (m *FileBuf) Find_File_Type_CPP() bool {
       strings.HasSuffix(m.path_name, ".cxx.new") ||
       strings.HasSuffix(m.path_name, ".cxx.old") ) {
 
-    m.file_type = FT_CPP;
+    m.file_type = FT_CPP
     m.Hi = new( Highlight_CPP )
     m.Hi.Init( m )
-    return true;
+    return true
   }
-  return false;
+  return false
 }
 
 func (m *FileBuf) Find_File_Type_Go() bool {
@@ -135,22 +157,23 @@ func (m *FileBuf) Find_File_Type_Go() bool {
       strings.HasSuffix(m.path_name, ".go.new") ||
       strings.HasSuffix(m.path_name, ".go.old") ) {
 
-    m.file_type = FT_GO;
+    m.file_type = FT_GO
     m.Hi = new( Highlight_Go )
     m.Hi.Init( m )
-    return true;
+    return true
   }
-  return false;
+  return false
 }
 
 func (m *FileBuf) Find_File_Type_Suffix() {
 
   if( m.is_dir ) {
-    m.file_type = FT_DIR;
+    m.file_type = FT_DIR
     m.Hi = new( Highlight_Dir )
     m.Hi.Init( m )
 
-  } else if( m.Find_File_Type_CPP() ||
+  } else if( m.Find_File_Type_Bash() ||
+             m.Find_File_Type_CPP() ||
              m.Find_File_Type_Go() ) {
     // File type found
   } else {
@@ -180,20 +203,20 @@ func (m *FileBuf) ReReadFile() {
 
   // Can only re-read user files
   if( m_USER_FILE <= m_vis.Buf2FileNum( m ) ) {
-    m.ClearChanged();
-    m.ClearLines();
+    m.ClearChanged()
+    m.ClearLines()
 
     m.save_history = false; //< Gets turned back on in ReadFile()
 
-    m.ReadFile();
+    m.ReadFile()
 
     // Reposition cursor in each FileView of this file if needed:
     for w:=0; w<MAX_WINS; w++ {
-      var p_V *FileView = m.views.GetPFv( w );
+      var p_V *FileView = m.views.GetPFv( w )
 
-      p_V.Check_Context();
+      p_V.Check_Context()
     }
-    m.save_history    = true;
+    m.save_history = true
   }
 }
 
@@ -321,10 +344,10 @@ func (m *FileBuf) add_infile_bytes( p_fl *FLine, infile_bytes []byte ) *FLine {
     if '\n' == B {
       m.PushLP( p_fl )
       p_fl = nil
-      m.lines.LF_at_EOF = true;
+      m.lines.LF_at_EOF = true
     } else {
       p_fl.PushB( B )
-      m.lines.LF_at_EOF = false;
+      m.lines.LF_at_EOF = false
     }
   }
   return p_fl
@@ -333,31 +356,31 @@ func (m *FileBuf) add_infile_bytes( p_fl *FLine, infile_bytes []byte ) *FLine {
 func (m *FileBuf) ClearLines() {
   m.lines.Clear()
 
-//m.lineRegexsValid.clear();
+//m.lineRegexsValid.clear()
 }
 
 func (m *FileBuf) Write() bool {
-  var ok bool = false;
+  var ok bool = false
 
 //if( ENC_BYTE == m.encoding )
 //{
-    ok = m.Write_p( &m.lines );
+    ok = m.Write_p( &m.lines )
 //}
 //else if( ENC_HEX == m.encoding )
 //{
-//  Array_t<BLine*> n_lines;
-//  bool LF_at_EOF = true;
+//  Array_t<BLine*> n_lines
+//  bool LF_at_EOF = true
 //
 //  if( HEX_to_BYTE_get_lines( m, n_lines, LF_at_EOF ) )
 //  {
-//    ok = Write_p( m, n_lines, LF_at_EOF );
+//    ok = Write_p( m, n_lines, LF_at_EOF )
 //  }
 //}
 //else {
 //  m.p_vis.Window_Message("\nUnhandled Encoding: %s\n\n"
-//                        , Encoding_Str( m.encoding ) );
+//                        , Encoding_Str( m.encoding ) )
 //}
-  return ok;
+  return ok
 }
 
 func (m *FileBuf) Write_p( p_lines *FLineList ) bool {
@@ -366,14 +389,14 @@ func (m *FileBuf) Write_p( p_lines *FLineList ) bool {
 
   if( 0==len( m.path_name ) ) {
     // No file name message:
-    ok = false;
-    m_vis.CmdLineMessage("No file name to write to");
+    ok = false
+    m_vis.CmdLineMessage("No file name to write to")
   } else {
     p_f, err := os.OpenFile( m.path_name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644 )
 
     if( err != nil ) {
       // Could not open file for writing message:
-      ok = false;
+      ok = false
       m_vis.Window_Message( fmt.Sprintf("\nCould not open:\n\n%s\n\nfor writing\n\n",
                             m.path_name) )
     } else {
@@ -384,22 +407,22 @@ func (m *FileBuf) Write_p( p_lines *FLineList ) bool {
         _,err = p_f.Write( p_lines.GetLP(k).to_SB(0) )
 
         if( k<NUM_LINES-1 || p_lines.LF_at_EOF ) {
-          _,err = p_f.Write( []byte("\n") );
+          _,err = p_f.Write( []byte("\n") )
         }
       }
       if( err != nil ) {
-        m_vis.CmdLineMessage( fmt.Sprintf("Failed to write: \"%s\"", m.path_name) );
+        m_vis.CmdLineMessage( fmt.Sprintf("Failed to write: \"%s\"", m.path_name) )
       } else {
         m.mod_time = ModificationTime( m.path_name )
-        m.changed_externally = false;
+        m.changed_externally = false
 
-        m.history.Clear();
+        m.history.Clear()
         // Wrote to file message:
-        m_vis.CmdLineMessage( fmt.Sprintf("\"%s\" written", m.path_name) );
+        m_vis.CmdLineMessage( fmt.Sprintf("\"%s\" written", m.path_name) )
       }
     }
   }
-  return ok;
+  return ok
 }
 
 func (m *FileBuf) GetPath() string {
@@ -522,21 +545,21 @@ func (m *FileBuf) RemoveLP( l_num int ) *FLine {
 //
 func (m *FileBuf) RemoveR( l_num, c_num int ) rune {
 
-//Line* lp =  m.lines[ l_num ];
-//Line* sp = m.styles[ l_num ];
+//Line* lp =  m.lines[ l_num ]
+//Line* sp = m.styles[ l_num ]
 
   var R rune = m.lines.RemoveR( l_num, c_num )
-//byte C = 0;
+//byte C = 0
 //bool ok = lp->remove( c_num, C )
        //&& sp->remove( c_num )
-       //&& m.lineRegexsValid.set( l_num, false );
+       //&& m.lineRegexsValid.set( l_num, false )
 
-//if( SavingHist( m ) ) m.history.Save_RemoveChar( l_num, c_num, C );
+//if( SavingHist( m ) ) m.history.Save_RemoveChar( l_num, c_num, C )
 
   if( m.save_history ) {
     m.history.Save_RemoveRune( l_num, c_num, R )
   }
-  return R;
+  return R
 }
 
 // Insert a new empty line on line l_num.
@@ -549,7 +572,7 @@ func (m *FileBuf) InsertLE( l_num int ) {
   if( m.save_history ) {
     m.history.Save_InsertLine( l_num )
   }
-  m.InsertLine_Adjust_Views_topLines( l_num );
+  m.InsertLine_Adjust_Views_topLines( l_num )
 }
 
 // Insert RLine
@@ -560,7 +583,7 @@ func (m *FileBuf) InsertRLP( l_num int, p_rl *RLine ) {
   if( m.save_history ) {
     m.history.Save_InsertLine( l_num )
   }
-  m.InsertLine_Adjust_Views_topLines( l_num );
+  m.InsertLine_Adjust_Views_topLines( l_num )
 }
 
 func (m *FileBuf) GetSize() int {
@@ -577,24 +600,24 @@ func (m *FileBuf) GetCursorByte( CL, CC int ) int {
 //
 //  for w:=0; w<MAX_WINS; w++ {
 //
-//    pV *View = m.views[w];
+//    pV *View = m.views[w]
 //
 //    for w2:=0; w2<m_vis.GetNumWins(); w2++ {
 //
 //      if( pV == m_vis.WinView( w2 ) )
 //      {
-//      //m.self.Find_Styles( pV->GetTopLine() + pV->WorkingRows() );
-//      //m.self.Find_Regexs( pV->GetTopLine(), pV->WorkingRows() );
+//      //m.self.Find_Styles( pV->GetTopLine() + pV->WorkingRows() )
+//      //m.self.Find_Regexs( pV->GetTopLine(), pV->WorkingRows() )
 //
-//        pV.RepositionView();
-//        pV.Print_Borders();
-//        pV.PrintWorkingView();
-//        pV.PrintStsLine();
-//        pV.PrintFileLine();
+//        pV.RepositionView()
+//        pV.Print_Borders()
+//        pV.PrintWorkingView()
+//        pV.PrintStsLine()
+//        pV.PrintFileLine()
 //
-//        if( PRINT_CMD_LINE ) pV.PrintCmdLine();
+//        if( PRINT_CMD_LINE ) pV.PrintCmdLine()
 //
-//        pV->SetStsLineNeedsUpdate( true );
+//        pV->SetStsLineNeedsUpdate( true )
 //      }
 //    }
 //  }
@@ -616,17 +639,17 @@ func (m *FileBuf) Update() {
 
 func (m *FileBuf) UpdateCmd() {
 
-//m_vis.Update_Change_Statuses();
+//m_vis.Update_Change_Statuses()
 
-//m_vis.UpdateViewsOfFile( m );
+//m_vis.UpdateViewsOfFile( m )
 
   if( nil != m.p_lv ) {
 
-    m.p_lv.RepositionView();
-    m.p_lv.PrintWorkingView();
+    m.p_lv.RepositionView()
+    m.p_lv.PrintWorkingView()
 
     // Put cursor back into current window
-    m.p_lv.PrintCursor();
+    m.p_lv.PrintCursor()
   }
 }
 
@@ -634,9 +657,9 @@ func (m *FileBuf) InsertLine_Adjust_Views_topLines( l_num int ) {
 
   for w:=0; w<m.views.Len(); w++ {
 
-    var p_fv *FileView = m.views.GetPFv( w );
+    var p_fv *FileView = m.views.GetPFv( w )
 
-    p_fv.InsertedLine_Adjust_TopLine( l_num );
+    p_fv.InsertedLine_Adjust_TopLine( l_num )
   }
 }
 
@@ -649,17 +672,17 @@ func (m *FileBuf) Update_Styles_Find_St( first_line int ) CrsPos {
   // CrsPos:
   var done bool = false
   for l:=first_line-1; !done && 0<=l; l-- {
-    var LL int = m.LineLen( l );
+    var LL int = m.LineLen( l )
     for p:=LL-1; !done && 0<=p; p-- {
       var S byte = m.lines.GetLP(l).GetStyle(p)
       if( 0==S ) {
-        st.crsLine = l;
-        st.crsChar = p;
-        done = true;
+        st.crsLine = l
+        st.crsChar = p
+        done = true
       }
     }
   }
-  return st;
+  return st
 }
 
 // Find m.styles up to but not including up_to_line number
@@ -668,7 +691,7 @@ func (m *FileBuf) Find_Styles( up_to_line int ) {
   var NUM_LINES int = m.NumLines()
 
   if( 0<NUM_LINES ) {
-    m.lines.hi_touched_line = Min_i( m.lines.hi_touched_line, NUM_LINES-1 );
+    m.lines.hi_touched_line = Min_i( m.lines.hi_touched_line, NUM_LINES-1 )
 
     if( m.lines.hi_touched_line < up_to_line ) {
       // Find m.styles for some EXTRA_LINES beyond where we need to find
@@ -677,14 +700,14 @@ func (m *FileBuf) Find_Styles( up_to_line int ) {
       // Find_Styles_In_Range() does not need to be called every time the
       // user scrolls down another line.  Find_Styles_In_Range() will only
       // be called once for every EXTRA_LINES scrolled down.
-      var EXTRA_LINES int = 10;
+      var EXTRA_LINES int = 10
 
-      var st CrsPos = m.Update_Styles_Find_St( m.lines.hi_touched_line );
-      var fn int    = Min_i( up_to_line+EXTRA_LINES, NUM_LINES );
+      var st CrsPos = m.Update_Styles_Find_St( m.lines.hi_touched_line )
+      var fn int    = Min_i( up_to_line+EXTRA_LINES, NUM_LINES )
 
-      m.Find_Styles_In_Range( st, fn );
+      m.Find_Styles_In_Range( st, fn )
 
-      m.lines.hi_touched_line = fn;
+      m.lines.hi_touched_line = fn
     }
   }
 }
@@ -694,11 +717,11 @@ func (m *FileBuf) Find_Styles_In_Range( st CrsPos, fn int ) {
   // Hi should have already have been allocated, but just in case
   // check and allocate here if needed.
   if( nil == m.Hi ) {
-    m.file_type = FT_TEXT;
+    m.file_type = FT_TEXT
     m.Hi = new( Highlight_Text )
     m.Hi.Init( m )
   }
-  m.Hi.Run_Range( st, fn );
+  m.Hi.Run_Range( st, fn )
 }
 
 // Leave star style unchanged, and clear syntax m.styles
@@ -708,8 +731,8 @@ func (m *FileBuf) ClearSyntaxStyles( l_num, c_num int ) {
   var lp *FLine = m.lines.GetLP( l_num )
 
   // Clear everything except star and in-file
-//sr.SetB( c_num, sr.GetB( c_num ) & ( HI_STAR | HI_STAR_IN_F ) );
-  lp.SetStyle( c_num, lp.GetStyle( c_num ) & ( HI_STAR | HI_STAR_IN_F ) );
+//sr.SetB( c_num, sr.GetB( c_num ) & ( HI_STAR | HI_STAR_IN_F ) )
+  lp.SetStyle( c_num, lp.GetStyle( c_num ) & ( HI_STAR | HI_STAR_IN_F ) )
 }
 
 // Leave star and in-file styles unchanged, and set syntax style
@@ -760,13 +783,13 @@ func (m *FileBuf) BufferEditor_SortName() bool {
       var p_l_1 *FLine = m.lines.GetLP( k+1 )
 
       if( m.BufferEditor_SortName_Swap( p_l_0, p_l_1 ) ) {
-      //SwapLines( m, k, k+1 );
+      //SwapLines( m, k, k+1 )
         m.lines.Swap( k, k+1 )
-        changed = true;
+        changed = true
       }
     }
   }
-  return changed;
+  return changed
 }
 
 // Return true if p_l_0 (dname,fname)
@@ -782,7 +805,7 @@ func (m *FileBuf) BufferEditor_SortName_Swap( p_l_0, p_l_1 *FLine ) bool {
 
   if( 0<dn_compare ) {
     // l_0 dname is greater than l_1 dname
-    swap = true;
+    swap = true
 
   } else if( 0==dn_compare ) {
     // l_0 dname == l_1 dname
@@ -792,10 +815,10 @@ func (m *FileBuf) BufferEditor_SortName_Swap( p_l_0, p_l_1 *FLine ) bool {
 
     if( 0<strings.Compare( l_0_fn, l_1_fn ) ) {
       // l_0 fname is greater than l_1 fname
-      swap = true;
+      swap = true
     }
   }
-  return swap;
+  return swap
 }
 
 func (m *FileBuf) Changed() bool {
@@ -803,7 +826,7 @@ func (m *FileBuf) Changed() bool {
 }
 
 func (m *FileBuf) ClearChanged() {
-  m.history.Clear();
+  m.history.Clear()
 }
 
 func (m *FileBuf) Find_Regexs( start_line, num_lines int ) {
@@ -811,10 +834,10 @@ func (m *FileBuf) Find_Regexs( start_line, num_lines int ) {
   m.Check_4_New_Regex()
 
 //if( m.p_regex_obj != nil ) {
-    var up_to_line int = Min_i( start_line+num_lines, m.NumLines() );
+    var up_to_line int = Min_i( start_line+num_lines, m.NumLines() )
 
     for k:=start_line; k<up_to_line; k++ {
-      m.Find_Regexs_4_Line( k );
+      m.Find_Regexs_4_Line( k )
     }
 //}
 }
@@ -823,14 +846,14 @@ func (m *FileBuf) Find_Regexs( start_line, num_lines int ) {
 //
 //  m.Check_4_New_Regex()
 //
-//  var up_to_line int = Min_i( start_line+num_lines, m.NumLines() );
+//  var up_to_line int = Min_i( start_line+num_lines, m.NumLines() )
 //
 //  for k:=start_line; k<up_to_line; k++ {
 //
 //    var lp *FLine = m.lines.GetLP( k )
 //
 //    if( !lp.star_styles_valid ) {
-//      m.Find_Regexs_4_Line( lp );
+//      m.Find_Regexs_4_Line( lp )
 //      lp.star_styles_valid = true
 //    }
 //  }
@@ -916,13 +939,13 @@ func (m *FileBuf) Other_File_Has_My_Regex( file_name string ) bool {
         file_name != m_SLASH_BUF_NAME &&
         !strings.HasSuffix( file_name, string(DIR_DELIM) ) ) {
 
-      var pfb *FileBuf = m_vis.GetFileBuf_s( file_name );
+      var pfb *FileBuf = m_vis.GetFileBuf_s( file_name )
       if( nil != pfb ) {
-        return pfb.Has_Regex( m.p_regex_obj );
+        return pfb.Has_Regex( m.p_regex_obj )
       }
     }
   }
-  return false;
+  return false
 }
 
 func (m *FileBuf) Filename_Is_Relevant( fname string ) bool {
@@ -1042,16 +1065,16 @@ func (m *FileBuf) Have_Regex_In_File( pname string ) bool {
           done = true
         } else {
           if( '\n' == B ) {
-            found = Bytes_Has_Regex( m_bb.Bytes(), m.p_regex_obj );
-            m_bb.Reset();
+            found = Bytes_Has_Regex( m_bb.Bytes(), m.p_regex_obj )
+            m_bb.Reset()
           } else {
-            m_bb.WriteByte( B );
+            m_bb.WriteByte( B )
           }
         }
       }
     }
   }
-  return found;
+  return found
 }
 
 //func (m *FileBuf) Has_Regex( p_regex_obj *regexp.Regexp ) bool {
@@ -1070,11 +1093,11 @@ func (m *FileBuf) Have_Regex_In_File( pname string ) bool {
 //        m_bb.WriteRune( R )
 //      }
 //      if( Bytes_Has_Regex( m_bb.Bytes(), p_regex_obj ) ) {
-//        return true;
+//        return true
 //      }
 //    }
 //  }
-//  return false;
+//  return false
 //}
 
 func (m *FileBuf) Has_Regex( p_regex_obj *regexp.Regexp ) bool {
@@ -1086,30 +1109,30 @@ func (m *FileBuf) Has_Regex( p_regex_obj *regexp.Regexp ) bool {
     var lp *FLine = m.lines.GetLP( k )
     if( 0 < lp.Len() ) {
       if( Bytes_Has_Regex( lp.to_SB(0), p_regex_obj ) ) {
-        return true;
+        return true
       }
     }
   }
-  return false;
+  return false
 }
 
 func (m *FileBuf) Find_Regexs_4_Line_Plain( lp *FLine ) {
-  var LL int = lp.Len();
+  var LL int = lp.Len()
   // Find the patterns for the line:
-  var found bool = true;
+  var found bool = true
   for p:=0; found && p<LL; {
     var match_pos, match_len int
 
   //found = m.Regex_Search( lp.runes.data[p:], &match_pos, &match_len )
     found = m.Regex_Search( lp.to_SB(p), &match_pos, &match_len )
     if( found ) {
-      var match_st int = p + match_pos;
-      var match_fn int = p + match_pos + match_len;
+      var match_st int = p + match_pos
+      var match_fn int = p + match_pos + match_len
 
       for pos:=match_st; pos<LL && pos<match_fn; pos++ {
         lp.styles.data[pos] |= HI_STAR
       }
-      p = match_fn;
+      p = match_fn
     }
   }
 }
@@ -1119,9 +1142,9 @@ func (m *FileBuf) Find_Regexs_4_Line_Plain( lp *FLine ) {
 //  lp.ClearStarAndInFileStyles()
 //
 //  if( nil != m.p_regex_obj ) {
-//    var LL int = lp.Len();
+//    var LL int = lp.Len()
 //    // Find the patterns for the line:
-//    var found bool = true;
+//    var found bool = true
 //    for p:=0; found && p<LL; {
 //      var match_pos, match_len int
 //
@@ -1129,13 +1152,13 @@ func (m *FileBuf) Find_Regexs_4_Line_Plain( lp *FLine ) {
 //                              &match_pos,
 //                              &match_len ) && 0 < match_len
 //      if( found ) {
-//        var match_st int = p + match_pos;
-//        var match_fn int = p + match_pos + match_len;
+//        var match_st int = p + match_pos
+//        var match_fn int = p + match_pos + match_len
 //
 //        for pos:=match_st; pos<LL && pos<match_fn; pos++ {
 //          lp.styles.data[pos] |= HI_STAR
 //        }
-//        p = match_fn;
+//        p = match_fn
 //      }
 //    }
 //  }

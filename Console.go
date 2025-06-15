@@ -83,19 +83,16 @@ func init() {
   TS_RV_NORMAL    = TS_RV_NORMAL   .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlack ).Bold(true)
   TS_RV_STAR      = TS_RV_STAR     .Background( tcell.ColorWhite ).Foreground( tcell.ColorRed   ).Bold(true)
   TS_RV_STAR_IN_F = TS_RV_STAR_IN_F.Background( tcell.ColorWhite ).Foreground( tcell.ColorBlue  ).Bold(true)
-//TS_RV_DEFINE    = TS_RV_DEFINE   .Background( tcell.ColorWhite ).Foreground( tcell.ColorDarkMagenta ).Bold(true)
   TS_RV_DEFINE    = TS_RV_DEFINE   .Background( tcell.ColorWhite ).Foreground( tcell.ColorPurple ).Bold(true)
   TS_RV_COMMENT   = TS_RV_COMMENT  .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlue ).Bold(true)
   TS_RV_CONST     = TS_RV_CONST    .Background( tcell.ColorWhite ).Foreground( tcell.ColorAqua ).Bold(true)
-//TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorBlue ).Foreground( tcell.ColorYellow ).Bold(true)
-//TS_RV_VARTYPE   = TS_RV_VARTYPE  .Background( tcell.ColorBlue ).Foreground( tcell.ColorGreen ).Bold(true)
-  TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorWhite ).Foreground( tcell.ColorYellow ).Bold(true)
+  TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorWhite ).Foreground( tcell.ColorFuchsia ).Bold(true)
   TS_RV_VARTYPE   = TS_RV_VARTYPE  .Background( tcell.ColorWhite ).Foreground( tcell.ColorLime  ).Bold(true)
   TS_RV_NONASCII  = TS_RV_NONASCII .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue ).Bold(true)
 }
 
 type Console struct {
-  screen   tcell.Screen;
+  screen   tcell.Screen
   running  bool
 }
 
