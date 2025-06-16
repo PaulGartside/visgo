@@ -538,6 +538,30 @@ func (m *Vis) FName_2_FNum( full_fname string, file_num *int ) bool {
   return found
 }
 
+func (m *Vis) HandleColon_detab() {
+
+  if( 6 < m_rbuf.Len() ) {
+    S := m_rbuf.to_str()
+    if tab_sz, err := strconv.Atoi( S[6:] ); err != nil {
+      m.CmdLineMessage( fmt.Sprintf("Could not convert to int: %s", S[6:]) )
+    } else {
+      if( 0 < tab_sz && tab_sz <= 32 ) {
+        m.CV().p_fb.RemoveTabs_SpacesAtEOLs( tab_sz )
+      }
+    }
+  }
+}
+
+func (m *Vis) HandleColon_dos2unix() {
+
+  m.CV().p_fb.dos2unix()
+}
+
+func (m *Vis) HandleColon_unix2dos() {
+
+  m.CV().p_fb.unix2dos()
+}
+
 func (m *Vis) Exe_Colon_b() {
 
   if( 1 == m_rbuf.Len() ) { // :b
@@ -752,14 +776,17 @@ func ( m *Vis ) Handle_Colon_Cmd() {
   if( 0 == m_rbuf.Len() ) {
     m.CV().PrintCursor()
   } else {
-    if       ( m_rbuf.EqualStr("q") )    { m.Quit()
-    } else if( m_rbuf.EqualStr("qa") )   { m.QuitAll()
-    } else if( m_rbuf.EqualStr("vsp") )  { m.VSplitWindow()
-    } else if( m_rbuf.EqualStr("sp") )   { m.HSplitWindow()
-    } else if( m_rbuf.GetR(0)=='b' )     { m.Exe_Colon_b()
-    } else if( m_rbuf.GetR(0)=='e' )     { m.Exe_Colon_e()
-    } else if( m_rbuf.GetR(0)=='w' )     { m.Exe_Colon_w()
-    } else if( IsDigit(m_rbuf.GetR(0)) ) { m.MoveToLine()
+    if       ( m_rbuf.EqualStr("q") )        { m.Quit()
+    } else if( m_rbuf.EqualStr("qa") )       { m.QuitAll()
+    } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
+    } else if( m_rbuf.EqualStr("sp") )       { m.HSplitWindow()
+    } else if( m_rbuf.StartsWith("detab=") ) { m.HandleColon_detab()
+    } else if( m_rbuf.EqualStr("dos2unix") ) { m.HandleColon_dos2unix()
+    } else if( m_rbuf.EqualStr("unix2dos") ) { m.HandleColon_unix2dos()
+    } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
+    } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
+    } else if( m_rbuf.GetR(0)=='w' )         { m.Exe_Colon_w()
+    } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
     } else {
       m.CV().PrintCursor()
     }
@@ -1027,12 +1054,10 @@ func (m *Vis) CmdLineMessage( msg string ) {
       m_console.SetR( ROW, COL+MSG_LEN+k, ' ', &TS_NORMAL )
     }
   }
-//Console::Update()
 
   if( pV.in_diff_mode ) { m.diff.PrintCursor( pV )
   } else                {     pV.PrintCursor()
   }
-//Log( msg )
 }
 
 func (m *Vis) Window_Message( msg string ) {

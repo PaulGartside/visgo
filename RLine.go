@@ -251,6 +251,11 @@ func (m *RLine) EqualStr( S string ) bool {
   return slices.Equal( m.data, []byte(S) )
 }
 
+func (m *RLine) StartsWith( S string ) bool {
+
+  return strings.HasPrefix( m.to_str(), S )
+}
+
 func (m *RLine) to_str() string {
   return string(m.data)
 }

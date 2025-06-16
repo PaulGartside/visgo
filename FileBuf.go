@@ -1242,3 +1242,141 @@ func (m *FileBuf) UndoAll( p_fv *FileView ) {
   }
 }
 
+func (m *FileBuf) RemoveTabs_SpacesAtEOLs( tab_sz int ) {
+
+  num_tabs_removed := 0
+  num_spcs_removed := 0
+
+  NUM_LINES := m.lines.Len()
+
+  for ln:=0; ln<NUM_LINES; ln++ {
+    num_tabs_removed += m.RemoveTabs_from_line( ln, tab_sz )
+    num_spcs_removed += m.RemoveSpcs_from_EOL( ln )
+  }
+  if( 0 < num_tabs_removed && 0 < num_spcs_removed ) {
+    m.Update()
+    m_vis.CmdLineMessage( fmt.Sprintf("Removed %v tabs, %v spaces",
+                                      num_tabs_removed, num_spcs_removed) )
+  } else if( 0 < num_tabs_removed ) {
+    m.Update()
+    m_vis.CmdLineMessage( fmt.Sprintf("Removed %v tabs",
+                                      num_tabs_removed) )
+  } else if( 0 < num_spcs_removed ) {
+    m.Update()
+    m_vis.CmdLineMessage( fmt.Sprintf("Removed %v spaces",
+                                      num_spcs_removed)  )
+  } else {
+    m_vis.CmdLineMessage("No tabs or spaces removed")
+  }
+}
+
+// Returns number of tabs removed
+func (m *FileBuf) RemoveTabs_from_line( ln, tab_sz int ) int {
+  tabs_removed := 0
+
+  p_fl := m.lines.GetLP(ln)
+  LL := p_fl.Len()
+  cnum_t := 0 // char number with respect to tabs
+
+  for p:=0; p<LL; p++ {
+    R := p_fl.GetR( p )
+
+    if( R != '\t' ) { cnum_t += 1
+    } else {
+      tabs_removed++
+      num_spaces := tab_sz - ( cnum_t % tab_sz )
+      m.SetR( ln, p, ' ', false )
+      for i:=1; i<num_spaces; i++ {
+        p++
+        m.InsertR( ln, p, ' ')
+        LL++
+      }
+      cnum_t = 0
+    }
+  }
+  return tabs_removed
+}
+
+// Returns number of spaces removed
+func (m *FileBuf) RemoveSpcs_from_EOL( ln int ) int {
+  spaces_removed := 0
+
+  p_fl := m.lines.GetLP(ln)
+  LL := p_fl.Len()
+
+  if( 0 < LL ) {
+    end_R := p_fl.GetR(LL-1)
+
+    logical_EOL := LL-1 // Unix line ending
+    if( end_R == '\r' ) { logical_EOL = LL-2 // Windows line ending
+    }
+    done := false
+    for p:=logical_EOL; !done && -1<p; p-- {
+      if( ' ' == p_fl.GetR( p ) ) {
+        m.RemoveR( ln, p )
+        spaces_removed++
+      } else {
+        done = true
+      }
+    }
+  }
+  return spaces_removed
+}
+
+func (m *FileBuf) dos2unix() {
+
+  num_CRs_removed := 0
+
+  NUM_LINES := m.lines.Len()
+
+  for ln:=0; ln<NUM_LINES; ln++ {
+    p_fl := m.lines.GetLP(ln)
+    LL := p_fl.Len()
+
+    if( 0 < LL ) {
+      R := p_fl.GetR( LL-1 )
+
+      if( R == '\r' ) {
+        m.RemoveR( ln, LL-1 )
+        num_CRs_removed++
+      }
+    }
+  }
+  if( 0 < num_CRs_removed ) {
+    m.Update()
+    m_vis.CmdLineMessage( fmt.Sprintf("Removed %v CRs", num_CRs_removed) )
+  } else {
+    m_vis.CmdLineMessage("No CRs removed");
+  }
+}
+
+func (m *FileBuf) unix2dos() {
+
+  num_CRs_added := 0
+
+  NUM_LINES := m.lines.Len()
+
+  for ln:=0; ln<NUM_LINES; ln++ {
+    p_fl := m.lines.GetLP(ln)
+    LL := p_fl.Len()
+
+    if( 0 < LL ) {
+      R := p_fl.GetR( LL-1 )
+
+      if( R != '\r' ) {
+        m.PushR( ln, '\r' )
+        num_CRs_added++
+      }
+    } else {
+      m.PushR( ln, '\r' )
+      num_CRs_added++
+    }
+  }
+  if( 0 < num_CRs_added ) {
+    m.Update()
+    m_vis.CmdLineMessage( fmt.Sprintf("Added %v CRs", num_CRs_added) )
+  } else {
+    m_vis.CmdLineMessage("No CRs added")
+  }
+}
+
