@@ -209,7 +209,7 @@ func AppendDirDelim( s string ) string {
   var s_len int = len( s )
 
   if 0<s_len && DIR_DELIM != s[s_len-1] {
-    s = s + string(DIR_DELIM)
+    s = s + DIR_DELIM_S
   }
   return s
 }

@@ -270,10 +270,8 @@ func (m *FileBuf) ReadExistingDir_Sort() {
       if( ! p_l_0.EqualStr("..") ) {
         var p_l_1 *FLine = m.lines.GetLP( k+1 )
 
-        S_DIR_DELIM := string(DIR_DELIM)
-
-        if( !p_l_0.ends_with( S_DIR_DELIM ) &&
-             p_l_1.ends_with( S_DIR_DELIM ) ) { m.lines.Swap( k, k+1 )
+        if( !p_l_0.EndsWith( DIR_DELIM_S ) &&
+             p_l_1.EndsWith( DIR_DELIM_S ) ) { m.lines.Swap( k, k+1 )
         }
       }
     }
@@ -545,16 +543,7 @@ func (m *FileBuf) RemoveLP( l_num int ) *FLine {
 //
 func (m *FileBuf) RemoveR( l_num, c_num int ) rune {
 
-//Line* lp =  m.lines[ l_num ]
-//Line* sp = m.styles[ l_num ]
-
   var R rune = m.lines.RemoveR( l_num, c_num )
-//byte C = 0
-//bool ok = lp->remove( c_num, C )
-       //&& sp->remove( c_num )
-       //&& m.lineRegexsValid.set( l_num, false )
-
-//if( SavingHist( m ) ) m.history.Save_RemoveChar( l_num, c_num, C )
 
   if( m.save_history ) {
     m.history.Save_RemoveRune( l_num, c_num, R )
@@ -937,7 +926,7 @@ func (m *FileBuf) Other_File_Has_My_Regex( file_name string ) bool {
         file_name != m_SHELL_BUF_NAME &&
         file_name != m_COLON_BUF_NAME &&
         file_name != m_SLASH_BUF_NAME &&
-        !strings.HasSuffix( file_name, string(DIR_DELIM) ) ) {
+        !strings.HasSuffix( file_name, DIR_DELIM_S ) ) {
 
       var pfb *FileBuf = m_vis.GetFileBuf_s( file_name )
       if( nil != pfb ) {
@@ -1242,6 +1231,8 @@ func (m *FileBuf) UndoAll( p_fv *FileView ) {
   }
 }
 
+// Remove tabs, and remove spaces at ends of lines
+//
 func (m *FileBuf) RemoveTabs_SpacesAtEOLs( tab_sz int ) {
 
   num_tabs_removed := 0
@@ -1264,7 +1255,7 @@ func (m *FileBuf) RemoveTabs_SpacesAtEOLs( tab_sz int ) {
   } else if( 0 < num_spcs_removed ) {
     m.Update()
     m_vis.CmdLineMessage( fmt.Sprintf("Removed %v spaces",
-                                      num_spcs_removed)  )
+                                      num_spcs_removed) )
   } else {
     m_vis.CmdLineMessage("No tabs or spaces removed")
   }

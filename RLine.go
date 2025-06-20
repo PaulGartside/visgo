@@ -5,7 +5,7 @@ import (
 //"bytes"
 //"fmt"
   "slices"
-  "strings"
+//"strings"
   "unicode/utf8"
 )
 
@@ -251,9 +251,89 @@ func (m *RLine) EqualStr( S string ) bool {
   return slices.Equal( m.data, []byte(S) )
 }
 
+//func (m *RLine) StartsWith( S string ) bool {
+//
+//  return strings.HasPrefix( m.to_str(), S )
+//}
+
 func (m *RLine) StartsWith( S string ) bool {
 
-  return strings.HasPrefix( m.to_str(), S )
+  starts_with_S := true
+  len_S := len( S )
+
+  if( len( m.data ) < len_S ) {
+    starts_with_S = false
+  } else {
+    for k:=0; (starts_with_S && k<len_S); k++ {
+      if( S[k] != m.data[k] ) {
+        starts_with_S = false
+      }
+    }
+  }
+  return starts_with_S
+}
+
+//func (m *RLine) EndsWith( suffix string ) bool {
+//  S := m.to_str()
+//  len_S := len(S)
+//  len_suffix := len(suffix)
+//  ends_w := len_suffix <= len_S && S[ len_S - len_suffix: ] == suffix
+//  return ends_w
+//}
+
+// This implementation uses RLine.to_str(), which allocates a new string.
+//
+//func (m *RLine) EndsWith( S string ) bool {
+//
+//  return strings.HasSuffix( m.to_str(), S )
+//}
+
+// This implementation avoids RLine.to_str(), which allocates a new string.
+//
+//func (m *RLine) EndsWith( S string ) bool {
+//
+//  ends_with_S := true
+//  len_S := len( S )
+//  // Like strings.HasSuffix( X, S ), if len_S is zero, return true
+//  if( 0 < len_S ) {
+//    len_m := len( m.data )
+//
+//    if( len_m < len_S ) {
+//      ends_with_S = false
+//    } else {
+//      diff_len := len_m - len_S
+//      for k:=(len_S-1); (ends_with_S && 0<=k); k++ {
+//        if( S[k] != m.data[k+diff_len] ) {
+//          ends_with_S = false
+//        }
+//      }
+//    }
+//  }
+//  return ends_with_S
+//}
+
+// This implementation avoids RLine.to_str(), which allocates a new string.
+//
+func (m *RLine) EndsWith( S string ) bool {
+
+  ends_with_S := true
+  len_S := len( S )
+  // Like strings.HasSuffix( X, S ), if len_S is zero, return true
+  if( 0 < len_S ) {
+    len_m := len( m.data )
+
+    if( len_m < len_S ) {
+      ends_with_S = false
+    } else {
+      diff_len := len_m - len_S
+      for k:=0; (ends_with_S && k<len_S); k++ {
+        if( S[k] != m.data[k+diff_len] ) {
+          ends_with_S = false
+        }
+      }
+    }
+  }
+  return ends_with_S
 }
 
 func (m *RLine) to_str() string {
@@ -264,10 +344,38 @@ func (m *RLine) from_str( S string ) {
   m.data = []byte(S)
 }
 
-func (m *RLine) Compare( ln RLine ) int {
+// This implementation uses RLine.to_str(), which allocates a new string.
+// Return -1 if m is less than    ln
+// Return  0 if m is the same as  ln
+// Return +1 if m is greater than ln
+//
+//func (m *RLine) Compare( ln RLine ) int {
+//
+//  return strings.Compare( m.to_str(), ln.to_str() )
+//}
 
-  // FIXME: Do this in a way that does not require memory allocation:
-  return strings.Compare( m.to_str(), ln.to_str() )
+// This implementation avoids RLine.to_str(), which allocates a new string.
+// Return -1 if m is less than    ln
+// Return  0 if m is the same as  ln
+// Return +1 if m is greater than ln
+//
+func (m *RLine) Compare( ln RLine ) int {
+  rval := 0
+  len_m  := len( m.data )
+  len_ln := len( ln.data )
+  min_len := Min_i( len_m, len_ln )
+
+  for k:=0; (rval == 0 && k<min_len); k++ {
+    if       ( m.data[k] < ln.data[k] ) { rval = -1
+    } else if( m.data[k] > ln.data[k] ) { rval =  1
+    }
+  }
+  if( 0 == rval ) {
+    if       ( len_m < len_ln ) { rval = -1
+    } else if( len_m > len_ln ) { rval =  1
+    }
+  }
+  return rval
 }
 
 // Not sure if this method is need.  Just use to_str().
@@ -303,13 +411,5 @@ func (m *RLine) RemoveSpaces() {
       k--
     }
   }
-}
-
-func (m *RLine) ends_with( suffix string ) bool {
-  S := m.to_str()
-  len_S := len(S)
-  len_suffix := len(suffix)
-  ends_w := len_suffix <= len_S && S[ len_S - len_suffix: ] == suffix
-  return ends_w
 }
 

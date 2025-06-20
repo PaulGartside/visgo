@@ -42,6 +42,8 @@ var m_bb bytes.Buffer  // bytes Buffer
 const MAX_WINS = 8
 const DIR_DELIM = os.PathSeparator
 
+var DIR_DELIM_S string = string(DIR_DELIM)
+
 // This is how enums are created in go:
 type Paste_Mode int
 

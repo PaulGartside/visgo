@@ -3,7 +3,7 @@ package main
 
 import (
 //"bytes"
-//"fmt"
+  "fmt"
   "github.com/gdamore/tcell/v2"
   "regexp"
   "unicode"
@@ -26,8 +26,6 @@ type LineView struct {
   banner_delim rune
 
   saved_line FLine
-
-  reg RLineList
 }
 
 func (m *LineView) Init( p_file_buf *FileBuf, banner_delim rune ) {
@@ -871,8 +869,8 @@ func (m *LineView) Do_x() {
       // Put char x'ed into register:
       var nlp *RLine = new( RLine )
       nlp.PushR( R )
-      m.reg.Clear()
-      m.reg.PushLP( nlp )
+      m_vis.reg.Clear()
+      m_vis.reg.PushLP( nlp )
       m_vis.paste_mode = PM_ST_FN
 
       var NLL int = m.p_fb.LineLen( CL ); // New line length
@@ -1003,8 +1001,8 @@ func (m *LineView) Do_D() {
       R := m.p_fb.RemoveR( OCL, OCP )
       nlp.PushR( R )
     }
-    m.reg.Clear()
-    m.reg.PushLP( nlp )
+    m_vis.reg.Clear()
+    m_vis.reg.PushLP( nlp )
     m_vis.paste_mode = PM_ST_FN
 
     // If cursor is not at beginning of line, move it back one space.
@@ -1033,7 +1031,7 @@ func (m *LineView) Do_x_range_pre( p_st_line, p_st_char, p_fn_line, p_fn_char *i
     Swap( p_st_line, p_fn_line )
     Swap( p_st_char, p_fn_char )
   }
-  m.reg.Clear()
+  m_vis.reg.Clear()
 }
 
 func (m *LineView) Do_x_range_single( L, st_char, fn_char int ) {
@@ -1055,7 +1053,7 @@ func (m *LineView) Do_x_range_single( L, st_char, fn_char int ) {
 
       LL = m.p_fb.LineLen( L ); // Removed a char, so re-calculate LL
     }
-    m.reg.PushLP( nlp )
+    m_vis.reg.PushLP( nlp )
   }
 }
 
@@ -1091,7 +1089,7 @@ func (m *LineView) Do_x_range_multiple( st_line, st_char, fn_line, fn_char int )
     } else {
       L++
     }
-    m.reg.PushLP( nlp )
+    m_vis.reg.PushLP( nlp )
   }
   if( started_in_middle && ended___in_middle ) {
 
@@ -1171,9 +1169,9 @@ func (m *LineView) Do_dd_Normal( ONL int ) {
   // Remove line from FileBuf and save in paste register:
   var p_fl *FLine = m.p_fb.RemoveLP( OCL )
 
-  // m.reg will own nlp
-  m.reg.Clear()
-  m.reg.PushLP( &p_fl.runes )
+  // m_vis.reg will own nlp
+  m_vis.reg.Clear()
+  m_vis.reg.PushLP( &p_fl.runes )
   m_vis.paste_mode = PM_LINE
 
   m.GoToCrsPos_NoWrite( NCL, NCP )
@@ -1386,8 +1384,8 @@ func (m *LineView) Do_yy() {
   if( 0 < m.p_fb.NumLines() ) {
     var lp *FLine = m.p_fb.GetLP( m.CrsLine() )
 
-    m.reg.Clear()
-    m.reg.PushLP( &lp.runes )
+    m_vis.reg.Clear()
+    m_vis.reg.PushLP( &lp.runes )
 
     m_vis.paste_mode = PM_LINE
   }
@@ -1409,8 +1407,8 @@ func (m *LineView) Do_yw() {
       for k:=st_char; k<=fn_char; k++ {
         nlp.PushR( m.p_fb.GetR( st_line, k ) )
       }
-      m.reg.Clear()
-      m.reg.PushLP( nlp )
+      m_vis.reg.Clear()
+      m_vis.reg.PushLP( nlp )
       m_vis.paste_mode = PM_ST_FN
     }
   }
@@ -1435,11 +1433,11 @@ func (m *LineView) Do_p() {
 
 func (m *LineView) Do_p_or_P_st_fn( paste_pos Paste_Pos ) {
 
-  N_REG_LINES := m.reg.Len()
+  N_REG_LINES := m_vis.reg.Len()
 
   for k:=0; k<N_REG_LINES; k++ {
-    NLL := m.reg.GetLP(k).Len()  // New line length
-    OCL := m.CrsLine()               // Old cursor line
+    NLL := m_vis.reg.GetLP(k).Len()  // New line length
+    OCL := m.CrsLine()           // Old cursor line
 
     if( 0 == k ) { // Add to current line
       m.MoveInBounds_Line()
@@ -1451,7 +1449,7 @@ func (m *LineView) Do_p_or_P_st_fn( paste_pos Paste_Pos ) {
       if( (0 < OLL) && (paste_pos==PP_After) ) { forward = 1 }
 
       for i:=0; i<NLL; i++ {
-        R := m.reg.GetLP(k).GetR(i)
+        R := m_vis.reg.GetLP(k).GetR(i)
         m.p_fb.InsertR( OCL, OCP+i+forward, R )
       }
       if( 1 < N_REG_LINES && OCP+forward < OLL ) { // Move rest of first line onto new line below
@@ -1466,27 +1464,27 @@ func (m *LineView) Do_p_or_P_st_fn( paste_pos Paste_Pos ) {
       if( m.p_fb.NumLines() == OCL+k ) { m.p_fb.InsertLE( OCL+k ) }
 
       for i:=0; i<NLL; i++ {
-        R := m.reg.GetLP(k).GetR(i)
+        R := m_vis.reg.GetLP(k).GetR(i)
         m.p_fb.InsertR( OCL+k, i, R )
       }
     } else {
       // Put reg on line below:
-      m.p_fb.InsertRLP( OCL+k, m.reg.GetLP(k) )
+      m.p_fb.InsertRLP( OCL+k, m_vis.reg.GetLP(k) )
     }
   }
   // Update current view after other views, so that the cursor will be put back in place
-  m.p_fb.Update()
+  m.p_fb.UpdateCmd()
 }
 
 func (m *LineView) Do_p_line() {
 
   OCL := m.CrsLine()  // Old cursor line
-  NUM_LINES := m.reg.Len()
+  NUM_LINES := m_vis.reg.Len()
 
   for k:=0; k<NUM_LINES; k++ {
     // Put reg on line below:
     p_rl := new( RLine )
-    p_rl.Copy( *m.reg.GetLP(k) )
+    p_rl.Copy( *m_vis.reg.GetLP(k) )
     m.p_fb.InsertRLP( OCL+k+1, p_rl )
   }
   // Update current view after other views,
@@ -1506,12 +1504,12 @@ func (m *LineView) Do_P() {
 func (m *LineView) Do_P_line() {
 
   OCL := m.CrsLine()  // Old cursor line
-  NUM_LINES := m.reg.Len()
+  NUM_LINES := m_vis.reg.Len()
 
   for k:=0; k<NUM_LINES; k++ {
     // Put reg on line above:
     p_rl := new( RLine )
-    p_rl.Copy( *m.reg.GetLP(k) )
+    p_rl.Copy( *m_vis.reg.GetLP(k) )
     m.p_fb.InsertRLP( OCL+k, p_rl )
   }
   m.p_fb.UpdateCmd()
@@ -1612,14 +1610,14 @@ func (m *LineView) Do_v_Handle_g() {
 
 func (m *LineView) Do_y_v() {
 
-  m.reg.Clear()
+  m_vis.reg.Clear()
 
   m.Do_y_v_st_fn()
 }
 
 func (m *LineView) Do_Y_v() {
 
-  m.reg.Clear()
+  m_vis.reg.Clear()
 
   m.Do_Y_v_st_fn()
 }
@@ -1729,7 +1727,7 @@ func (m *LineView) Do_y_v_st_fn() {
         p_rl.PushR( m.p_fb.GetR( L, P ) )
       }
     }
-    m.reg.PushLP( p_rl )
+    m_vis.reg.PushLP( p_rl )
   }
   m_vis.paste_mode = PM_ST_FN
 }
@@ -1748,7 +1746,7 @@ func (m *LineView) Do_Y_v_st_fn() {
         p_rl.PushR( m.p_fb.GetR( L, P ) )
       }
     }
-    m.reg.PushLP( p_rl )
+    m_vis.reg.PushLP( p_rl )
   }
   m_vis.paste_mode = PM_LINE
 }
@@ -1757,7 +1755,7 @@ func (m *LineView) Do_D_v_line() {
 
   m.Swap_Visual_St_Fn_If_Needed()
 
-  m.reg.Clear()
+  m_vis.reg.Clear()
 
   removed_line := false
   // 1. If m.v_st_line==0, fn_line will go negative in the loop below,
@@ -1766,9 +1764,9 @@ func (m *LineView) Do_D_v_line() {
   fn_line := m.v_fn_line
   for L := m.v_st_line; 1 < m.p_fb.NumLines() && L<=fn_line; fn_line-- {
     flp := m.p_fb.RemoveLP( L )
-    m.reg.PushLP( &flp.runes )
+    m_vis.reg.PushLP( &flp.runes )
 
-    // m.reg will delete nlp
+    // m_vis.reg will delete nlp
     removed_line = true
   }
   m_vis.paste_mode = PM_LINE

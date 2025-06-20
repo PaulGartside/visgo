@@ -194,8 +194,8 @@ func (m *FLine) Set__StarInFStyle( idx int ) {
   m.styles.SetB( idx, m.styles.GetB( idx ) | HI_STAR_IN_F )
 }
 
-func (m *FLine) ends_with( suffix string ) bool {
+func (m *FLine) EndsWith( suffix string ) bool {
 
-  return m.runes.ends_with( suffix )
+  return m.runes.EndsWith( suffix )
 }
 
