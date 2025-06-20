@@ -538,7 +538,7 @@ func (m *Vis) FName_2_FNum( full_fname string, file_num *int ) bool {
   return found
 }
 
-func (m *Vis) HandleColon_detab() {
+func (m *Vis) Exe_Colon_detab() {
 
   if( 6 < m_rbuf.Len() ) {
     S := m_rbuf.to_str()
@@ -552,12 +552,12 @@ func (m *Vis) HandleColon_detab() {
   }
 }
 
-func (m *Vis) HandleColon_dos2unix() {
+func (m *Vis) Exe_Colon_dos2unix() {
 
   m.CV().p_fb.dos2unix()
 }
 
-func (m *Vis) HandleColon_unix2dos() {
+func (m *Vis) Exe_Colon_unix2dos() {
 
   m.CV().p_fb.unix2dos()
 }
@@ -578,6 +578,14 @@ func (m *Vis) Exe_Colon_b() {
         m.GoToBuffer( buffer_num )
       }
     }
+  }
+}
+
+func (m *Vis) Set_Syntax() {
+
+  if( 4 < m_rbuf.Len() ) {
+    S := m_rbuf.to_str()
+    m.CV().p_fb.Set_File_Type( S[4:] )
   }
 }
 
@@ -780,13 +788,14 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("qa") )       { m.QuitAll()
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
     } else if( m_rbuf.EqualStr("sp") )       { m.HSplitWindow()
-    } else if( m_rbuf.StartsWith("detab=") ) { m.HandleColon_detab()
-    } else if( m_rbuf.EqualStr("dos2unix") ) { m.HandleColon_dos2unix()
-    } else if( m_rbuf.EqualStr("unix2dos") ) { m.HandleColon_unix2dos()
+    } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
     } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
     } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
     } else if( m_rbuf.GetR(0)=='w' )         { m.Exe_Colon_w()
-    } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
+    } else if( m_rbuf.EqualStr("dos2unix") ) { m.Exe_Colon_dos2unix()
+    } else if( m_rbuf.EqualStr("unix2dos") ) { m.Exe_Colon_unix2dos()
+    } else if( m_rbuf.StartsWith("syn=") )   { m.Set_Syntax()
+    } else if( m_rbuf.StartsWith("detab=") ) { m.Exe_Colon_detab()
     } else {
       m.CV().PrintCursor()
     }

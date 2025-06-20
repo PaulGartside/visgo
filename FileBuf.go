@@ -15,7 +15,6 @@ import (
 )
 
 type FileBuf struct {
-//p_vis     *Vis
   p_lv      *LineView
 
   path_name, dir_name string
@@ -29,7 +28,6 @@ type FileBuf struct {
 
   file_type       File_Type
   Hi              Highlight_Base
-//hi_touched_line int
 
   regex_str string
   p_regex_obj *regexp.Regexp
@@ -628,10 +626,6 @@ func (m *FileBuf) Update() {
 
 func (m *FileBuf) UpdateCmd() {
 
-//m_vis.Update_Change_Statuses()
-
-//m_vis.UpdateViewsOfFile( m )
-
   if( nil != m.p_lv ) {
 
     m.p_lv.RepositionView()
@@ -786,9 +780,12 @@ func (m *FileBuf) BufferEditor_SortName() bool {
 func (m *FileBuf) BufferEditor_SortName_Swap( p_l_0, p_l_1 *FLine ) bool {
   var swap bool = false
 
+  p_l_0_str := p_l_0.to_str()
+  p_l_1_str := p_l_1.to_str()
+
   // Tail is the directory name:
-  var l_0_dn string = GetFnameTail( p_l_0.to_str() )
-  var l_1_dn string = GetFnameTail( p_l_1.to_str() )
+  var l_0_dn string = GetFnameTail( p_l_0_str )
+  var l_1_dn string = GetFnameTail( p_l_1_str )
 
   var dn_compare int = strings.Compare( l_0_dn, l_1_dn )
 
@@ -799,8 +796,8 @@ func (m *FileBuf) BufferEditor_SortName_Swap( p_l_0, p_l_1 *FLine ) bool {
   } else if( 0==dn_compare ) {
     // l_0 dname == l_1 dname
     // Head is the file name:
-    var l_0_fn string = GetFnameHead( p_l_0.to_str() )
-    var l_1_fn string = GetFnameHead( p_l_1.to_str() )
+    var l_0_fn string = GetFnameHead( p_l_0_str )
+    var l_1_fn string = GetFnameHead( p_l_1_str )
 
     if( 0<strings.Compare( l_0_fn, l_1_fn ) ) {
       // l_0 fname is greater than l_1 fname
@@ -1368,6 +1365,39 @@ func (m *FileBuf) unix2dos() {
     m_vis.CmdLineMessage( fmt.Sprintf("Added %v CRs", num_CRs_added) )
   } else {
     m_vis.CmdLineMessage("No CRs added")
+  }
+}
+
+func (m *FileBuf) Set_File_Type( syn string ) {
+  if( !m.is_dir ) {
+    found_syntax_type := true
+
+    if( (syn == "sh") ||
+        (syn == "bash") ) {
+      m.file_type = FT_BASH
+      m.Hi = new( Highlight_Bash )
+
+    } else if( (syn == "c") ||
+               (syn == "cpp") ) {
+      m.file_type = FT_CPP
+      m.Hi = new( Highlight_CPP )
+
+    } else if( syn == "go" ) {
+      m.file_type = FT_GO
+      m.Hi = new( Highlight_Go )
+
+    } else if( syn == "text" ) {
+      m.file_type = FT_TEXT
+      m.Hi = new( Highlight_Text )
+
+    } else {
+      found_syntax_type = false
+    }
+    if( found_syntax_type ) {
+      m.Hi.Init( m )
+      m.lines.hi_touched_line = 0
+      m.Update()
+    }
   }
 }
 
