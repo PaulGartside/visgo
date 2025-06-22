@@ -3,7 +3,6 @@ package main
 
 import (
 //"fmt"
-
 //"github.com/gdamore/tcell/v2"
 )
 
@@ -28,6 +27,11 @@ type Key struct {
   map_buf_index   int
 
   console Console
+}
+
+func (m *Key) RunningDot() bool {
+
+  return m.get_from_dot_buf_n || m.get_from_dot_buf_l
 }
 
 func (m *Key) In() Key_rune {
@@ -81,11 +85,4 @@ func (m *Key) In_MapBuf() Key_rune {
   }
   return kr
 }
-
-//func (m *Key) MapBuf_pop() {
-//  LEN_MAP_BUF := m.map_buf.Len()
-//  if( 0 < LEN_MAP_BUF ) {
-//    m.map_buf = m.map_buf[:LEN_MAP_BUF-1]
-//  }
-//}
 

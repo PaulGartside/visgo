@@ -293,7 +293,6 @@ func Handle_c( m *Vis ) {
   kr := m_key.In()
 
   if( kr.IsKeyRune() ) {
-
     if( kr.R == 'w' ) {
       if( !m_key.get_from_dot_buf_n ) {
         m_key.dot_buf_n.Clear()
@@ -570,8 +569,8 @@ func Handle_Dot( m *Vis ) {
 
   if( 0<m_key.dot_buf_n.Len() ) {
     if( m_key.save_2_map_buf ) {
-      // Pop '.' off map_buf, because the contents of m_key.map_buf
-      // will be saved to m_key.map_buf.
+      // Pop '.' off m_key.map_buf, because '.' means to run the existing
+      // commands in m_key.map_buf
       m_key.map_buf.Pop()
     }
     m_key.get_from_dot_buf_n = true

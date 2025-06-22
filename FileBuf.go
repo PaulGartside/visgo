@@ -616,23 +616,27 @@ func (m *FileBuf) GetCursorByte( CL, CC int ) int {
 
 func (m *FileBuf) Update() {
 
-  m_vis.Update_Change_Statuses()
+  if( !m_key.RunningDot() ) {
+    m_vis.Update_Change_Statuses()
 
-  m_vis.UpdateViewsOfFile( m )
+    m_vis.UpdateViewsOfFile( m )
 
-  // Put cursor back into current window
-  m_vis.CV().PrintCursor()
+    // Put cursor back into current window
+    m_vis.CV().PrintCursor()
+  }
 }
 
 func (m *FileBuf) UpdateCmd() {
 
-  if( nil != m.p_lv ) {
+  if( !m_key.RunningDot() ) {
+    if( nil != m.p_lv ) {
 
-    m.p_lv.RepositionView()
-    m.p_lv.PrintWorkingView()
+      m.p_lv.RepositionView()
+      m.p_lv.PrintWorkingView()
 
-    // Put cursor back into current window
-    m.p_lv.PrintCursor()
+      // Put cursor back into current window
+      m.p_lv.PrintCursor()
+    }
   }
 }
 

@@ -148,7 +148,7 @@ func (m *FileView) RepositionView() {
 
 func (m *FileView) Update_not_PrintCursor() {
 
-  if( !m_key.get_from_dot_buf_n && !m_key.get_from_dot_buf_l ) {
+  if( !m_key.RunningDot() ) {
 
     m.p_fb.Find_Styles( m.topLine + m.WorkingRows() )
     m.p_fb.Find_Regexs( m.topLine, m.WorkingRows() )

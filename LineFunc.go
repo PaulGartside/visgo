@@ -2,7 +2,7 @@
 package main
 
 import (
-//"fmt"
+  "fmt"
   "github.com/gdamore/tcell/v2"
 )
 
@@ -75,6 +75,11 @@ func L_Handle_Return( m *Vis ) {
 
 func L_Handle_a( m *Vis ) {
 
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('a') )
+    m_key.save_2_dot_buf_l = true
+  }
   if( m.colon_mode ) {
     end_of_line_delim := m.colon_view.Do_a()
 
@@ -89,6 +94,9 @@ func L_Handle_a( m *Vis ) {
       m.slash_mode = false
       m.Handle_Slash_GotPattern( m_rbuf.to_str(), true )
     }
+  }
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.save_2_dot_buf_l = false
   }
 }
 
@@ -124,16 +132,34 @@ func L_Handle_c( m *Vis ) {
 
   if( kr.IsKeyRune() ) {
     if( kr.R == 'w' ) {
+      if( !m_key.get_from_dot_buf_l ) {
+        m_key.dot_buf_l.Clear()
+        m_key.dot_buf_l.Push( make_Key_rune('c') )
+        m_key.dot_buf_l.Push( make_Key_rune('w') )
+        m_key.save_2_dot_buf_l = true
+      }
       if       ( m.colon_mode ) { m.colon_view.Do_cw()
       } else if( m.slash_mode ) { m.slash_view.Do_cw()
       }
+      if( !m_key.get_from_dot_buf_l ) {
+        m_key.save_2_dot_buf_l = false
+      }
     } else if( kr.R == '$' ) {
+      if( !m_key.get_from_dot_buf_l ) {
+        m_key.dot_buf_l.Clear()
+        m_key.dot_buf_l.Push( make_Key_rune('c') )
+        m_key.dot_buf_l.Push( make_Key_rune('$') )
+        m_key.save_2_dot_buf_l = true
+      }
       if( m.colon_mode ) {
         m.colon_view.Do_D()
         m.colon_view.Do_a()
       } else if( m.slash_mode ) {
         m.slash_view.Do_D()
         m.slash_view.Do_a()
+      }
+      if( !m_key.get_from_dot_buf_l ) {
+        m_key.save_2_dot_buf_l = false
       }
     }
   }
@@ -145,10 +171,20 @@ func L_Handle_d( m *Vis ) {
 
   if( kr.IsKeyRune() ) {
     if( kr.R == 'd' ) {
+      if( !m_key.get_from_dot_buf_l ) {
+        m_key.dot_buf_l.Clear()
+        m_key.dot_buf_l.Push( make_Key_rune('d') )
+        m_key.dot_buf_l.Push( make_Key_rune('d') )
+      }
       if       ( m.colon_mode ) { m.colon_view.Do_dd()
       } else if( m.slash_mode ) { m.slash_view.Do_dd()
       }
     } else if( kr.R == 'w' ) {
+      if( !m_key.get_from_dot_buf_l ) {
+        m_key.dot_buf_l.Clear()
+        m_key.dot_buf_l.Push( make_Key_rune('d') )
+        m_key.dot_buf_l.Push( make_Key_rune('w') )
+      }
       if       ( m.colon_mode ) { m.colon_view.Do_dw()
       } else if( m.slash_mode ) { m.slash_view.Do_dw()
       }
@@ -158,6 +194,10 @@ func L_Handle_d( m *Vis ) {
 
 func L_Handle_D( m *Vis ) {
 
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('D') )
+  }
   if       ( m.colon_mode ) { m.colon_view.Do_D()
   } else if( m.slash_mode ) { m.slash_view.Do_D()
   }
@@ -205,171 +245,215 @@ func L_Handle_g( m *Vis ) {
 
 func L_Handle_G( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoToEndOfFile();
-  } else if( m.slash_mode ) { m.slash_view.GoToEndOfFile();
+  if       ( m.colon_mode ) { m.colon_view.GoToEndOfFile()
+  } else if( m.slash_mode ) { m.slash_view.GoToEndOfFile()
   }
 }
 
 func L_Handle_h( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoLeft();
-  } else if( m.slash_mode ) { m.slash_view.GoLeft();
+  if       ( m.colon_mode ) { m.colon_view.GoLeft()
+  } else if( m.slash_mode ) { m.slash_view.GoLeft()
   }
 }
 
 func L_Handle_i( m *Vis ) {
-//Log("Top: L_Handle_i()")
 
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('i') )
+    m_key.save_2_dot_buf_l = true
+  }
   if( m.colon_mode ) {
-    var end_of_line_delim bool = m.colon_view.Do_i();
+    var end_of_line_delim bool = m.colon_view.Do_i()
 
     if( end_of_line_delim ) {
-      m.colon_mode = false;
-      m.Handle_Colon_Cmd();
+      m.colon_mode = false
+      m.Handle_Colon_Cmd()
     }
   } else if( m.slash_mode ) {
-    var end_of_line_delim bool = m.slash_view.Do_i();
+    var end_of_line_delim bool = m.slash_view.Do_i()
 
     if( end_of_line_delim ) {
-      m.slash_mode = false;
-
-//Log( fmt.Sprintf("m_rbuf.to_str()=%v", m_rbuf.to_str()) )
-      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
+      m.slash_mode = false
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true )
     }
   }
-//Log("Bot: L_Handle_i()")
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.save_2_dot_buf_l = false
+  }
 }
 
 func L_Handle_j( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoDown();
-  } else if( m.slash_mode ) { m.slash_view.GoDown();
+  if       ( m.colon_mode ) { m.colon_view.GoDown()
+  } else if( m.slash_mode ) { m.slash_view.GoDown()
   }
 }
 
 func L_Handle_J( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_J();
-  } else if( m.slash_mode ) { m.slash_view.Do_J();
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('J') )
+  }
+  if       ( m.colon_mode ) { m.colon_view.Do_J()
+  } else if( m.slash_mode ) { m.slash_view.Do_J()
   }
 }
 
 func L_Handle_k( m *Vis ) {
-//Log("Top: L_Handle_k()")
-  if       ( m.colon_mode ) { m.colon_view.GoUp();
+  if       ( m.colon_mode ) { m.colon_view.GoUp()
   } else if( m.slash_mode ) {
-//Log("m.slash_view.GoUp()")
-    m.slash_view.GoUp();
+    m.slash_view.GoUp()
   }
-//Log("Bot: L_Handle_k()")
 }
 
 func L_Handle_l( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoRight();
-  } else if( m.slash_mode ) { m.slash_view.GoRight();
+  if       ( m.colon_mode ) { m.colon_view.GoRight()
+  } else if( m.slash_mode ) { m.slash_view.GoRight()
   }
 }
 
 func L_Handle_o( m *Vis ) {
 
   if( m.colon_mode ) {
-    var end_of_line_delim bool = m.colon_view.Do_o();
+    var end_of_line_delim bool = m.colon_view.Do_o()
 
     if( end_of_line_delim ) {
-      m.colon_mode = false;
+      m.colon_mode = false
 
-      m.Handle_Colon_Cmd();
+      m.Handle_Colon_Cmd()
     }
   } else if( m.slash_mode ) {
-    var end_of_line_delim bool = m.slash_view.Do_o();
+    var end_of_line_delim bool = m.slash_view.Do_o()
 
     if( end_of_line_delim ) {
-      m.slash_mode = false;
+      m.slash_mode = false
 
-      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true )
     }
   }
 }
 
 func L_Handle_n( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_n();
-  } else if( m.slash_mode ) { m.slash_view.Do_n();
+  if       ( m.colon_mode ) { m.colon_view.Do_n()
+  } else if( m.slash_mode ) { m.slash_view.Do_n()
   }
 }
 
 func L_Handle_N( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_N();
-  } else if( m.slash_mode ) { m.slash_view.Do_N();
+  if       ( m.colon_mode ) { m.colon_view.Do_N()
+  } else if( m.slash_mode ) { m.slash_view.Do_N()
   }
 }
 
 func L_Handle_p( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_p();
-  } else if( m.slash_mode ) { m.slash_view.Do_p();
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('p') )
+  }
+  if       ( m.colon_mode ) { m.colon_view.Do_p()
+  } else if( m.slash_mode ) { m.slash_view.Do_p()
   }
 }
 
 func L_Handle_P( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_P();
-  } else if( m.slash_mode ) { m.slash_view.Do_P();
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('P') )
+  }
+  if       ( m.colon_mode ) { m.colon_view.Do_P()
+  } else if( m.slash_mode ) { m.slash_view.Do_P()
   }
 }
 
 func L_Handle_R( m *Vis ) {
 
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('R') )
+    m_key.save_2_dot_buf_l = true
+  }
   if( m.colon_mode ) {
-    var end_of_line_delim bool = m.colon_view.Do_R();
+    var end_of_line_delim bool = m.colon_view.Do_R()
 
     if( end_of_line_delim ) {
-      m.colon_mode = false;
-
-      m.Handle_Colon_Cmd();
+      m.colon_mode = false
+      m.Handle_Colon_Cmd()
     }
   } else if( m.slash_mode ) {
-    var end_of_line_delim bool = m.slash_view.Do_R();
+    var end_of_line_delim bool = m.slash_view.Do_R()
 
     if( end_of_line_delim ) {
-      m.slash_mode = false;
-
-      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true );
+      m.slash_mode = false
+      m.Handle_Slash_GotPattern( m_rbuf.to_str(), true )
     }
+  }
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.save_2_dot_buf_l = false
   }
 }
 
 func L_Handle_s( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_s();
-  } else if( m.slash_mode ) { m.slash_view.Do_s();
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('s') )
+    m_key.save_2_dot_buf_l = true
+  }
+
+  if       ( m.colon_mode ) { m.colon_view.Do_s()
+  } else if( m.slash_mode ) { m.slash_view.Do_s()
+  }
+
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.save_2_dot_buf_l = false
   }
 }
 
 func L_Handle_v( m *Vis ) {
 
-  copy_vis_buf_2_dot_buf_l := false;
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.vis_buf.Clear()
+    m_key.vis_buf.Push( make_Key_rune('v') )
+    m_key.save_2_vis_buf = true
+  }
+  copy_vis_buf_2_dot_buf_l := false
 
-  if       ( m.colon_mode ) { copy_vis_buf_2_dot_buf_l = m.colon_view.Do_v();
-  } else if( m.slash_mode ) { copy_vis_buf_2_dot_buf_l = m.slash_view.Do_v();
+  if       ( m.colon_mode ) { copy_vis_buf_2_dot_buf_l = m.colon_view.Do_v()
+  } else if( m.slash_mode ) { copy_vis_buf_2_dot_buf_l = m.slash_view.Do_v()
   }
 
-  if( copy_vis_buf_2_dot_buf_l ) {}
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.save_2_vis_buf = false
+
+    if( copy_vis_buf_2_dot_buf_l ) {
+      m_key.dot_buf_l.Copy( m_key.vis_buf )
+    }
+  }
 }
 
 func L_Handle_w( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoToNextWord();
-  } else if( m.slash_mode ) { m.slash_view.GoToNextWord();
+  if       ( m.colon_mode ) { m.colon_view.GoToNextWord()
+  } else if( m.slash_mode ) { m.slash_view.GoToNextWord()
   }
 }
 
 func L_Handle_x( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_x();
-  } else if( m.slash_mode ) { m.slash_view.Do_x();
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('x') )
+  }
+  if       ( m.colon_mode ) { m.colon_view.Do_x()
+  } else if( m.slash_mode ) { m.slash_view.Do_x()
   }
 }
 
@@ -379,12 +463,12 @@ func L_Handle_y( m *Vis ) {
 
   if( kr.IsKeyRune() ) {
     if( kr.R == 'y' ) {
-      if       ( m.colon_mode ) { m.colon_view.Do_yy();
-      } else if( m.slash_mode ) { m.slash_view.Do_yy();
+      if       ( m.colon_mode ) { m.colon_view.Do_yy()
+      } else if( m.slash_mode ) { m.slash_view.Do_yy()
       }
     } else if( kr.R == 'w' ) {
-      if       ( m.colon_mode ) { m.colon_view.Do_yw();
-      } else if( m.slash_mode ) { m.slash_view.Do_yw();
+      if       ( m.colon_mode ) { m.colon_view.Do_yw()
+      } else if( m.slash_mode ) { m.slash_view.Do_yw()
       }
     }
   }
@@ -392,63 +476,86 @@ func L_Handle_y( m *Vis ) {
 
 func L_Handle_Tilda( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.Do_Tilda();
-  } else if( m.slash_mode ) { m.slash_view.Do_Tilda();
+  if( !m_key.get_from_dot_buf_l ) {
+    m_key.dot_buf_l.Clear()
+    m_key.dot_buf_l.Push( make_Key_rune('~') )
+  }
+  if       ( m.colon_mode ) { m.colon_view.Do_Tilda()
+  } else if( m.slash_mode ) { m.slash_view.Do_Tilda()
   }
 }
 
 func L_Handle_Dollar( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoToEndOfLine();
-  } else if( m.slash_mode ) { m.slash_view.GoToEndOfLine();
+  if       ( m.colon_mode ) { m.colon_view.GoToEndOfLine()
+  } else if( m.slash_mode ) { m.slash_view.GoToEndOfLine()
   }
 }
 
 func L_Handle_Percent( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoToOppositeBracket();
-  } else if( m.slash_mode ) { m.slash_view.GoToOppositeBracket();
+  if       ( m.colon_mode ) { m.colon_view.GoToOppositeBracket()
+  } else if( m.slash_mode ) { m.slash_view.GoToOppositeBracket()
   }
 }
 
 func L_Handle_0( m *Vis ) {
 
-  if       ( m.colon_mode ) { m.colon_view.GoToBegOfLine();
-  } else if( m.slash_mode ) { m.slash_view.GoToBegOfLine();
+  if       ( m.colon_mode ) { m.colon_view.GoToBegOfLine()
+  } else if( m.slash_mode ) { m.slash_view.GoToBegOfLine()
   }
 }
 
 func L_Handle_SemiColon( m *Vis ) {
 
   if( 0 <= m.fast_rune ) {
-    if       ( m.colon_mode ) { m.colon_view.Do_f( m.fast_rune );
-    } else if( m.slash_mode ) { m.slash_view.Do_f( m.fast_rune );
+    if       ( m.colon_mode ) { m.colon_view.Do_f( m.fast_rune )
+    } else if( m.slash_mode ) { m.slash_view.Do_f( m.fast_rune )
     }
   }
 }
 
 func L_Handle_Colon( m *Vis ) {
 
-  m.colon_mode = false;
+  m.colon_mode = false
 
   p_cv := m.CV()
 
-  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv );
-  } else                  { p_cv.PrintCursor();
+  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv )
+  } else                  { p_cv.PrintCursor()
   }
 }
 
 func L_Handle_Slash( m *Vis ) {
 
-  m.slash_mode = false;
+  m.slash_mode = false
 
   p_cv := m.CV()
 
-  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv );
-  } else                  { p_cv.PrintCursor();
+  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv )
+  } else                  { p_cv.PrintCursor()
   }
 }
 
 func L_Handle_Dot( m *Vis ) {
+
+  if( 0<m_key.dot_buf_l.Len() ) {
+    m_key.get_from_dot_buf_l = true
+
+    for( m_key.get_from_dot_buf_l ) {
+      kr := m_key.In()
+
+      var cf CmdFunc = m.GetLineFunc( kr )
+      if( nil != cf ) { cf(m) }
+    }
+    if( m.CV().in_diff_mode ) {
+      // Diff does its own update every time a command is run
+    } else {
+      // Dont update until after all the commands have been executed:
+      if       ( m.colon_mode ) { m.colon_view.Update()
+      } else if( m.slash_mode ) { m.slash_view.Update()
+      }
+    }
+  }
 }
 

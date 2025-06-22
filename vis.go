@@ -1169,6 +1169,14 @@ func (m *Vis) GetCmdFunc( kr Key_rune ) CmdFunc {
   return cf
 }
 
+func (m *Vis) GetLineFunc( kr Key_rune ) CmdFunc {
+  var cf CmdFunc
+  if( kr.IsKeyRune() ) { cf = m.line_funcs[ kr.R ]
+  } else               { cf = m.line_funcs[ kr.K ]
+  }
+  return cf
+}
+
 func (m *Vis) Run() {
   var have_saved_key_ru bool = false
   var saved_kr Key_rune
