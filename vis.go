@@ -552,6 +552,76 @@ func (m *Vis) Exe_Colon_detab() {
   }
 }
 
+func (m *Vis) MapStart() {
+
+  m_key.map_buf.Clear()
+  m_key.save_2_map_buf = true
+
+  var p_cv *FileView = m.CV()
+
+  if( p_cv.in_diff_mode ) { // FIXME:
+  } else {
+    p_cv.inMap = true
+    p_cv.PrintCmdLine()
+    p_cv.PrintCursor()
+  }
+}
+
+func (m *Vis) MapEnd() {
+
+  if( m_key.save_2_map_buf ) {
+    m_key.save_2_map_buf = false
+    // Remove trailing ':' from m_key.map_buf:
+    m_key.map_buf.Pop() // '\n'
+    m_key.map_buf.Pop() // ':'
+
+    var p_cv *FileView = m.CV()
+    p_cv.inMap = false
+    p_cv.PrintCmdLine()
+  }
+}
+
+func (m *Vis) MapShow() {
+  var p_cv *FileView = m.CV()
+  G_ROW := p_cv.Cmd__Line_Row()
+  G_ST  := p_cv.Col_Win_2_GL( 0 )
+  WC    := p_cv.WorkingCols()
+  MAP_LEN := m_key.map_buf.Len()
+
+  // Print :
+  m_console.SetR( G_ROW, G_ST, ':', &TS_NORMAL )
+
+  // Print map
+  offset := 1
+  for k:=0; k<MAP_LEN && offset+k<WC; k++ {
+    kr := m_key.map_buf.Get( k )
+    if( kr.R == '\n' ) {
+      m_console.SetR( G_ROW, G_ST+offset+k, '<', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, 'C', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, 'R', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, '>', &TS_NORMAL )
+
+    } else if( kr.IsESC() ) {
+      m_console.SetR( G_ROW, G_ST+offset+k, '<', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, 'E', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, 'S', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, 'C', &TS_NORMAL ); offset++
+      m_console.SetR( G_ROW, G_ST+offset+k, '>', &TS_NORMAL )
+
+    } else {
+      m_console.SetR( G_ROW, G_ST+offset+k, kr.R, &TS_NORMAL )
+    }
+  }
+  // Print empty space after map to end of command line
+  for k:=MAP_LEN; offset+k<WC; k++ {
+    m_console.SetR( G_ROW, G_ST+offset+k, ' ', &TS_NORMAL )
+  }
+
+  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv )
+  } else {                    p_cv.PrintCursor()
+  }
+}
+
 func (m *Vis) Exe_Colon_dos2unix() {
 
   m.CV().p_fb.dos2unix()
@@ -780,6 +850,7 @@ func ( m *Vis ) MoveToLine() {
 func ( m *Vis ) Handle_Colon_Cmd() {
 
   m_rbuf.RemoveSpaces()
+  m.MapEnd()
 
   if( 0 == m_rbuf.Len() ) {
     m.CV().PrintCursor()
@@ -792,6 +863,8 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
     } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
     } else if( m_rbuf.GetR(0)=='w' )         { m.Exe_Colon_w()
+    } else if( m_rbuf.EqualStr("map") )      { m.MapStart()
+    } else if( m_rbuf.EqualStr("showmap") )  { m.MapShow()
     } else if( m_rbuf.EqualStr("dos2unix") ) { m.Exe_Colon_dos2unix()
     } else if( m_rbuf.EqualStr("unix2dos") ) { m.Exe_Colon_unix2dos()
     } else if( m_rbuf.StartsWith("syn=") )   { m.Set_Syntax()
@@ -1073,6 +1146,33 @@ func (m *Vis) Window_Message( msg string ) {
   // FIXME:
 }
 
+//func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune) {
+//  var l_have_saved_key_ru bool = false
+//  var l_saved_kr Key_rune
+//
+//  var num int = 1
+//  var done bool = false
+//  for !done {
+//    if( !m_console.HasPendingEvent() ) {
+//      done = true
+//    } else {
+//      l_kr := m_key.In()
+//      if( l_kr.IsKeyRune() && l_kr.R == _ru ) {
+//        num++
+//      } else {
+//        done = true
+//        l_have_saved_key_ru = true
+//        l_saved_kr = l_kr
+//      }
+//    }
+//  }
+//  // Fast scrolling:
+//  if( 1<num ) { _handler( m, num*2 )
+//  } else      { _handler( m, num )
+//  }
+//  return l_have_saved_key_ru, l_saved_kr
+//}
+
 func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune) {
   var l_have_saved_key_ru bool = false
   var l_saved_kr Key_rune
@@ -1094,9 +1194,8 @@ func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune)
     }
   }
   // Fast scrolling:
-  if( 1<num ) { _handler( m, num*2 )
-  } else      { _handler( m, num )
-  }
+  _handler( m, num )
+
   return l_have_saved_key_ru, l_saved_kr
 }
 

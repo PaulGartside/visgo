@@ -18,6 +18,7 @@ type FileView struct {
 
   inInsertMode, inReplaceMode bool
   inVisualMode, inVisualBlock bool
+  inMap bool
 
   v_st_line, v_st_char int // Visual start line number, and char number on line
   v_fn_line, v_fn_char int // Visual ending line number, and char number on line
@@ -276,33 +277,90 @@ func (m *FileView) PrintFileLine() {
   }
 }
 
+func (m *FileView) Set_Insert_Mode( on bool ) {
+
+  if( on != m.inInsertMode ) {
+    m.inInsertMode = on
+    m.PrintCmdLine()
+    m_console.Show()
+  }
+}
+
+func (m *FileView) Set_Replace_Mode( on bool ) {
+
+  if( on != m.inReplaceMode ) {
+    m.inReplaceMode = on
+    m.PrintCmdLine()
+    m_console.Show()
+  }
+}
+
+func (m *FileView) Set_Visual_Mode( on bool ) {
+
+  if( on != m.inVisualMode ) {
+    m.inVisualMode = on
+    m.PrintCmdLine()
+    m_console.Show()
+  }
+}
+
+func (m *FileView) Set_VisualB_Mode( on bool ) {
+
+  if( on != m.inVisualBlock ) {
+    m.inVisualBlock = on
+    m.PrintCmdLine()
+    m_console.Show()
+  }
+}
+
 func (m *FileView) PrintCmdLine() {
-
-  var WC int = m.WorkingCols()
-
   // Command line row in window:
   var WIN_COL int = 0
 
   var G_ROW int = m.Cmd__Line_Row()
   var G_COL int = m.Col_Win_2_GL( WIN_COL )
 
+  var col int = 0
   var buf bytes.Buffer
 
-  var col int = 0
-  // Draw insert banner if needed
   if( m.inInsertMode ) {
-
-    col,_ = fmt.Fprintf( &buf, "--INSERT --" )
+    col,_ = fmt.Fprintf( &buf, "--INSERT--" )
     m_console.SetBuffer( G_ROW, G_COL, &buf, &TS_BANNER )
 
   } else if( m.inReplaceMode ) {
-
     col,_ = fmt.Fprintf( &buf, "--REPLACE--" )
     m_console.SetBuffer( G_ROW, G_COL, &buf, &TS_BANNER )
+
+  } else if( m.inVisualMode ) {
+    col,_ = fmt.Fprintf( &buf, "--VISUAL--" )
+    m_console.SetBuffer( G_ROW, G_COL, &buf, &TS_BANNER )
+
+  } else if( m.inVisualBlock ) {
+    col,_ = fmt.Fprintf( &buf, "--VISUAL_B--" )
+    m_console.SetBuffer( G_ROW, G_COL, &buf, &TS_BANNER )
+
+  } else {
+    col,_ = fmt.Fprintf( &buf, "            " )
+    m_console.SetBuffer( G_ROW, G_COL, &buf, &TS_NORMAL )
   }
 
-  for ; col<WC; col++ {
-    m_console.SetR( G_ROW, m.Col_Win_2_GL( col ), ' ', &TS_NORMAL )
+  if( m.inMap ) {
+    mapping := []rune("--MAPPING--")
+    mapping_len := len( mapping )
+    map_col := m.nCols-2-mapping_len
+    for k:=col; k<map_col; k++ {
+      G_COL = m.Col_Win_2_GL( k )
+      m_console.SetR( G_ROW, G_COL, ' ', &TS_NORMAL )
+    }
+    // --MAPPING-- banner is shown at the right side of the command line row:
+    G_COL = m.Col_Win_2_GL( map_col )
+    m_console.SetSR( G_ROW, G_COL, mapping, &TS_BANNER )
+  } else {
+    WC := m.WorkingCols()
+    for k:=col; k<WC; k++ {
+      G_COL = m.Col_Win_2_GL( k )
+      m_console.SetR( G_ROW, G_COL, ' ', &TS_NORMAL )
+    }
   }
 }
 
@@ -507,47 +565,6 @@ func (m *FileView) InVarType( line, pos int ) bool {
 func (m *FileView) InNonAscii( line, pos int ) bool {
 
   return m.p_fb.HasStyle( line, pos, HI_NONASCII )
-}
-
-func (m *FileView) DisplayBanner() {
-
-  // Command line row in window:
-  var WIN_COL int = 0
-
-  var G_ROW int = m.Cmd__Line_Row()
-  var G_COL int = m.Col_Win_2_GL( WIN_COL )
-
-  if( m.inInsertMode ) {
-
-    m_console.SetSR( G_ROW, G_COL, []rune("--INSERT --"), &TS_BANNER )
-
-  } else if( m.inReplaceMode ) {
-
-    m_console.SetSR( G_ROW, G_COL, []rune("--REPLACE--"), &TS_BANNER )
-
-  } else if( m.inVisualMode ) {
-
-    m_console.SetSR( G_ROW, G_COL, []rune("--VISUAL --"), &TS_BANNER )
-  }
-  m.PrintCursor(); // Put cursor back in position.
-}
-
-func (m *FileView) Remove_Banner() {
-
-  WC := m.WorkingCols()
-  N := Min_i( WC, 11 )
-
-  // Command line row in window:
-  WIN_ROW := m.WorkingRows() + 2
-
-  // Clear command line:
-  for k:=0; k<N; k++ {
-    var G_ROW int = m.Row_Win_2_GL( WIN_ROW )
-    var G_COL int = m.Col_Win_2_GL( k )
-
-    m_console.SetR( G_ROW, G_COL, ' ', &TS_NORMAL )
-  }
-  m.PrintCursor(); // Put cursor back in position.
 }
 
 func (m *FileView) Set_Cmd_Line_Msg( msg string ) {
@@ -1001,10 +1018,7 @@ func (m *FileView) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
       m.Set_crsRowCol( NCL - m.topLine, NCP - m.leftChar )
 
       m.PrintStsLine()
-    //m.PrintCmdLine()
       m.PrintCursor()  // Put cursor into position.
-
-    //m.sts_line_needs_update = true
     }
   }
 }
@@ -1020,9 +1034,7 @@ func (m *FileView) GoToCrsPos_Write_Visual( OCL, OCP, NCL, NCP int ) {
   }
   m.crsRow = NCL - m.topLine
   m.crsCol = NCP - m.leftChar
-//Console::Update()
   m.PrintCursor()
-//m.sts_line_needs_update = true
 }
 
 func (m *FileView) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
@@ -1715,8 +1727,7 @@ func (m *FileView) MoveInBounds_Line() {
 }
 
 func (m *FileView) Do_i() {
-  m.inInsertMode = true
-  m.DisplayBanner()
+  m.Set_Insert_Mode( true )
 
   if( 0 == m.p_fb.NumLines() ) { m.p_fb.PushLE(); }
 
@@ -1728,9 +1739,7 @@ func (m *FileView) Do_i() {
     m.GoToCrsPos_Write( m.CrsLine(), LL )
   }
   var count int
-  kr := m_key.In()
-  for( ! kr.IsESC() ) {
-
+  for kr := m_key.In(); ! kr.IsESC(); kr = m_key.In() {
     if kr.IsEndOfLineDelim() {
       m.InsertAddReturn()
     } else if( kr.IsBS() || kr.IsDEL() ) {
@@ -1740,11 +1749,10 @@ func (m *FileView) Do_i() {
     }
     if( kr.IsBS() || kr.IsDEL() ) {
       if( 0 < count ) { count--; }
-    } else { count++; }
-
-    kr = m_key.In()
+    } else { count++;
+    }
   }
-  m.inInsertMode = false
+  m.Set_Insert_Mode( false )
 
   // Move cursor back one space:
   if( 0 < m.crsCol ) {
@@ -2074,7 +2082,7 @@ func (m *FileView) Do_x_range_post( st_line, st_char int ) {
 
   m.GoToCrsPos_NoWrite( ncl, ncc )
 
-  m.inVisualMode = false
+  m.Set_Visual_Mode( false )
 
   m.p_fb.Update(); //<- No need to Undo_v() or Remove_Banner() because of this
 }
@@ -2147,7 +2155,6 @@ func (m *FileView) Do_dd_Normal( ONL int ) {
 
   var OCL int = m.CrsLine();           // Old cursor line
   var OCP int = m.CrsChar();           // Old cursor position
-//var OLL int = m.p_fb.LineLen( OCL ); // Old line length
 
   var DELETING_LAST_LINE bool = OCL == ONL-1
 
@@ -2522,14 +2529,14 @@ func (m *FileView) Do_N_PrevDir_Search_for_Dir( dl *int ) bool {
 
 func (m *FileView) Do_v() bool {
 
-  m.inVisualBlock = false
+  m.Set_VisualB_Mode( false )
 
   return m.Do_visualMode()
 }
 
 func (m *FileView) Do_V() bool {
 
-  m.inVisualBlock = true
+  m.Set_VisualB_Mode( true )
 
   return m.Do_visualMode()
 }
@@ -2785,8 +2792,7 @@ func (m *FileView) Do_r_replace_white_space_with_register_line( k, OCL, ISP int 
 
 func (m *FileView) Do_R() {
 
-  m.inReplaceMode = true
-  m.DisplayBanner()
+  m.Set_Replace_Mode( true )
 
   if( m.p_fb.NumLines()==0 ) { m.p_fb.PushLE() }
 
@@ -2800,8 +2806,7 @@ func (m *FileView) Do_R() {
       }
     }
   }
-  m.Remove_Banner()
-  m.inReplaceMode = false
+  m.Set_Replace_Mode( false )
 
   // Move cursor back one space:
   if( 0 < m.crsCol ) {
@@ -2872,8 +2877,7 @@ func (m *FileView) Do_U() {
 //
 func (m *FileView) Do_visualMode() bool {
   m.MoveInBounds_Line()
-  m.inVisualMode = true
-  m.DisplayBanner()
+  m.Set_Visual_Mode( true )
 
   m.v_st_line = m.CrsLine();  m.v_fn_line = m.v_st_line
   m.v_st_char = m.CrsChar();  m.v_fn_char = m.v_st_char
@@ -2921,8 +2925,7 @@ func (m *FileView) Do_visualMode() bool {
   return false
 
 EXIT_VISUAL:
-  m.inVisualMode = false
-  m.Remove_Banner()
+  m.Set_Visual_Mode( false )
   m.Undo_v()
   return false
 }
@@ -2984,14 +2987,14 @@ func (m *FileView) Do_x_v() {
   } else {
     m.Do_x_range( m.v_st_line, m.v_st_char, m.v_fn_line, m.v_fn_char )
   }
-  m.Remove_Banner()
+  m.PrintCmdLine()
 }
 
 func (m *FileView) Do_D_v() {
 
   if( m.inVisualBlock ) {
     m.Do_x_range_block( m.v_st_line, m.v_st_char, m.v_fn_line, m.v_fn_char )
-    m.Remove_Banner()
+    m.PrintCmdLine()
   } else {
     m.Do_D_v_line()
   }
@@ -3026,8 +3029,7 @@ func (m *FileView) Do_Tilda_v() {
   if( m.inVisualBlock ) { m.Do_Tilda_v_block()
   } else                { m.Do_Tilda_v_st_fn()
   }
-  m.inVisualMode = false
-  m.Remove_Banner()
+  m.Set_Visual_Mode( false )
   m.Undo_v() //<- This will cause the tilda'ed characters to be redrawn
 }
 
@@ -3046,7 +3048,7 @@ func (m *FileView) Do_v_Handle_gf() {
     if( went_to_file ) {
       // If we made it to buffer indicated by fname, no need to Undo_v() or
       // Remove_Banner() because the whole view pane will be redrawn
-      m.inVisualMode = false
+      m.Set_Visual_Mode( false )
     }
   }
 }
@@ -3064,9 +3066,8 @@ func (m *FileView) Do_v_Handle_gp() {
     s_pattern := string(r_pattern)
     s_pattern_literal := regexp.QuoteMeta( s_pattern )
 
-    m.inVisualMode = false
+    m.Set_Visual_Mode( false )
     m.Undo_v()
-    m.Remove_Banner()
 
     m_vis.Handle_Slash_GotPattern( s_pattern_literal, false )
   }
@@ -3290,8 +3291,7 @@ func (m *FileView) Do_D_v_line() {
   }
   m_vis.paste_mode = PM_LINE
 
-  m.inVisualMode = false
-  m.Remove_Banner()
+  m.Set_Visual_Mode( false )
   // D'ed lines will be removed, so no need to Undo_v()
 
   if( removed_line ) {
@@ -3341,8 +3341,7 @@ func (m *FileView) Do_a_vb() {
 
 func (m *FileView) Do_i_vb() {
 
-  m.inInsertMode = true
-  m.DisplayBanner()
+  m.Set_Insert_Mode( true )
 
   count := 0
 //for( char c=m.key.In(); c != ESC; c=m.key.In() )
@@ -3362,8 +3361,7 @@ func (m *FileView) Do_i_vb() {
       m.p_fb.Update()
     }
   }
-  m.Remove_Banner()
-  m.inInsertMode = false
+  m.Set_Insert_Mode( false )
 }
 
 func (m *FileView) Do_Tilda_v_block() {

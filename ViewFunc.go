@@ -11,8 +11,8 @@ func (m *Vis) InitViewFuncs() {
   m.view_funcs[ ':' ] = Handle_Colon
 //m.view_funcs[ '+' ] = Handle_q
   m.view_funcs[ 'i' ] = Handle_i
-//m.view_funcs[ 'j' ] = Handle_j
-//m.view_funcs[ 'k' ] = Handle_k
+  m.view_funcs[ 'j' ] = Handle_j_1
+  m.view_funcs[ 'k' ] = Handle_k_1
   m.view_funcs[ 'l' ] = Handle_l
   m.view_funcs[ 'h' ] = Handle_h
 
@@ -110,6 +110,10 @@ func Handle_i( m *Vis ) {
   }
 }
 
+func Handle_j_1( m *Vis ) {
+  Handle_j( m, 1 )
+}
+
 func Handle_j( m *Vis, num int ) {
 
   var p_cv *FileView = m.CV()
@@ -117,6 +121,10 @@ func Handle_j( m *Vis, num int ) {
   if( p_cv.in_diff_mode ) { m.diff.GoDown( num )
   } else                  { p_cv.GoDown( num )
   }
+}
+
+func Handle_k_1( m *Vis ) {
+  Handle_k( m, 1 )
 }
 
 func Handle_k( m *Vis, num int ) {
@@ -569,8 +577,8 @@ func Handle_Dot( m *Vis ) {
 
   if( 0<m_key.dot_buf_n.Len() ) {
     if( m_key.save_2_map_buf ) {
-      // Pop '.' off m_key.map_buf, because '.' means to run the existing
-      // commands in m_key.map_buf
+      // Pop '.' off map_buf, because the contents of m.key.dot_buf_n
+      // will be saved to m.key.map_buf.
       m_key.map_buf.Pop()
     }
     m_key.get_from_dot_buf_n = true
@@ -593,7 +601,31 @@ func Handle_Dot( m *Vis ) {
 }
 
 func Handle_m( m *Vis ) {
-  // FIXME:
+
+  if( m_key.save_2_map_buf || 0==m_key.map_buf.Len() ) {
+    // When mapping, 'm' is ignored.
+    // If not mapping and map buf len is zero, 'm' is ignored.
+    return
+  }
+  m_key.get_from_map_buf = true
+
+  for m_key.get_from_map_buf {
+    kr := m_key.In()
+
+    var cf CmdFunc
+    if( kr.IsKeyRune() ) { cf = m.view_funcs[ kr.R ]
+    } else               { cf = m.view_funcs[ kr.K ]
+    }
+    if( nil != cf ) { cf(m) }
+  }
+  var p_cv *FileView = m.CV()
+
+  if( p_cv.in_diff_mode ) {
+    // Diff does its own update every time a command is run
+  } else {
+    // Dont update until after all the commands have been executed:
+    p_cv.p_fb.Update()
+  }
 }
 
 func Handle_g( m *Vis ) {
