@@ -784,11 +784,8 @@ func (m *LineView) Do_i_tabs() bool {
 }
 
 func (m *LineView) Do_i_normal() bool {
-
   var count int = 0
-
   for kr := m_key.In(); !kr.IsESC(); kr = m_key.In() {
-
     if( kr.IsEndOfLineDelim() ) {
       m.HandleReturn()
       return true

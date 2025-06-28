@@ -518,15 +518,12 @@ func (m *FileView) DisplayBanner() {
   var G_COL int = m.Col_Win_2_GL( WIN_COL )
 
   if( m.inInsertMode ) {
-
     m_console.SetSR( G_ROW, G_COL, []rune("--INSERT --"), &TS_BANNER )
 
   } else if( m.inReplaceMode ) {
-
     m_console.SetSR( G_ROW, G_COL, []rune("--REPLACE--"), &TS_BANNER )
 
   } else if( m.inVisualMode ) {
-
     m_console.SetSR( G_ROW, G_COL, []rune("--VISUAL --"), &TS_BANNER )
   }
   m.PrintCursor(); // Put cursor back in position.
@@ -547,6 +544,20 @@ func (m *FileView) Remove_Banner() {
 
     m_console.SetR( G_ROW, G_COL, ' ', &TS_NORMAL )
   }
+  m.PrintCursor(); // Put cursor back in position.
+}
+
+func (m *FileView) DisplayMapping() {
+
+  mapping := []rune("--MAPPING--")
+  mapping_len := len( mapping )
+
+  // --MAPPING-- banner is shown at the right side of the command line row:
+  var G_ROW int = m.Cmd__Line_Row()
+  var G_COL int = m.Col_Win_2_GL( m.nCols-2-mapping_len )
+
+  m_console.SetSR( G_ROW, G_COL, mapping, &TS_BANNER )
+
   m.PrintCursor(); // Put cursor back in position.
 }
 
@@ -1728,9 +1739,7 @@ func (m *FileView) Do_i() {
     m.GoToCrsPos_Write( m.CrsLine(), LL )
   }
   var count int
-  kr := m_key.In()
-  for( ! kr.IsESC() ) {
-
+  for kr := m_key.In(); ! kr.IsESC(); kr = m_key.In() {
     if kr.IsEndOfLineDelim() {
       m.InsertAddReturn()
     } else if( kr.IsBS() || kr.IsDEL() ) {
@@ -1740,9 +1749,8 @@ func (m *FileView) Do_i() {
     }
     if( kr.IsBS() || kr.IsDEL() ) {
       if( 0 < count ) { count--; }
-    } else { count++; }
-
-    kr = m_key.In()
+    } else { count++;
+    }
   }
   m.inInsertMode = false
 

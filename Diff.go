@@ -8,6 +8,9 @@ func (m *Diff) PrintCursor( pV *FileView ) {
   // FIXME:
 }
 
+func (m *Diff) DisplayMapping() {
+}
+
 func (m *Diff) Do_i() {
 }
 

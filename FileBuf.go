@@ -1338,7 +1338,7 @@ func (m *FileBuf) dos2unix() {
     m.Update()
     m_vis.CmdLineMessage( fmt.Sprintf("Removed %v CRs", num_CRs_removed) )
   } else {
-    m_vis.CmdLineMessage("No CRs removed");
+    m_vis.CmdLineMessage("No CRs removed")
   }
 }
 
