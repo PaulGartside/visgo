@@ -394,7 +394,9 @@ func (m *Vis) InitBufferEditor() {
 
 func (m *Vis) InitHelpBuffer() {
 
-  m.CreateFile( m_HELP_BUF_NAME, FT_TEXT )
+  p_help_file := m.CreateFile( m_HELP_BUF_NAME, FT_TEXT )
+
+  p_help_file.ReadString( HELP_STR )
 }
 
 func (m *Vis) InitMsgBuffer() {
@@ -659,6 +661,11 @@ func (m *Vis) Set_Syntax() {
   }
 }
 
+func (m *Vis) Help() {
+
+  m.GoToBuffer( m_HELP_FILE )
+}
+
 func (m *Vis) Quit() {
 
   if( m.num_wins <= 1 ) {
@@ -857,6 +864,7 @@ func ( m *Vis ) Handle_Colon_Cmd() {
   } else {
     if       ( m_rbuf.EqualStr("q") )        { m.Quit()
     } else if( m_rbuf.EqualStr("qa") )       { m.QuitAll()
+    } else if( m_rbuf.EqualStr("help") )     { m.Help()
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
     } else if( m_rbuf.EqualStr("sp") )       { m.HSplitWindow()
     } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()

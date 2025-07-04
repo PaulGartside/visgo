@@ -483,10 +483,8 @@ func (m *FileView) Get_Style( line, pos int ) *tcell.Style {
 
 func (m *FileView) InVisualArea( line, pos int ) bool {
 
-  if( m.inVisualMode ) {
-    if( m.inVisualBlock ) { return m.InVisualBlock( line, pos )
-    } else                { return m.InVisualStFn ( line, pos )
-    }
+  if       ( m.inVisualMode )  { return m.InVisualStFn ( line, pos )
+  } else if( m.inVisualBlock ) { return m.InVisualBlock( line, pos )
   }
   return false
 }
@@ -985,7 +983,7 @@ func (m *FileView) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
     m.PrintCursor();  // Put cursor back into position.
     return
   }
-  if( m.inVisualMode ) {
+  if( m.inVisualMode || m.inVisualBlock ) {
     m.v_fn_line = NCL
     m.v_fn_char = NCP
   }
@@ -1009,10 +1007,8 @@ func (m *FileView) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
 
     m.Update_and_PrintCursor()
   } else {
-    if( m.inVisualMode ) {
-      if( m.inVisualBlock ) { m.GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP )
-      } else                { m.GoToCrsPos_Write_Visual     ( OCL, OCP, NCL, NCP )
-      }
+    if       ( m.inVisualMode  ) { m.GoToCrsPos_Write_Visual     ( OCL, OCP, NCL, NCP )
+    } else if( m.inVisualBlock ) { m.GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP )
     } else {
       // m.crsRow and m.crsCol must be set to new values before calling CalcNewCrsByte and PrintCursor
       m.Set_crsRowCol( NCL - m.topLine, NCP - m.leftChar )
@@ -1114,7 +1110,7 @@ func (m *FileView) GoToEndOfLine() {
     var LL  int = m.p_fb.LineLen( m.CrsLine() )
     var OCL int = m.CrsLine(); // Old cursor line
 
-    if( m.inVisualMode && m.inVisualBlock ) {
+    if( m.inVisualBlock ) {
       // In Visual Block, $ puts cursor at the position
       // of the end of the longest line in the block
       var max_LL int = LL
@@ -2339,7 +2335,7 @@ func (m *FileView) Do_n_FindNextPattern( ncp *CrsPos ) bool {
 
   m.p_fb.Check_4_New_Regex()
   m.p_fb.Find_Regexs_4_Line( OCL )
-  for ; st_c<LL && m.InStarOrStarInF(OCL,st_c); st_c++ { 
+  for ; st_c<LL && m.InStarOrStarInF(OCL,st_c); st_c++ {
   }
   // If at end of current line, go down to next line:
   if( LL <= st_c ) { st_c=0; st_l++; }
@@ -2529,13 +2525,15 @@ func (m *FileView) Do_N_PrevDir_Search_for_Dir( dl *int ) bool {
 
 func (m *FileView) Do_v() bool {
 
-  m.Set_VisualB_Mode( false )
+  m.Set_Visual_Mode( true )
+//m.Set_VisualB_Mode( false )
 
   return m.Do_visualMode()
 }
 
 func (m *FileView) Do_V() bool {
 
+//m.Set_Visual_Mode( false )
   m.Set_VisualB_Mode( true )
 
   return m.Do_visualMode()
@@ -2877,7 +2875,7 @@ func (m *FileView) Do_U() {
 //
 func (m *FileView) Do_visualMode() bool {
   m.MoveInBounds_Line()
-  m.Set_Visual_Mode( true )
+//m.Set_Visual_Mode( true )
 
   m.v_st_line = m.CrsLine();  m.v_fn_line = m.v_st_line
   m.v_st_char = m.CrsChar();  m.v_fn_char = m.v_st_char
@@ -2885,7 +2883,7 @@ func (m *FileView) Do_visualMode() bool {
   // Write current byte in visual:
   m.Replace_Crs_Char( &TS_VISUAL )
 
-  for ; m.inVisualMode ; {
+  for ; m.inVisualMode || m.inVisualBlock; {
     kr := m_key.In()
 
     if       ( kr.R == 'l' ) { m.GoRight()
@@ -2925,7 +2923,6 @@ func (m *FileView) Do_visualMode() bool {
   return false
 
 EXIT_VISUAL:
-  m.Set_Visual_Mode( false )
   m.Undo_v()
   return false
 }
@@ -3401,6 +3398,9 @@ func (m *FileView) Do_Tilda_v_st_fn() {
 }
 
 func (m *FileView) Undo_v() {
+
+  m.inVisualMode = false
+  m.inVisualBlock = false
 
   m.p_fb.Update()
 }

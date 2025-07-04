@@ -349,6 +349,17 @@ func (m *FileBuf) add_infile_bytes( p_fl *FLine, infile_bytes []byte ) *FLine {
   return p_fl
 }
 
+func (m *FileBuf) ReadString( S string) {
+
+  infile_bytes := []byte( S )
+
+  var p_fl *FLine
+  p_fl = m.add_infile_bytes( p_fl, infile_bytes )
+  if nil != p_fl {
+    m.lines.PushLP( p_fl )
+  }
+}
+
 func (m *FileBuf) ClearLines() {
   m.lines.Clear()
 
