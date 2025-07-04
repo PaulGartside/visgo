@@ -163,6 +163,20 @@ func (m *FileBuf) Find_File_Type_Go() bool {
   return false
 }
 
+func (m *FileBuf) Find_File_Type_XML() bool {
+
+  if( strings.HasSuffix(m.path_name, ".xml") ||
+      strings.HasSuffix(m.path_name, ".xml.new") ||
+      strings.HasSuffix(m.path_name, ".xml.old") ) {
+
+    m.file_type = FT_XML
+    m.Hi = new( Highlight_XML )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
 func (m *FileBuf) Find_File_Type_Suffix() {
 
   if( m.is_dir ) {
@@ -172,7 +186,8 @@ func (m *FileBuf) Find_File_Type_Suffix() {
 
   } else if( m.Find_File_Type_Bash() ||
              m.Find_File_Type_CPP() ||
-             m.Find_File_Type_Go() ) {
+             m.Find_File_Type_Go() ||
+             m.Find_File_Type_XML() ) {
     // File type found
   } else {
     // File type NOT found based on suffix.
@@ -1404,6 +1419,10 @@ func (m *FileBuf) Set_File_Type( syn string ) {
     } else if( syn == "text" ) {
       m.file_type = FT_TEXT
       m.Hi = new( Highlight_Text )
+
+    } else if( syn == "xml" ) {
+      m.file_type = FT_XML
+      m.Hi = new( Highlight_XML )
 
     } else {
       found_syntax_type = false

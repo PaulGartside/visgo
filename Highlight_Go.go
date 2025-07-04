@@ -28,6 +28,11 @@ func (m *Highlight_Go) Run_Range( st CrsPos, fn int ) {
   m.Find_Styles_Keys_In_Range( st, fn )
 }
 
+func (m *Highlight_Go) Find_Styles_Keys_In_Range( st CrsPos, fn int ) {
+
+  Hi_FindKey_In_Range( m.p_fb, HiPairs_Go[:], st, fn )
+}
+
 func (m *Highlight_Go) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
@@ -450,10 +455,5 @@ var HiPairs_Go = [...]HiKeyVal {
 
   { "import"             , HI_DEFINE  },
   { ""                   , 0 },
-}
-
-func (m *Highlight_Go) Find_Styles_Keys_In_Range( st CrsPos, fn int ) {
-
-  Hi_FindKey_In_Range( m.p_fb, HiPairs_Go[:], st, fn )
 }
 

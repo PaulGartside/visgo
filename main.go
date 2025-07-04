@@ -70,6 +70,7 @@ const (
   FT_CPP
   FT_GO
   FT_TEXT
+  FT_XML
 )
 
 type ChangeType int

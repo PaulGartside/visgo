@@ -27,6 +27,11 @@ func (m *Highlight_CPP) Run_Range( st CrsPos, fn int ) {
   m.Find_Styles_Keys_In_Range( st, fn )
 }
 
+func (m *Highlight_CPP) Find_Styles_Keys_In_Range( st CrsPos, fn int ) {
+
+  Hi_FindKey_In_Range( m.p_fb, HiPairs_CPP[:], st, fn )
+}
+
 func (m *Highlight_CPP) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
@@ -462,10 +467,5 @@ var HiPairs_CPP = [...]HiKeyVal {
   { "__func__"           , HI_DEFINE  },
   { "__LINE__"           , HI_DEFINE  },
   { ""                   , 0 },
-}
-
-func (m *Highlight_CPP) Find_Styles_Keys_In_Range( st CrsPos, fn int ) {
-
-  Hi_FindKey_In_Range( m.p_fb, HiPairs_CPP[:], st, fn )
 }
 

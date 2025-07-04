@@ -302,6 +302,15 @@ func IsWord_NonIdent( R rune ) bool {
   return !IsSpace( R ) && !IsWord_Ident( R )
 }
 
+func IsXML_Ident( R rune ) bool {
+
+  return IsAlnum( R ) ||
+         R == '_' ||
+         R == '-' ||
+         R == '.' ||
+         R == ':'
+}
+
 func Swap( A, B *int ) {
 
   var T int = *B
