@@ -85,8 +85,8 @@ func (m *Highlight_Bash) Hi_In_Comment( l, p int ) (int,int) {
 
 func (m *Highlight_Bash) Hi_SingleQuote( l, p int ) (int,int) {
   m.state = nil
-  m.p_fb.SetSyntaxStyle( l, p, HI_CONST ); p++
-
+  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+  p++
   for ; l<m.p_fb.NumLines(); l++ {
     LL := m.p_fb.LineLen( l )
 
@@ -100,7 +100,8 @@ func (m *Highlight_Bash) Hi_SingleQuote( l, p int ) (int,int) {
           (c1!='\\' && c0=='\'') ||
           (c1=='\\' && c0=='\'' && slash_escaped) ) {
         // End of single quote:
-        m.p_fb.SetSyntaxStyle( l, p, HI_CONST ); p++
+        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p++
         m.state = m.Hi_In_None
       } else {
         if( (c1!='\\' && c0=='$') ||
@@ -158,7 +159,6 @@ func (m *Highlight_Bash) Hi_DoubleQuote( l, p int ) (int,int) {
 }
 
 func (m *Highlight_Bash) Hi_NumberBeg( l, p int ) (int,int) {
-  m.state = nil
   m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
   var c1 rune = m.p_fb.GetR( l, p )

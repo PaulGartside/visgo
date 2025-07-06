@@ -575,13 +575,14 @@ func (m *LineView) GoToNextWord() {
   ncp := CrsPos{ 0, 0 }
 
   if( m.GoToNextWord_GetPosition( &ncp ) ) {
+
     m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
   }
 }
 
 func (m *LineView) GoToPrevWord() {
 
-  var ncp = CrsPos{ 0, 0 }
+  ncp := CrsPos{ 0, 0 }
 
   if( m.GoToPrevWord_GetPosition( &ncp ) ) {
 

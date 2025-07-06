@@ -54,3 +54,78 @@ func Hi_FindKey_In_Range( p_fb *FileBuf, HiPairs []HiKeyVal, st CrsPos, fn int )
   }
 }
 
+// This shows one way to re-use class methods in Go:
+//
+func Hi_In_SingleQuote_CPP_Go(
+     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
+     int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  p_fb.SetSyntaxStyle( l, p, HI_CONST )
+  p++
+  for ; l<p_fb.NumLines(); l++ {
+    LL := p_fb.LineLen( l )
+
+    var slash_escaped bool = false
+    for ; p<LL; p++ {
+      // c0 is ahead of c1: (c1,c0)
+      var c1 rune = 0; if( 0<p ) { c1 = p_fb.GetR( l, p-1 ) }
+      var c0 rune =                     p_fb.GetR( l, p )
+
+      if( (c1==0    && c0=='\'') ||
+          (c1!='\\' && c0=='\'') ||
+          (c1=='\\' && c0=='\'' && slash_escaped) ) {
+        // End of single quote:
+        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p++
+        state = Hi_In_None
+      } else {
+        if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
+        } else                     { slash_escaped = false
+        }
+        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      }
+      if( nil != state ) { return l,p, state }
+    }
+    p = 0
+  }
+  return l,p, state
+}
+
+// This shows one way to re-use class methods in Go:
+//
+func Hi_In_DoubleQuote_CPP_Go(
+     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
+     int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  p_fb.SetSyntaxStyle( l, p, HI_CONST )
+  p++
+  for ; l<p_fb.NumLines(); l++ {
+    LL := p_fb.LineLen( l )
+
+    var slash_escaped bool = false
+    for ; p<LL; p++ {
+      // c0 is ahead of c1: (c1,c0)
+      var c1 rune = 0; if( 0<p) { c1 = p_fb.GetR( l, p-1 ) }
+      var c0 rune =                    p_fb.GetR( l, p )
+
+      if( (c1==0    && c0=='"') ||
+          (c1!='\\' && c0=='"') ||
+          (c1=='\\' && c0=='"' && slash_escaped) ) {
+        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p++
+        state = Hi_In_None
+      } else {
+        if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
+        } else {                     slash_escaped = false
+        }
+        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      }
+      if( nil != state ) { return l,p, state }
+    }
+    p = 0
+  }
+  return l,p, state
+}
+

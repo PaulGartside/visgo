@@ -1413,7 +1413,6 @@ func (m *FileView) GoToOppositeBracket() {
       m.GoToOppositeBracket_Forward( R, finish_rune )
 
     } else if( R=='}' || R==']' || R==')' ) {
-
       var finish_rune rune = 0
       if       ( R=='}' ) { finish_rune = '{'
       } else if( R==']' ) { finish_rune = '['

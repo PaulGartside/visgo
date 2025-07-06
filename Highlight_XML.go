@@ -10,7 +10,7 @@ import (
 type Highlight_XML struct {
   p_fb  *FileBuf
   state HiStateFunc
-  qtXSt HiStateFunc
+  qtXSt HiStateFunc // qtXSt = Quote Exit State
 }
 
 func (m *Highlight_XML) Init( p_fb *FileBuf ) {
@@ -363,10 +363,8 @@ func (m *Highlight_XML) Hi_NumberBeg( l, p int ) (int,int) {
   m.state = m.Hi_NumberIn
 
   LL := m.p_fb.LineLen( l )
-
   if( '0' == c1 && (p+1)<LL ) {
     var c0 rune = m.p_fb.GetR( l, p )
-
     if( 'x' == c0 || 'X' == c0 ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       m.state = m.Hi_NumberHex

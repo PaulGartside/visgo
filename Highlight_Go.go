@@ -134,67 +134,86 @@ func (m *Highlight_Go) Hi_EndCPP_Comment( l, p int ) (int,int) {
   return l,p
 }
 
+//func (m *Highlight_Go) Hi_In_SingleQuote( l, p int ) (int,int) {
+//  m.state = nil
+//  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//  p++
+//  for ; l<m.p_fb.NumLines(); l++ {
+//    LL := m.p_fb.LineLen( l )
+//
+//    var slash_escaped bool = false
+//    for ; p<LL; p++ {
+//      // c0 is ahead of c1: (c1,c0)
+//      var c1 rune = 0; if( 0<p) { c1 = m.p_fb.GetR( l, p-1 ) }
+//      var c0 rune =                    m.p_fb.GetR( l, p )
+//
+//      if( (c1==0    && c0=='\'') ||
+//          (c1!='\\' && c0=='\'') ||
+//          (c1=='\\' && c0=='\'' && slash_escaped) ) {
+//        // End of single quote:
+//        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//        p++
+//        m.state = m.Hi_In_None
+//      } else {
+//        if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
+//        } else {                     slash_escaped = false
+//        }
+//        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      }
+//      if( nil != m.state ) { return l,p }
+//    }
+//    p = 0
+//  }
+//  return l,p
+//}
+
+// This shows one way to re-use class methods in Go:
+//
 func (m *Highlight_Go) Hi_In_SingleQuote( l, p int ) (int,int) {
-  m.state = nil
-  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-  p++
-  for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
 
-    var slash_escaped bool = false
-    for ; p<LL; p++ {
-      // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                    m.p_fb.GetR( l, p )
+  l,p, m.state = Hi_In_SingleQuote_CPP_Go( l,p, m.p_fb, m.Hi_In_None )
 
-      if( (c1==0    && c0=='\'') ||
-          (c1!='\\' && c0=='\'') ||
-          (c1=='\\' && c0=='\'' && slash_escaped) ) {
-        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-        p++
-        m.state = m.Hi_In_None
-      } else {
-        if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
-        } else {                     slash_escaped = false
-        }
-        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      }
-      if( nil != m.state ) { return l,p }
-    }
-    p = 0
-  }
   return l,p
 }
 
+//func (m *Highlight_Go) Hi_In_DoubleQuote( l, p int ) (int,int) {
+//  m.state = nil
+//  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//  p++
+//  for ; l<m.p_fb.NumLines(); l++ {
+//    LL := m.p_fb.LineLen( l )
+//
+//    var slash_escaped bool = false
+//    for ; p<LL; p++ {
+//      // c0 is ahead of c1: (c1,c0)
+//      var c1 rune = 0; if( 0<p) { c1 = m.p_fb.GetR( l, p-1 ) }
+//      var c0 rune =                    m.p_fb.GetR( l, p )
+//
+//      if( (c1==0    && c0=='"') ||
+//          (c1!='\\' && c0=='"') ||
+//          (c1=='\\' && c0=='"' && slash_escaped) ) {
+//        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//        p++
+//        m.state = m.Hi_In_None
+//      } else {
+//        if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
+//        } else {                     slash_escaped = false
+//        }
+//        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      }
+//      if( nil != m.state ) { return l,p }
+//    }
+//    p = 0
+//  }
+//  return l,p
+//}
+
+// This shows one way to re-use class methods in Go:
+//
 func (m *Highlight_Go) Hi_In_DoubleQuote( l, p int ) (int,int) {
-  m.state = nil
-  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-  p++
-  for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
 
-    var slash_escaped bool = false
-    for ; p<LL; p++ {
-      // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                    m.p_fb.GetR( l, p )
+  l,p, m.state = Hi_In_DoubleQuote_CPP_Go( l,p, m.p_fb, m.Hi_In_None )
 
-      if( (c1==0    && c0=='"') ||
-          (c1!='\\' && c0=='"') ||
-          (c1=='\\' && c0=='"' && slash_escaped) ) {
-        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-        p++
-        m.state = m.Hi_In_None
-      } else {
-        if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
-        } else {                     slash_escaped = false
-        }
-        m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      }
-      if( nil != m.state ) { return l,p }
-    }
-    p = 0
-  }
   return l,p
 }
 
