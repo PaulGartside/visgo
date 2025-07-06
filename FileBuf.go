@@ -163,6 +163,20 @@ func (m *FileBuf) Find_File_Type_Go() bool {
   return false
 }
 
+func (m *FileBuf) Find_File_Type_SQL() bool {
+
+  if( strings.HasSuffix(m.path_name, ".sql") ||
+      strings.HasSuffix(m.path_name, ".sql.new") ||
+      strings.HasSuffix(m.path_name, ".sql.old") ) {
+
+    m.file_type = FT_SQL
+    m.Hi = new( Highlight_SQL )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
 func (m *FileBuf) Find_File_Type_XML() bool {
 
   if( strings.HasSuffix(m.path_name, ".xml") ||
@@ -187,6 +201,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
   } else if( m.Find_File_Type_Bash() ||
              m.Find_File_Type_CPP() ||
              m.Find_File_Type_Go() ||
+             m.Find_File_Type_SQL() ||
              m.Find_File_Type_XML() ) {
     // File type found
   } else {
@@ -1415,6 +1430,10 @@ func (m *FileBuf) Set_File_Type( syn string ) {
     } else if( syn == "go" ) {
       m.file_type = FT_GO
       m.Hi = new( Highlight_Go )
+
+    } else if( syn == "sql" ) {
+      m.file_type = FT_SQL
+      m.Hi = new( Highlight_SQL )
 
     } else if( syn == "text" ) {
       m.file_type = FT_TEXT

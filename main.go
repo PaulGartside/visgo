@@ -69,6 +69,7 @@ const (
   FT_BASH
   FT_CPP
   FT_GO
+  FT_SQL
   FT_TEXT
   FT_XML
 )

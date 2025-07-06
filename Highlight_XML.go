@@ -1,6 +1,4 @@
 
-// C:\Users\Default\AppData\Local\Microsoft\Windows\Shell\
-
 package main
 
 import (
@@ -355,109 +353,144 @@ func (m *Highlight_XML) Hi_In_DoubleQuote( l, p int ) (int,int) {
   return l,p
 }
 
+//func (m *Highlight_XML) Hi_NumberBeg( l, p int ) (int,int) {
+//  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//
+//  var c1 rune = m.p_fb.GetR( l, p )
+//  p++
+//  m.state = m.Hi_NumberIn
+//
+//  LL := m.p_fb.LineLen( l )
+//  if( '0' == c1 && (p+1)<LL ) {
+//    var c0 rune = m.p_fb.GetR( l, p )
+//    if( 'x' == c0 || 'X' == c0 ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      m.state = m.Hi_NumberHex
+//      p++
+//    }
+//  }
+//  return l,p
+//}
+
 func (m *Highlight_XML) Hi_NumberBeg( l, p int ) (int,int) {
-  m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
-  var c1 rune = m.p_fb.GetR( l, p )
-  p++
-  m.state = m.Hi_NumberIn
+  l,p, m.state = Hi_NumberBeg_Base( l,p, m.p_fb, m.Hi_NumberIn, m.Hi_NumberHex )
 
-  LL := m.p_fb.LineLen( l )
-  if( '0' == c1 && (p+1)<LL ) {
-    var c0 rune = m.p_fb.GetR( l, p )
-    if( 'x' == c0 || 'X' == c0 ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      m.state = m.Hi_NumberHex
-      p++
-    }
-  }
   return l,p
 }
+
+//func (m *Highlight_XML) Hi_NumberIn( l, p int ) (int,int) {
+//  LL := m.p_fb.LineLen( l )
+//  if( LL <= p ) { m.state = m.Hi_In_None
+//  } else {
+//    var c1 rune = m.p_fb.GetR( l, p )
+//
+//    if( '.'==c1 ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      m.state = m.Hi_NumberFraction
+//      p++
+//    } else if( 'e'==c1 || 'E'==c1 ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      m.state = m.Hi_NumberExponent
+//      p++
+//      if( p<LL ) {
+//        var c0 rune = m.p_fb.GetR( l, p )
+//        if( '+' == c0 || '-' == c0 ) {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//          p++
+//        }
+//      }
+//    } else if( IsDigit(c1) ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      p++
+//    } else {
+//      m.state = m.Hi_In_None
+//    }
+//  }
+//  return l,p
+//}
 
 func (m *Highlight_XML) Hi_NumberIn( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
-  if( LL <= p ) { m.state = m.Hi_In_None
-  } else {
-    var c1 rune = m.p_fb.GetR( l, p )
 
-    if( '.'==c1 ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      m.state = m.Hi_NumberFraction
-      p++
-    } else if( 'e'==c1 || 'E'==c1 ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      m.state = m.Hi_NumberExponent
-      p++
-      if( p<LL ) {
-        var c0 rune = m.p_fb.GetR( l, p )
-        if( '+' == c0 || '-' == c0 ) {
-          m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-          p++
-        }
-      }
-    } else if( IsDigit(c1) ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      p++
-    } else {
-      m.state = m.Hi_In_None
-    }
-  }
+  l,p, m.state = Hi_NumberIn_Base( l,p, m.p_fb, m.Hi_In_None, m.Hi_NumberFraction, m.Hi_NumberExponent )
+
   return l,p
 }
+
+//func (m *Highlight_XML) Hi_NumberHex( l, p int ) (int,int) {
+//  LL := m.p_fb.LineLen( l )
+//  if( LL <= p ) { m.state = m.Hi_In_None
+//  } else {
+//    var c1 rune = m.p_fb.GetR( l, p )
+//    if( IsXDigit(c1) ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      p++
+//    } else {
+//      m.state = m.Hi_In_None
+//    }
+//  }
+//  return l,p
+//}
 
 func (m *Highlight_XML) Hi_NumberHex( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
-  if( LL <= p ) { m.state = m.Hi_In_None
-  } else {
-    var c1 rune = m.p_fb.GetR( l, p )
-    if( IsXDigit(c1) ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      p++
-    } else {
-      m.state = m.Hi_In_None
-    }
-  }
+
+  l,p, m.state = Hi_NumberHex_Base( l,p, m.p_fb, m.Hi_In_None )
+
   return l,p
 }
+
+//func (m *Highlight_XML) Hi_NumberFraction( l, p int ) (int,int) {
+//  LL := m.p_fb.LineLen( l )
+//  if( LL <= p ) { m.state = m.Hi_In_None
+//  } else {
+//    var c1 rune = m.p_fb.GetR( l, p )
+//    if( IsDigit(c1) ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      p++
+//    } else if( 'e'==c1 || 'E'==c1 ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      m.state = m.Hi_NumberExponent
+//      p++
+//      if( p<LL ) {
+//        var c0 rune = m.p_fb.GetR( l, p )
+//        if( '+' == c0 || '-' == c0 ) {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//          p++
+//        }
+//      }
+//    } else {
+//      m.state = m.Hi_In_None
+//    }
+//  }
+//  return l,p
+//}
 
 func (m *Highlight_XML) Hi_NumberFraction( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
-  if( LL <= p ) { m.state = m.Hi_In_None
-  } else {
-    var c1 rune = m.p_fb.GetR( l, p )
-    if( IsDigit(c1) ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      p++
-    } else if( 'e'==c1 || 'E'==c1 ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      m.state = m.Hi_NumberExponent
-      p++
-      if( p<LL ) {
-        var c0 rune = m.p_fb.GetR( l, p )
-        if( '+' == c0 || '-' == c0 ) {
-          m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-          p++
-        }
-      }
-    } else {
-      m.state = m.Hi_In_None
-    }
-  }
+
+  l,p, m.state = Hi_NumberFraction_Base( l,p, m.p_fb, m.Hi_In_None, m.Hi_NumberExponent )
+
   return l,p
 }
 
+//func (m *Highlight_XML) Hi_NumberExponent( l, p int ) (int,int) {
+//  LL := m.p_fb.LineLen( l )
+//  if( LL <= p ) { m.state = m.Hi_In_None
+//  } else {
+//    var c1 rune = m.p_fb.GetR( l, p )
+//    if( IsDigit(c1) ) {
+//      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
+//      p++
+//    } else {
+//      m.state = m.Hi_In_None
+//    }
+//  }
+//  return l,p
+//}
+
 func (m *Highlight_XML) Hi_NumberExponent( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
-  if( LL <= p ) { m.state = m.Hi_In_None
-  } else {
-    var c1 rune = m.p_fb.GetR( l, p )
-    if( IsDigit(c1) ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
-      p++
-    } else {
-      m.state = m.Hi_In_None
-    }
-  }
+
+  l,p, m.state = Hi_NumberExponent_Base( l,p, m.p_fb, m.Hi_In_None )
+
   return l,p
 }
 

@@ -56,7 +56,7 @@ func Hi_FindKey_In_Range( p_fb *FileBuf, HiPairs []HiKeyVal, st CrsPos, fn int )
 
 // This shows one way to re-use class methods in Go:
 //
-func Hi_In_SingleQuote_CPP_Go(
+func Hi_In_SingleQuote_Base(
      l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
      int,int,HiStateFunc) {
 
@@ -94,7 +94,7 @@ func Hi_In_SingleQuote_CPP_Go(
 
 // This shows one way to re-use class methods in Go:
 //
-func Hi_In_DoubleQuote_CPP_Go(
+func Hi_In_DoubleQuote_Base(
      l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
      int,int,HiStateFunc) {
 
@@ -125,6 +125,133 @@ func Hi_In_DoubleQuote_CPP_Go(
       if( nil != state ) { return l,p, state }
     }
     p = 0
+  }
+  return l,p, state
+}
+
+func Hi_NumberBeg_Base(
+     l, p int, p_fb *FileBuf, Hi_NumberIn HiStateFunc, Hi_NumberHex HiStateFunc) (
+     int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  p_fb.SetSyntaxStyle( l, p, HI_CONST )
+
+  var c1 rune = p_fb.GetR( l, p )
+  p++
+  state = Hi_NumberIn
+
+  LL := p_fb.LineLen( l )
+  if( '0' == c1 && (p+1)<LL ) {
+    var c0 rune = p_fb.GetR( l, p )
+    if( 'x' == c0 || 'X' == c0 ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      state = Hi_NumberHex
+      p++
+    }
+  }
+  return l,p, state
+}
+
+func Hi_NumberIn_Base(
+      l, p int, p_fb *FileBuf,
+      Hi_In_None,Hi_NumberFraction,Hi_NumberExponent HiStateFunc) (
+      int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  LL := p_fb.LineLen( l )
+  if( LL <= p ) { state = Hi_In_None
+  } else {
+    var c1 rune = p_fb.GetR( l, p )
+
+    if( '.'==c1 ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      state = Hi_NumberFraction
+      p++
+    } else if( 'e'==c1 || 'E'==c1 ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      state = Hi_NumberExponent
+      p++
+      if( p<LL ) {
+        var c0 rune = p_fb.GetR( l, p )
+        if( '+' == c0 || '-' == c0 ) {
+          p_fb.SetSyntaxStyle( l, p, HI_CONST )
+          p++
+        }
+      }
+    } else if( IsDigit(c1) ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      p++
+    } else {
+      state = Hi_In_None
+    }
+  }
+  return l,p, state
+}
+
+func Hi_NumberHex_Base(
+     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc) (
+     int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  LL := p_fb.LineLen( l )
+  if( LL <= p ) { state = Hi_In_None
+  } else {
+    var c1 rune = p_fb.GetR( l, p )
+    if( IsXDigit(c1) ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      p++
+    } else {
+      state = Hi_In_None
+    }
+  }
+  return l,p, state
+}
+
+func Hi_NumberFraction_Base(
+     l, p int, p_fb *FileBuf, Hi_In_None,Hi_NumberExponent HiStateFunc ) (
+     int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  LL := p_fb.LineLen( l )
+  if( LL <= p ) { state = Hi_In_None
+  } else {
+    var c1 rune = p_fb.GetR( l, p )
+    if( IsDigit(c1) ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      p++
+    } else if( 'e'==c1 || 'E'==c1 ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      state = Hi_NumberExponent
+      p++
+      if( p<LL ) {
+        var c0 rune = p_fb.GetR( l, p )
+        if( '+' == c0 || '-' == c0 ) {
+          p_fb.SetSyntaxStyle( l, p, HI_CONST )
+          p++
+        }
+      }
+    } else {
+      state = Hi_In_None
+    }
+  }
+  return l,p, state
+}
+
+func Hi_NumberExponent_Base(
+      l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
+      int,int,HiStateFunc) {
+
+  var state HiStateFunc = nil
+  LL := p_fb.LineLen( l )
+  if( LL <= p ) { state = Hi_In_None
+  } else {
+    var c1 rune = p_fb.GetR( l, p )
+    if( IsDigit(c1) ) {
+      p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      p++
+    } else {
+      state = Hi_In_None
+    }
   }
   return l,p, state
 }

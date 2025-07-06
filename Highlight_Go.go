@@ -171,7 +171,7 @@ func (m *Highlight_Go) Hi_EndCPP_Comment( l, p int ) (int,int) {
 //
 func (m *Highlight_Go) Hi_In_SingleQuote( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_In_SingleQuote_CPP_Go( l,p, m.p_fb, m.Hi_In_None )
+  l,p, m.state = Hi_In_SingleQuote_Base( l,p, m.p_fb, m.Hi_In_None )
 
   return l,p
 }
@@ -212,7 +212,7 @@ func (m *Highlight_Go) Hi_In_SingleQuote( l, p int ) (int,int) {
 //
 func (m *Highlight_Go) Hi_In_DoubleQuote( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_In_DoubleQuote_CPP_Go( l,p, m.p_fb, m.Hi_In_None )
+  l,p, m.state = Hi_In_DoubleQuote_Base( l,p, m.p_fb, m.Hi_In_None )
 
   return l,p
 }
