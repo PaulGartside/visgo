@@ -2077,9 +2077,10 @@ func (m *FileView) Do_x_range_post( st_line, st_char int ) {
 
   m.GoToCrsPos_NoWrite( ncl, ncc )
 
-  m.Set_Visual_Mode( false )
+//m.Set_Visual_Mode( false )
 
-  m.p_fb.Update(); //<- No need to Undo_v() or Remove_Banner() because of this
+//m.p_fb.Update(); //<- No need to Undo_v() or Remove_Banner() because of this
+  m.Undo_v()
 }
 
 func (m *FileView) Do_f( FAST_RUNE rune ) {
@@ -2873,8 +2874,8 @@ func (m *FileView) Do_U() {
 // Returns true if something was changed, else false
 //
 func (m *FileView) Do_visualMode() bool {
+  changed := false
   m.MoveInBounds_Line()
-//m.Set_Visual_Mode( true )
 
   m.v_st_line = m.CrsLine();  m.v_fn_line = m.v_st_line
   m.v_st_char = m.CrsChar();  m.v_fn_char = m.v_st_char
@@ -2907,23 +2908,19 @@ func (m *FileView) Do_visualMode() bool {
     } else if( kr.R == 'z' ) { m_vis.Handle_z()
     } else if( kr.R == 'f' ) { m_vis.Handle_f()
     } else if( kr.R == ';' ) { m_vis.Handle_SemiColon()
-    } else if( kr.R == 'y' ) { m.Do_y_v(); goto EXIT_VISUAL
-    } else if( kr.R == 'Y' ) { m.Do_Y_v(); goto EXIT_VISUAL
-    } else if( kr.R == 'r' ) { m.Do_r_v(); goto EXIT_VISUAL
-    } else if( kr.R == 'R' ) { m.Do_R_v(); goto EXIT_VISUAL
+    } else if( kr.R == 'y' ) { m.Do_y_v(); m.Undo_v()
+    } else if( kr.R == 'Y' ) { m.Do_Y_v(); m.Undo_v()
+    } else if( kr.R == 'r' ) { m.Do_r_v(); m.Undo_v()
+    } else if( kr.R == 'R' ) { m.Do_R_v(); m.Undo_v()
     } else if( kr.R == 'x' ||
-               kr.R == 'd' ) { m.Do_x_v(); return true
-    } else if( kr.R == 'D' ) { m.Do_D_v(); return true
-    } else if( kr.R == 's' ) { m.Do_s_v(); return true
-    } else if( kr.R == '~' ) { m.Do_Tilda_v(); return true
-    } else if( kr.IsESC() ) { goto EXIT_VISUAL
+               kr.R == 'd' ) { m.Do_x_v();     changed = true; m.Undo_v()
+    } else if( kr.R == 'D' ) { m.Do_D_v();     changed = true; m.Undo_v()
+    } else if( kr.R == 's' ) { m.Do_s_v();     changed = true; m.Undo_v()
+    } else if( kr.R == '~' ) { m.Do_Tilda_v(); changed = true; m.Undo_v()
+    } else if( kr.IsESC() ) { m.Undo_v()
     }
   }
-  return false
-
-EXIT_VISUAL:
-  m.Undo_v()
-  return false
+  return changed
 }
 
 // Returns true if still in visual mode, else false
@@ -3005,9 +3002,11 @@ func (m *FileView) Do_s_v() {
 
     CURSOR_AT_END_OF_LINE = LL-1 <= m.v_st_char || LL-1 <= m.v_fn_char
   }
+  was_in_visual_block :=  m.inVisualBlock
+
   m.Do_x_v()
 
-  if( m.inVisualBlock ) {
+  if( was_in_visual_block ) {
     if( CURSOR_AT_END_OF_LINE ) { m.Do_a_vb()
     } else                      { m.Do_i_vb()
     }
