@@ -49,12 +49,14 @@ func (m *Vector[T]) Pop() (T, bool) {
 }
 
 // Copy src_vec.vals into m.vals
+//
 func (m *Vector[T]) Copy( src_vec Vector[T] ) {
   m.SetLen( src_vec.Len() )
   copy( m.vals[:], src_vec.vals[:] )
 }
 
 // Set length without guaranteeing existing contents remain the same:
+//
 func (m *Vector[T]) SetLen( length int ) {
 
   if( length < m.Len() ) {

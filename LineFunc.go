@@ -521,9 +521,7 @@ func L_Handle_Colon( m *Vis ) {
 
   p_cv := m.CV()
 
-  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv )
-  } else                  { p_cv.PrintCursor()
-  }
+  p_cv.PrintCursor()
 }
 
 func L_Handle_Slash( m *Vis ) {
@@ -532,9 +530,7 @@ func L_Handle_Slash( m *Vis ) {
 
   p_cv := m.CV()
 
-  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv )
-  } else                  { p_cv.PrintCursor()
-  }
+  p_cv.PrintCursor()
 }
 
 func L_Handle_Dot( m *Vis ) {
@@ -548,13 +544,9 @@ func L_Handle_Dot( m *Vis ) {
       var cf CmdFunc = m.GetLineFunc( kr )
       if( nil != cf ) { cf(m) }
     }
-    if( m.CV().in_diff_mode ) {
-      // Diff does its own update every time a command is run
-    } else {
-      // Dont update until after all the commands have been executed:
-      if       ( m.colon_mode ) { m.colon_view.Update()
-      } else if( m.slash_mode ) { m.slash_view.Update()
-      }
+    // Dont update until after all the commands have been executed:
+    if       ( m.colon_mode ) { m.colon_view.Update()
+    } else if( m.slash_mode ) { m.slash_view.Update()
     }
   }
 }

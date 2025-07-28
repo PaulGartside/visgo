@@ -63,6 +63,19 @@ func (m *IntList) Push( val int ) {
   m.data = append( m.data, val )
 } 
 
+func (m *IntList) Pop() (int, bool) {
+  var rval int
+  ok := false
+  LEN := len(m.data)
+
+  if( 0 < LEN ) {
+    rval = m.data[ LEN-1 ]
+    ok = true
+    m.data = m.data[:LEN-1]
+  }
+  return rval, ok
+}
+
 func (m *IntList) Insert( idx int, val int ) {
   // First append val to make sure data is large enough:
   m.Push( val ) 

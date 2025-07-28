@@ -210,6 +210,57 @@ func (m *Vis) GoToBuffer_Fname( fname string ) bool {
   return went_to_buffer
 }
 
+// m.vis.m.file_hist[m.vis.m.win]:
+//-------------------------
+//| 5 | 4 | 3 | 2 | 1 | 0 |
+//-------------------------
+//:b -> GoToPrevBuffer()
+//-------------------------
+//| 4 | 3 | 2 | 1 | 0 | 5 |
+//-------------------------
+//:b -> GoToPrevBuffer()
+//-------------------------
+//| 3 | 2 | 1 | 0 | 5 | 4 |
+//-------------------------
+//:n -> GoToNextBuffer()
+//-------------------------
+//| 4 | 3 | 2 | 1 | 0 | 5 |
+//-------------------------
+//:n -> GoToNextBuffer()
+//-------------------------
+//| 5 | 4 | 3 | 2 | 1 | 0 |
+//-------------------------
+
+// After starting up:
+//-------------------------------
+//| f1 | be | bh | f4 | f3 | f2 |
+//-------------------------------
+
+func (m *Vis) GoToNextBuffer() {
+
+  var FILE_HIST_LEN int = m.file_hist[m.win].Len()
+
+  if( FILE_HIST_LEN <= 1 ) {
+    // Nothing to do, so just put cursor back
+    m.CV().PrintCursor()
+  } else {
+  //NoDiff_CV(m);
+
+    var pV_old *FileView = m.CV()
+    var tp_old Tile_Pos  = pV_old.GetTilePos()
+
+    // Move view index at back to front of m.file_hist
+    view_index_new, ok := m.file_hist[m.win].Pop()
+    if( ok ) {
+      m.file_hist[m.win].Insert( 0, view_index_new )
+
+      // Redisplay current window with new view:
+      m.CV().SetTilePos( tp_old )
+      m.CV().Update_and_PrintCursor()
+    }
+  }
+}
+
 func (m *Vis) GoToPrevBuffer() {
 
   var FILE_HIST_LEN int = m.file_hist[m.win].Len()
@@ -238,11 +289,11 @@ func (m *Vis) GoToPrevBuffer() {
 
       // For DIR and BUFFER_EDITOR, invalidate regex's so that files that
       // no longer contain the current regex are no longer highlighted
-    //if( m.CV().GetFB().GetFileType() == FT_DIR
-    // || m.CV().GetFB().GetFileType() == FT_BUFFER_EDITOR )
-    //{
-    //  m.CV().GetFB().Invalidate_Regexs()
-    //}
+      if( m.CV().p_fb.file_type == FT_DIR ||
+          m.CV().p_fb.file_type == FT_BUFFER_EDITOR ) {
+
+        m.CV().p_fb.Invalidate_Regexs()
+      }
       // Redisplay current window with new view:
     //CV(m)->SetTilePos( tp_old )
       m.CV().Update_and_PrintCursor()
@@ -352,12 +403,11 @@ func (m *Vis) GoToBuffer( buf_idx int ) {
       }
       // For DIR and BUFFER_EDITOR, invalidate regex's so that files that
       // no longer contain the current regex are no longer highlighted
-    // FIXME:
-    //if( p_nv.GetFB()->GetFileType() == FT_DIR
-    // || p_nv.GetFB()->GetFileType() == FT_BUFFER_EDITOR )
-    //{
-    //  p_nv.GetFB()->Invalidate_Regexs()
-    //}
+      if( p_nv.p_fb.file_type == FT_DIR ||
+          p_nv.p_fb.file_type == FT_BUFFER_EDITOR ) {
+
+        p_nv.p_fb.Invalidate_Regexs()
+      }
       p_nv.SetTilePos( m.PV().GetTilePos() )
       p_nv.Update_and_PrintCursor()
     }
@@ -561,12 +611,9 @@ func (m *Vis) MapStart() {
 
   var p_cv *FileView = m.CV()
 
-  if( p_cv.in_diff_mode ) { // FIXME:
-  } else {
-    p_cv.inMap = true
-    p_cv.PrintCmdLine()
-    p_cv.PrintCursor()
-  }
+  p_cv.inMap = true
+  p_cv.PrintCmdLine()
+  p_cv.PrintCursor()
 }
 
 func (m *Vis) MapEnd() {
@@ -619,9 +666,7 @@ func (m *Vis) MapShow() {
     m_console.SetR( G_ROW, G_ST+offset+k, ' ', &TS_NORMAL )
   }
 
-  if( p_cv.in_diff_mode ) { m.diff.PrintCursor( p_cv )
-  } else {                    p_cv.PrintCursor()
-  }
+  p_cv.PrintCursor()
 }
 
 func (m *Vis) Exe_Colon_dos2unix() {
@@ -762,6 +807,11 @@ func (m *Vis) Quit_JoinTiles( TP Tile_Pos ) {
   }
 }
 
+func ( m *Vis ) GoToSearchBuffer() {
+
+  m.GoToBuffer( m_SLASH_FILE );
+}
+
 func ( m *Vis ) Exe_Colon_e() {
 
   var p_cv *FileView = m.CV()
@@ -865,8 +915,10 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     if       ( m_rbuf.EqualStr("q") )        { m.Quit()
     } else if( m_rbuf.EqualStr("qa") )       { m.QuitAll()
     } else if( m_rbuf.EqualStr("help") )     { m.Help()
+    } else if( m_rbuf.EqualStr("n") )        { m.GoToNextBuffer()
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
     } else if( m_rbuf.EqualStr("sp") )       { m.HSplitWindow()
+    } else if( m_rbuf.EqualStr("se") )       { m.GoToSearchBuffer()
     } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
     } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
     } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
@@ -883,23 +935,6 @@ func ( m *Vis ) Handle_Colon_Cmd() {
   }
 }
 
-//func ( m *Vis ) Handle_Slash_GotPattern( pattern string ) {
-//
-//  m.regex_str = pattern
-//
-//  if( 0<len(m.regex_str) ) {
-//    m.Do_Star_Update_Search_Editor()
-//
-//    var p_cv *FileView = m.CV()
-//
-//    if( p_cv.in_diff_mode ) { m.diff.Do_n()
-//    } else                  {   p_cv.Do_n()
-//    }
-//  }
-//  // Show new slash pattern for all windows currently displayed:
-//  m.UpdateViews( true )
-//}
-
 func ( m *Vis ) Handle_Slash_GotPattern( pattern string, goto_pattern bool ) {
 
   m.regex_str = pattern
@@ -909,9 +944,7 @@ func ( m *Vis ) Handle_Slash_GotPattern( pattern string, goto_pattern bool ) {
 
     if( goto_pattern ) {
       var p_cv *FileView = m.CV()
-      if( p_cv.in_diff_mode ) { m.diff.Do_n()
-      } else                  {   p_cv.Do_n()
-      }
+      p_cv.Do_n()
     }
   }
   // Show new slash pattern for all windows currently displayed:
@@ -1023,25 +1056,15 @@ func (m *Vis) UpdateViews( show_search bool ) {
 
     var pv *FileView = m.GetView_Win( w )
 
-    if( ! pv.in_diff_mode ) {
-      if( show_search ) {
-        var msg string = "/" + m.regex_str
-        pv.Set_Cmd_Line_Msg( msg )
-      }
-      pv.Update_not_PrintCursor()
+    if( show_search ) {
+      var msg string = "/" + m.regex_str
+      pv.Set_Cmd_Line_Msg( msg )
     }
+    pv.Update_not_PrintCursor()
   }
-// FIXME:
-//if( m.InDiffMode() ) {
-//  if( show_search ) {
-//    string msg("/")
-//    m.diff.Set_Cmd_Line_Msg( msg += m.regex )
-//  }
-//  m.diff.Update()
-//}
   var p_cv *FileView = m.CV()
 
-  if( !p_cv.in_diff_mode ) { p_cv.PrintCursor(); }
+  p_cv.PrintCursor();
 }
 
 func (m *Vis) UpdateViewsOfFile( p_fb *FileBuf ) {
@@ -1072,9 +1095,7 @@ func (m *Vis) Handle_f() {
 
     cv := m.CV()
 
-    if( cv.in_diff_mode ) { m.diff.Do_f( m.fast_rune )
-    } else                {     cv.Do_f( m.fast_rune )
-    }
+    cv.Do_f( m.fast_rune )
   }
 }
 
@@ -1083,9 +1104,7 @@ func (m *Vis) Handle_SemiColon() {
   if( 0 <= m.fast_rune ) {
     cv := m.CV()
 
-    if( cv.in_diff_mode ) { m.diff.Do_f( m.fast_rune )
-    } else                {     cv.Do_f( m.fast_rune )
-    }
+    cv.Do_f( m.fast_rune )
   }
 }
 
@@ -1095,17 +1114,13 @@ func (m *Vis) Handle_z() {
   kr := m_key.In()
 
   if( kr.R == 't' || kr.IsEndOfLineDelim() ) {
-    if( cv.in_diff_mode ) { m.diff.MoveCurrLineToTop()
-    } else                {    cv.MoveCurrLineToTop()
-    }
+    cv.MoveCurrLineToTop()
+
   } else if( kr.R == 'z' ) {
-    if( cv.in_diff_mode ) { m.diff.MoveCurrLineCenter()
-    } else                {    cv.MoveCurrLineCenter()
-    }
+    cv.MoveCurrLineCenter()
+
   } else if( kr.R == 'b' ) {
-    if( cv.in_diff_mode ) { m.diff.MoveCurrLineToBottom()
-    } else               {     cv.MoveCurrLineToBottom()
-    }
+    cv.MoveCurrLineToBottom()
   }
 }
 
@@ -1145,9 +1160,7 @@ func (m *Vis) CmdLineMessage( msg string ) {
     }
   }
 
-  if( pV.in_diff_mode ) { m.diff.PrintCursor( pV )
-  } else                {     pV.PrintCursor()
-  }
+  pV.PrintCursor()
 }
 
 func (m *Vis) Window_Message( msg string ) {

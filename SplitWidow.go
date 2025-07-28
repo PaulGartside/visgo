@@ -163,11 +163,7 @@ func (m *Vis) GoToNextWindow() {
 
   //Console::Update()
 
-    if( m.CV().in_diff_mode ) {
-    //m.diff.PrintCursor( pV )
-    } else {
-      pV2.PrintCursor()
-    }
+    pV2.PrintCursor()
   }
 }
 
@@ -187,11 +183,7 @@ func (m *Vis) GoToNextWindow_l() {
 
     //Console::Update()
 
-      if( m.CV().in_diff_mode ) {
-      //m.diff.PrintCursor( pV )
-      } else {
-        pV.PrintCursor()
-      }
+      pV.PrintCursor()
     }
   }
 }
@@ -212,11 +204,7 @@ func (m *Vis) GoToNextWindow_h() {
 
     //Console::Update()
 
-      if( m.CV().in_diff_mode ) {
-      //m.diff.PrintCursor( pV )
-      } else {
-        pV.PrintCursor()
-      }
+      pV.PrintCursor()
     }
   }
 }
@@ -237,11 +225,7 @@ func (m *Vis) GoToNextWindow_jk() {
 
     //Console::Update()
 
-      if( m.CV().in_diff_mode ) {
-      //m.diff.PrintCursor( pV )
-      } else {
-        pV.PrintCursor()
-      }
+      pV.PrintCursor()
     }
   }
 }
