@@ -156,7 +156,7 @@ func (m *Vis) GetFileBuf_s( fname string ) *FileBuf {
 //      p_fb.Init( fname )
 //
 //      if( m.HaveFile( fname, &file_index ) ) {
-//        m.GoToBuffer( file_index 
+//        m.GoToBuffer( file_index
 //
 //        went_to_buffer = true
 //      }
@@ -679,6 +679,30 @@ func (m *Vis) Exe_Colon_unix2dos() {
   m.CV().p_fb.unix2dos()
 }
 
+func (m *Vis) Refresh() {
+  m.UpdateViews( false )
+}
+
+func (m *Vis) Set_Color_Scheme_1() {
+  m_console.Set_Color_Scheme_1()
+  m.Refresh()
+}
+
+func (m *Vis) Set_Color_Scheme_2() {
+  m_console.Set_Color_Scheme_2()
+  m.Refresh()
+}
+
+func (m *Vis) Set_Color_Scheme_3() {
+  m_console.Set_Color_Scheme_3()
+  m.Refresh()
+}
+
+func (m *Vis) Set_Color_Scheme_4() {
+  m_console.Set_Color_Scheme_4()
+  m.Refresh()
+}
+
 func (m *Vis) Exe_Colon_b() {
 
   if( 1 == m_rbuf.Len() ) { // :b
@@ -916,6 +940,7 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("qa") )       { m.QuitAll()
     } else if( m_rbuf.EqualStr("help") )     { m.Help()
     } else if( m_rbuf.EqualStr("n") )        { m.GoToNextBuffer()
+    } else if( m_rbuf.EqualStr("re") )       { m.Refresh()
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
     } else if( m_rbuf.EqualStr("sp") )       { m.HSplitWindow()
     } else if( m_rbuf.EqualStr("se") )       { m.GoToSearchBuffer()
@@ -927,6 +952,10 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("showmap") )  { m.MapShow()
     } else if( m_rbuf.EqualStr("dos2unix") ) { m.Exe_Colon_dos2unix()
     } else if( m_rbuf.EqualStr("unix2dos") ) { m.Exe_Colon_unix2dos()
+    } else if( m_rbuf.EqualStr("cs1") )      { m.Set_Color_Scheme_1()
+    } else if( m_rbuf.EqualStr("cs2") )      { m.Set_Color_Scheme_2()
+    } else if( m_rbuf.EqualStr("cs3") )      { m.Set_Color_Scheme_3()
+    } else if( m_rbuf.EqualStr("cs4") )      { m.Set_Color_Scheme_4()
     } else if( m_rbuf.StartsWith("syn=") )   { m.Set_Syntax()
     } else if( m_rbuf.StartsWith("detab=") ) { m.Exe_Colon_detab()
     } else {
