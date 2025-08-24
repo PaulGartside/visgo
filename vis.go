@@ -1333,12 +1333,14 @@ func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune)
 
 func (m *Vis) CheckFileModTime() {
   // m.file_hist[m.win].Get(0) is the current file number of the current window
-  if( m_USER_FILE <= m.file_hist[m.win].Get(0) ) {
+  curr_file_num_of_curr_win := m.file_hist[m.win].Get(0)
+
+  if( m_USER_FILE <= curr_file_num_of_curr_win ) {
     pfb := m.CV().p_fb
 
     var curr_mod_time time.Time = ModificationTime( pfb.path_name )
 
-    if(  curr_mod_time.After(pfb.mod_time) ) {
+    if( curr_mod_time.After( pfb.mod_time ) ) {
 
       if( pfb.is_regular ) {
         // Update file modification time so that the message window
@@ -1350,6 +1352,7 @@ func (m *Vis) CheckFileModTime() {
         // pfb->GetModTime() will get updated in pfb->ReReadFile()
         pfb.ReReadFile()
 
+        // Update views of current file that are currently displayed:
         for w:=0; w<m.num_wins; w++ {
           pV := m.GetView_Win( w )
           if( pfb == pV.p_fb ) {
@@ -1358,6 +1361,8 @@ func (m *Vis) CheckFileModTime() {
           }
         }
       }
+      // Make updates appear on screen:
+      m_console.Show()
     }
   }
 }
@@ -1450,7 +1455,7 @@ func (m *Vis) Run() {
         cf(m)
       }
     }
-    m.CheckFileModTime()
+  //m.CheckFileModTime()
   //m.Update_Change_Statuses()
   //updated_chg_sts := m.Update_Change_Statuses()
   }

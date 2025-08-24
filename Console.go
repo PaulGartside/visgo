@@ -7,7 +7,7 @@ import (
   "log"
 //"os"
 //"strings"
-//"time"
+  "time"
 
   "github.com/gdamore/tcell/v2"
 )
@@ -164,6 +164,44 @@ func (m *Console) SetString( row,col int, msg string, p_S *tcell.Style ) {
 // EventPaste
 // EventResize
 //
+//func (m *Console) Key_In() Key_rune {
+//  var K tcell.Key
+//  var R rune
+//
+//  var rcvd_key bool = false
+//
+//  for m.running && !rcvd_key {
+//    switch ev := m.screen.PollEvent().(type) {
+//
+//    case nil:
+//      m.running = false
+//
+//    case *tcell.EventResize:
+//      m_vis.Handle_Resize()
+//      m.screen.Sync()
+//
+//    case *tcell.EventKey:
+//      rcvd_key = true
+//      K = ev.Key()
+//      if K == tcell.KeyRune {
+//        R = ev.Rune()
+//      }
+//
+//    default:
+//    //Log("-- default ev")
+//    }
+//  }
+//  return Key_rune{ K, R }
+//}
+
+// EventError
+// EventTime
+// EventInterrupt
+// EventKey
+// EventMouse
+// EventPaste
+// EventResize
+//
 func (m *Console) Key_In() Key_rune {
   var K tcell.Key
   var R rune
@@ -171,23 +209,24 @@ func (m *Console) Key_In() Key_rune {
   var rcvd_key bool = false
 
   for m.running && !rcvd_key {
-    switch ev := m.screen.PollEvent().(type) {
-
-    case nil:
-      m.running = false
-
-    case *tcell.EventResize:
-      m_vis.Handle_Resize()
-      m.screen.Sync()
-
-    case *tcell.EventKey:
-      rcvd_key = true
-      K = ev.Key()
-      if K == tcell.KeyRune {
-        R = ev.Rune()
+    if( !m.screen.HasPendingEvent() ) {
+      time.Sleep( 100*time.Millisecond )
+      m_vis.CheckFileModTime()
+    } else {
+      switch ev := m.screen.PollEvent().(type) {
+      case nil:
+        m.running = false
+      case *tcell.EventResize:
+        m_vis.Handle_Resize()
+        m.screen.Sync()
+      case *tcell.EventKey:
+        rcvd_key = true
+        K = ev.Key()
+        if K == tcell.KeyRune {
+          R = ev.Rune()
+        }
+      default:
       }
-
-    default:
     }
   }
   return Key_rune{ K, R }
