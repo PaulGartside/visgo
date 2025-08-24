@@ -366,20 +366,110 @@ func (m *Vis) GetFullFileNameRelative2CurrFile( fname string ) (string, bool) {
   return pname, got_full_file_name
 }
 
+//func (m *Vis) GoToBuffer( buf_idx int ) {
+//
+//  if( m.views[m.win].Len() <= buf_idx ) {
+//    m.CmdLineMessage( fmt.Sprintf("Buffer %lu does not exist", buf_idx) )
+//
+//  } else {
+//    m.NoDiff_CV()
+//
+//    if( buf_idx == m.file_hist[m.win].Get(0) ) {
+//      // User asked for view that is currently displayed.
+//      // Dont do anything, just put cursor back in place.
+//      m.CV().PrintCursor()
+//
+//    } else {
+//      m.file_hist[m.win].Insert( 0, buf_idx )
+//
+//      // Remove subsequent buf_idx's from m.file_hist[m.win]:
+//      for k:=1; k<m.file_hist[m.win].Len(); k++  {
+//        if( buf_idx == m.file_hist[m.win].Get(k) ) {
+//          m.file_hist[m.win].Remove( k )
+//        }
+//      }
+//      // FIXME:
+//      var p_nv *FileView = m.CV(); // New FileView to display
+//      if( ! p_nv.Has_Context() ) {
+//        // Look for context for the new view:
+//        var found_context bool = false
+//        for w:=0; !found_context && w<m.num_wins; w++ {
+//          var p_v *FileView = m.views[w].GetPFv( buf_idx )
+//          if( p_v.Has_Context() ) {
+//            found_context = true
+//            p_nv.Set_Context( p_v )
+//          }
+//        }
+//      }
+//      // For DIR and BUFFER_EDITOR, invalidate regex's so that files that
+//      // no longer contain the current regex are no longer highlighted
+//      if( p_nv.p_fb.file_type == FT_DIR ||
+//          p_nv.p_fb.file_type == FT_BUFFER_EDITOR ) {
+//
+//        p_nv.p_fb.Invalidate_Regexs()
+//      }
+//      p_nv.SetTilePos( m.PV().GetTilePos() )
+//      p_nv.Update_and_PrintCursor()
+//    }
+//  }
+//}
+
+func (m *Vis) GoToBuffer_SetContext( buf_idx int, p_nv, p_pv *FileView ) {
+
+  new_file_is_directory_of_prev_file :=
+      ( p_nv.p_fb.is_dir) && // New  file is a directory
+      (!p_pv.p_fb.is_dir) && // Prev file is NOT a directory
+      (p_nv.p_fb.dir_name == p_pv.p_fb.dir_name) // New and prev files have same directory
+
+  if( new_file_is_directory_of_prev_file ) {
+
+    prev_fname_lnum_in_new_file := -1
+    prev_fname := p_pv.p_fb.file_name
+
+    for k:=0; k<p_nv.p_fb.NumLines(); k++ {
+      if( prev_fname == p_nv.p_fb.lines.GetLP(k).to_str() ) {
+        prev_fname_lnum_in_new_file = k
+        break
+      }
+    }
+    if( 0 <= prev_fname_lnum_in_new_file ) {
+      shift_down := Min_i( prev_fname_lnum_in_new_file, p_nv.WorkingRows()/2 )
+
+      topLine  := prev_fname_lnum_in_new_file - shift_down
+      leftChar := 0
+      crsRow   := 0 + shift_down
+      crsCol   := 0
+      p_nv.Set_Context_4Is( topLine, leftChar, crsRow, crsCol )
+    }
+  }
+  if( ! p_nv.Has_Context() ) {
+    // Look for context for the new view:
+    found_context := false
+    for w:=0; !found_context && w<MAX_WINS; w++ {
+      p_fv := m.views[ w ].GetPFv( buf_idx )
+      if( p_fv.Has_Context() ) {
+        found_context = true
+
+        p_nv.Set_Context_pFV( p_fv )
+      }
+    }
+  }
+}
+
 func (m *Vis) GoToBuffer( buf_idx int ) {
 
   if( m.views[m.win].Len() <= buf_idx ) {
     m.CmdLineMessage( fmt.Sprintf("Buffer %lu does not exist", buf_idx) )
 
   } else {
-    m.NoDiff_CV()
-
     if( buf_idx == m.file_hist[m.win].Get(0) ) {
       // User asked for view that is currently displayed.
       // Dont do anything, just put cursor back in place.
       m.CV().PrintCursor()
 
     } else {
+      m.NoDiff_CV()
+
       m.file_hist[m.win].Insert( 0, buf_idx )
 
       // Remove subsequent buf_idx's from m.file_hist[m.win]:
@@ -390,17 +480,10 @@ func (m *Vis) GoToBuffer( buf_idx int ) {
       }
       // FIXME:
       var p_nv *FileView = m.CV(); // New FileView to display
-      if( ! p_nv.Has_Context() ) {
-        // Look for context for the new view:
-        var found_context bool = false
-        for w:=0; !found_context && w<m.num_wins; w++ {
-          var p_v *FileView = m.views[w].GetPFv( buf_idx )
-          if( p_v.Has_Context() ) {
-            found_context = true
-            p_nv.Set_Context( p_v )
-          }
-        }
-      }
+      var p_pv *FileView = m.PV(); // FileView of previous file
+
+      m.GoToBuffer_SetContext( buf_idx, p_nv, p_pv );
+
       // For DIR and BUFFER_EDITOR, invalidate regex's so that files that
       // no longer contain the current regex are no longer highlighted
       if( p_nv.p_fb.file_type == FT_DIR ||
@@ -867,7 +950,6 @@ func ( m *Vis ) Exe_Colon_e() {
 }
 
 func ( m *Vis ) Exe_Colon_w() {
-//Log("Exe_Colon_w()")
 
   var p_cv *FileView = m.CV()
 

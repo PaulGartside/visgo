@@ -611,12 +611,20 @@ func (m *FileView) Check_Context() {
   }
 }
 
-func (m *FileView) Set_Context( p_fv *FileView ) {
+func (m *FileView) Set_Context_pFV( p_fv *FileView ) {
 
   m.topLine  = p_fv.topLine
   m.leftChar = p_fv.leftChar
   m.crsRow   = p_fv.crsRow
   m.crsCol   = p_fv.crsCol
+}
+
+func (m *FileView) Set_Context_4Is( topLine, leftChar, crsRow, crsCol int ) {
+
+  m.topLine  = topLine
+  m.leftChar = leftChar
+  m.crsRow   = crsRow
+  m.crsCol   = crsCol
 }
 
 func (m *FileView) SetViewPos() {

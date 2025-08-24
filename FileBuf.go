@@ -18,7 +18,7 @@ type FileBuf struct {
   p_lv      *LineView
 
   path_name, dir_name string
-//file_name string
+  file_name string
 
   is_dir, is_regular bool
   lines     FLineList
@@ -47,7 +47,11 @@ func (m *FileBuf) Init_FB_Common( path_name string, FT File_Type ) {
     m.dir_name = m.path_name
   } else {
     m.dir_name = GetFnameTail( m.path_name )
+    m.file_name = GetFnameHead( m.path_name )
   }
+  // Make sure m.dir_name ends in '/':
+  m.dir_name = AppendDirDelim( m.dir_name )
+
   if( FT == FT_BUFFER_EDITOR ) {
     m.file_type = FT_BUFFER_EDITOR
     m.Hi = new( Highlight_BufferEditor )

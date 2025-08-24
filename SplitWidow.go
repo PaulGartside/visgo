@@ -30,7 +30,7 @@ func (m *Vis) VSplitWindow() {
     // Copy current view context into new view
     var p_nv *FileView = m.GetView_Win( m.num_wins )
 
-    p_nv.Set_Context( p_cv )
+    p_nv.Set_Context_pFV( p_cv )
 
     // Make new window the current window:
     m.win = m.num_wins
@@ -73,7 +73,7 @@ func (m *Vis) VSplitWindow() {
     // Copy current view context into new view
     var p_nv *FileView = m.GetView_Win( m.num_wins )
 
-    p_nv.Set_Context( p_cv )
+    p_nv.Set_Context_pFV( p_cv )
 
     // Make new window the current window:
     m.num_wins += 1
@@ -113,7 +113,7 @@ func (m *Vis) HSplitWindow() {
     // Copy current view context into new view
     var p_nv *FileView = m.GetView_Win( m.num_wins )
 
-    p_nv.Set_Context( p_cv )
+    p_nv.Set_Context_pFV( p_cv )
 
     // Make new window the current window:
     m.win = m.num_wins
