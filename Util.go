@@ -2,7 +2,9 @@
 package main
 
 import (
+  "bytes"
   "fmt"
+  "io"
   "io/fs"
   "os"
   "path/filepath"
@@ -534,5 +536,108 @@ func ModificationTime( fname string ) time.Time {
     mod_time = file_info.ModTime()
   }
   return mod_time
+}
+
+// Returns true,nil if path_1 and path_2 are the same size.
+// Returns false,nil if path_1 and path_2 are NOT the same size,
+//   and no error occured.
+// Returns false,err if an error occured.
+//
+func Files_Are_Same_Size( path_1, path_2 string ) (bool, error) {
+
+  fi_1, err := os.Stat(path_1)
+  if err != nil {
+    return false, err
+  }
+  fi_2, err := os.Stat(path_2)
+  if err != nil {
+    return false, err
+  }
+  return (fi_1.Size() == fi_2.Size()), nil
+}
+
+// See of Files are Same using File Paths.
+// Returns true,nil if contents of path_1 and path_2 are the same.
+// Returns false,nil if contents of path_1 and path_2 are NOT the same,
+//   and no error occured.
+// Returns false,err if an error occured.
+//
+func Files_Are_Same_p( path_1, path_2 string ) (bool, error) {
+  // Assume files are the same until proven otherwise:
+  same,err := Files_Are_Same_Size( path_1, path_2 )
+  if( same ) {
+    f1, err := os.Open(path_1)
+    same = (err == nil)
+    if( same ) {
+      defer f1.Close()
+
+      f2, err := os.Open(path_2)
+      same = (err == nil)
+      if( same ) {
+        defer f2.Close()
+
+        chunkSize := 1024
+        buf_1 := make([]byte, chunkSize)
+        buf_2 := make([]byte, chunkSize)
+
+        for same {
+          n1, err1 := f1.Read(buf_1)
+          n2, err2 := f2.Read(buf_2)
+
+          if( err1 == io.EOF && err2 == io.EOF ) {
+            // Reached end of both files, and all chunks matched
+            break
+          } else if( (err1 == io.EOF && err2 != io.EOF) ||
+                     (err1 != io.EOF && err2 == io.EOF) ) {
+            // Content differs. Should never get here file sizes were verified to be the same above.
+            same = false
+          } else { // err1 != io.EOF && err2 != io.EOF
+            if( err1 != nil ) {
+              same = false
+              err = err1
+            } else if( err2 != nil ) {
+              same = false
+              err = err2
+            } else { // No errors, compare file contents:
+              if( n1 != n2 || !bytes.Equal(buf_1[:n1], buf_2[:n2]) ) {
+                same = false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return same, err
+}
+
+// See of Files are Same using FileBuf objects.
+// Returns true,nil if contents of path_1 and path_2 are the same.
+// Returns false,nil if contents of path_1 and path_2 are NOT the same,
+//   and no error occured.
+// Returns false,err if an error occured.
+//
+func Files_Are_Same_o( pfb_1, pfb_2 *FileBuf ) bool {
+  files_are_same := false
+
+  if( pfb_1.is_regular && pfb_2.is_regular ) {
+    num_lines_s := pfb_1.NumLines()
+    num_lines_l := pfb_2.NumLines()
+
+    if( (num_lines_s == num_lines_l) &&
+        (pfb_1.lines.LF_at_EOF == pfb_2.lines.LF_at_EOF) ) {
+      files_are_same = true
+
+      for k:=0; files_are_same && k<num_lines_s; k++ {
+        var p_fln_1 *FLine = pfb_1.GetLP( k )
+        var p_fln_2 *FLine = pfb_2.GetLP( k )
+
+        if( !p_fln_1.EqualLP( p_fln_2 ) ) {
+          files_are_same = false
+        }
+      }
+    }
+  }
+  return files_are_same
 }
 

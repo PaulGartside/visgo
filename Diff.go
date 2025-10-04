@@ -1,32 +1,751 @@
 
 package main
 
+import (
+  "fmt"
+  "github.com/gdamore/tcell/v2"
+  "strings"
+  "time"
+)
+
+type Diff_Type int
+
+const (
+  DT_UNKN0WN Diff_Type = iota
+  DT_SAME
+  DT_CHANGED
+  DT_INSERTED
+  DT_DELETED
+  DT_DIFF_FILES
+)
+
+const max_files_added_per_diff = 10
+
+type LineInfo = Vector[Diff_Type]
+
+type Diff_Info struct {
+  diff_type Diff_Type  // Diff type of line this Diff_Info refers to
+  line_num  int        // Line number in file to which this Diff_Info applies (view line)
+  pLineInfo *LineInfo  // Only non-nullptr if diff_type is DT_CHANGED
+}
+
+type SimLines struct { // Similar lines
+  ln_s   int       // Line number in short comp area
+  ln_l   int       // Line number in long  comp area
+  nbytes int       // Number of bytes in common between lines
+  li_s   *LineInfo // Line comparison info in short comp area
+  li_l   *LineInfo // Line comparison info in long  comp area
+}
+
 type Diff struct {
+  pvS *FileView
+  pvL *FileView
+  pfS *FileBuf
+  pfL *FileBuf
+
+  topLine  int  // top  of buffer view line number.
+  leftChar int  // left of buffer view character number.
+  crsRow   int  // cursor row    in buffer view. 0 <= crsRow < WorkingRows().
+  crsCol   int  // cursor column in buffer view. 0 <= crsCol < WorkingCols().
+
+  DI_List_S Vector[Diff_Info] // One Diff_Info per diff line
+  DI_List_L Vector[Diff_Info] // One Diff_Info per diff line
+  DI_L_ins_idx int
+
+  inVisualMode bool
+  inVisualBlock bool
+
+  v_st_line, v_st_char int
+  v_fn_line, v_fn_char int
+
+  printed_diff_ms bool
+  diff_dur time.Duration
+
+  sameList Vector[SameArea]
+  diffList Vector[DiffArea]
+  simiList Vector[SimLines]
+
+  num_files_added_this_diff int
+}
+
+func (m *Diff) Init( pv0 *FileView, pv1 *FileView ) {
+
+  if( pv0.p_fb.NumLines() < pv1.p_fb.NumLines() ) {
+    m.pvS = pv0
+    m.pvL = pv1
+  } else {
+    m.pvS = pv1
+    m.pvL = pv0
+  }
+  m.pfS = m.pvS.p_fb
+  m.pfL = m.pvL.p_fb
+}
+
+// Returns true if diff took place, else false
+//
+func (m *Diff) Run() bool {
+  ran_diff := false
+  if( m.pfS != m.pfL ) {
+    m.pvS.p_diff = m
+    m.pvL.p_diff = m
+    // All lines in both files:
+    DA := DiffArea{ 0, m.pfS.NumLines(), 0, m.pfL.NumLines() }
+    m.RunDiff( DA )
+    ran_diff = true
+
+    m.Find_Context()
+  }
+  return ran_diff
+}
+
+func (m *Diff) NoDiff() {
+
+  m.pvS.topLine  = m.ViewLineS( m.topLine )
+  m.pvS.leftChar = m.leftChar
+  m.pvS.crsRow   = m.crsRow
+  m.pvS.crsCol   = m.crsCol
+
+  m.pvL.topLine  = m.ViewLineL( m.topLine )
+  m.pvL.leftChar = m.leftChar
+  m.pvL.crsRow   = m.crsRow
+  m.pvL.crsCol   = m.crsCol
+
+  m.pvS.p_diff = nil
+  m.pvL.p_diff = nil
+}
+
+func (m *Diff) NumLines() int {
+
+  // DI_List_L and DI_List_S should be the same length
+  return m.DI_List_L.Len()
+}
+
+func (m *Diff) CrsLine() int {
+
+  return m.topLine  + m.crsRow;
+}
+
+func (m *Diff) CrsChar() int {
+
+  return m.leftChar + m.crsCol;
+}
+
+//func (m *Diff) Row_Win_2_GL( pV *FileView, win_row int ) int {
+//
+//  return pV.Y() + 1 + win_row
+//}
+
+//func (m *Diff) Col_Win_2_GL( pV *FileView, win_col int ) int {
+//
+//  return pV.X() + 1 + win_col
+//}
+
+func (m *Diff) LineLen() int {
+
+  pV := m_vis.CV()
+
+  diff_line := m.CrsLine()
+
+  var di Diff_Info = m.DiffInfo( pV, diff_line )
+
+  if( DT_UNKN0WN == di.diff_type ||
+      DT_DELETED == di.diff_type ) {
+    return 0;
+  }
+  view_line := di.line_num
+
+  return pV.p_fb.LineLen( view_line )
+}
+
+func (m *Diff) ViewLine( pV *FileView, diff_line int ) int {
+  var ln int
+  if       ( pV == m.pvS ) { ln = m.DI_List_S.Get( diff_line ).line_num
+  } else if( pV == m.pvL ) { ln = m.DI_List_L.Get( diff_line ).line_num
+  }
+  return ln
+}
+
+func (m *Diff) DiffInfo( pV *FileView, diff_line int ) Diff_Info {
+  var di Diff_Info
+  if       ( pV == m.pvS ) { di = m.DI_List_S.Get( diff_line )
+  } else if( pV == m.pvL ) { di = m.DI_List_L.Get( diff_line )
+  }
+  return di
+}
+
+func (m *Diff) View_2_DI_List( pV *FileView ) *Vector[Diff_Info] {
+  var p_DI_List *Vector[Diff_Info] = nil
+  if       ( pV == m.pvS ) { p_DI_List = &m.DI_List_S
+  } else if( pV == m.pvL ) { p_DI_List = &m.DI_List_L
+  }
+  return p_DI_List
+}
+
+func (m *Diff) DiffType( pV *FileView, diff_line int ) Diff_Type {
+
+  return m.DiffInfo( pV, diff_line ).diff_type
+}
+
+func (m *Diff) WorkingRows( pV *FileView ) int {
+
+  return pV.WinRows() -5
+}
+
+func (m *Diff) WorkingCols( pV *FileView ) int {
+
+  return pV.WinCols() -2
+}
+
+func (m *Diff) BotLine( pV *FileView ) int {
+
+  return m.topLine + m.WorkingRows( pV )-1
+}
+
+func (m *Diff) RightChar( pV *FileView ) int {
+
+  return m.leftChar + m.WorkingCols( pV )-1
+}
+
+func (m *Diff) Find_Context() {
+
+  if( !m.Has_Context() ) {
+    pV := m_vis.CV()
+
+    if( pV.Has_Context() ) {
+      m.Copy_ViewContext_2_DiffContext()
+    } else {
+      m.Do_n_Diff( false )
+      m.MoveCurrLineCenter( false )
+    }
+  }
+}
+
+func (m *Diff) Has_Context() bool {
+
+  return 0 != m.topLine ||
+         0 != m.leftChar ||
+         0 != m.crsRow ||
+         0 != m.crsCol
+}
+
+func (m *Diff) Copy_ViewContext_2_DiffContext() {
+  pV := m_vis.CV()
+
+  // View context -> diff context
+  diff_topLine := m.DiffLine( pV, pV.topLine )
+  diff_crsLine := m.DiffLine( pV, pV.CrsLine() )
+  diff_crsRow  := diff_crsLine - diff_topLine
+
+  m.topLine  = diff_topLine
+  m.leftChar = pV.leftChar
+  m.crsRow   = diff_crsRow
+  m.crsCol   = pV.crsCol
+}
+
+func (m *Diff) DiffLine( pV *FileView, view_line int ) int {
+  dl := 0
+  if       ( pV == m.pvS ) { dl = m.DiffLine_S( view_line )
+  } else if( pV == m.pvL ) { dl = m.DiffLine_L( view_line )
+  }
+  return dl
+}
+
+// Return the diff line of the view line on the short side
+func (m *Diff) DiffLine_S( view_line int ) int {
+
+  diff_line := 0
+  NUM_LINES_VS := m.pvS.p_fb.NumLines()
+
+  if( 0 < NUM_LINES_VS ) {
+    DI_LEN := m.DI_List_S.Len()
+
+    if( NUM_LINES_VS <= view_line ) {
+      diff_line = DI_LEN-1
+    } else {
+      // Diff line is greater or equal to view line,
+      // so start at view line number and search forward
+      k := view_line
+      var di Diff_Info = m.DI_List_S.Get( view_line )
+      k += view_line - di.line_num
+      found := false
+
+      for ; !found && k<DI_LEN; k += view_line - di.line_num {
+        di = m.DI_List_S.Get( k )
+
+        if( view_line == di.line_num ) {
+          found = true
+          diff_line = k
+        }
+      }
+    }
+  }
+  return diff_line
+}
+
+// Return the diff line of the view line on the long side
+func (m *Diff) DiffLine_L( view_line int ) int {
+
+  diff_line := 0
+  NUM_LINES_VL := m.pvL.p_fb.NumLines()
+
+  if( 0 < NUM_LINES_VL ) {
+    DI_LEN := m.DI_List_L.Len()
+
+    if( NUM_LINES_VL <= view_line ) {
+      diff_line = DI_LEN-1
+    } else {
+      // Diff line is greater or equal to view line,
+      // so start at view line number and search forward
+      k := view_line
+      var di Diff_Info = m.DI_List_L.Get( view_line )
+      k += view_line - di.line_num
+      found := false
+
+      for ; !found && k<DI_LEN; k += view_line - di.line_num {
+        di = m.DI_List_L.Get( k )
+
+        if( view_line == di.line_num ) {
+          found = true
+          diff_line = k
+        }
+      }
+    }
+  }
+  return diff_line
+}
+
+func (m *Diff) RepositionViews() {
+  // If a window re-size has taken place, and the window has gotten
+  // smaller, change top line and left char if needed, so that the
+  // cursor is in the buffer when it is re-drawn
+  pV := m_vis.CV()
+
+  if( m.WorkingRows( pV ) <= m.crsRow ) {
+    m.topLine += ( m.crsRow - m.WorkingRows( pV ) + 1 )
+    m.crsRow  -= ( m.crsRow - m.WorkingRows( pV ) + 1 )
+  }
+  if( m.WorkingCols( pV ) <= m.crsCol ) {
+    m.leftChar += ( m.crsCol - m.WorkingCols( pV ) + 1 )
+    m.crsCol   -= ( m.crsCol - m.WorkingCols( pV ) + 1 )
+  }
+}
+
+// Update both views
+func (m *Diff) UpdateBV() {
+
+  m.RepositionViews()
+  m.UpdateS()
+  m.UpdateL()
+
+  if( ! m.printed_diff_ms ) {
+    msg := fmt.Sprintf("Diff took: %v ms", m.diff_dur.Milliseconds())
+    m_vis.CmdLineMessage( msg )
+
+    m.printed_diff_ms = true
+  }
+}
+
+// Update 1 view
+func (m *Diff) Update1V( pV *FileView ) {
+
+  m.RepositionViews()
+
+  if       ( pV == m.pvS ) { m.UpdateS()
+  } else if( pV == m.pvL ) { m.UpdateL()
+  }
+}
+
+func (m *Diff) UpdateS() {
+
+  // Update short view:
+  m.pfS.Find_Styles( m.ViewLineS( m.topLine ) + m.WorkingRows( m.pvS ) );
+  m.pfS.Find_Regexs( m.ViewLineS( m.topLine ), m.WorkingRows( m.pvS ) );
+
+  m.pvS.PrintBorders()
+  m.PrintWorkingView( m.pvS )
+  m.PrintStsLine( m.pvS )
+  m.pvS.PrintFileLine()
+
+  m.PrintCmdLine( m.pvS )
+}
+
+func (m *Diff) UpdateL() {
+
+  // Update long view:
+  m.pfL.Find_Styles( m.ViewLineL( m.topLine ) + m.WorkingRows( m.pvL ) );
+  m.pfL.Find_Regexs( m.ViewLineL( m.topLine ), m.WorkingRows( m.pvL ) );
+
+  m.pvL.PrintBorders()
+  m.PrintWorkingView( m.pvL )
+  m.PrintStsLine( m.pvL )
+  m.pvL.PrintFileLine()
+
+  m.PrintCmdLine( m.pvL )
+}
+
+//func (m *Diff)  ViewLine( pV *FileView, diff_line int ) int {
+//
+//  return ( pV == m.pvS ) ? m.DI_List_S[ diff_line ].line_num
+//                         : m.DI_List_L[ diff_line ].line_num;
+//}
+
+func (m *Diff)  ViewLineS( diff_line int ) int {
+
+  return m.DI_List_S.Get( diff_line ).line_num
+}
+
+func (m *Diff)  ViewLineL( diff_line int ) int {
+
+  return m.DI_List_L.Get( diff_line ).line_num
+}
+
+//Style DiffStyle( const Style S )
+func DiffStyle( p_TS *tcell.Style ) *tcell.Style {
+  // If S is already a DIFF style, just return it
+  var p_TS_diff *tcell.Style = p_TS
+
+  if       ( p_TS == &TS_NORMAL   ) { p_TS_diff = &TS_DIFF_NORMAL
+  } else if( p_TS == &TS_STAR     ) { p_TS_diff = &TS_DIFF_STAR
+  } else if( p_TS == &TS_STAR_IN_F) { p_TS_diff = &TS_DIFF_STAR_IN_F
+  } else if( p_TS == &TS_COMMENT  ) { p_TS_diff = &TS_DIFF_COMMENT
+  } else if( p_TS == &TS_DEFINE   ) { p_TS_diff = &TS_DIFF_DEFINE
+  } else if( p_TS == &TS_CONST    ) { p_TS_diff = &TS_DIFF_CONST
+  } else if( p_TS == &TS_CONTROL  ) { p_TS_diff = &TS_DIFF_CONTROL
+  } else if( p_TS == &TS_VARTYPE  ) { p_TS_diff = &TS_DIFF_VARTYPE
+  } else if( p_TS == &TS_VISUAL   ) { p_TS_diff = &TS_DIFF_VISUAL
+  }
+  return p_TS_diff;
+}
+
+func (m *Diff) PrintWorkingView( pV *FileView ) {
+
+  NUM_LINES := m.NumLines()
+  WR        := pV.WorkingRows()
+  WC        := pV.WorkingCols()
+
+  row := 0; // (dl=diff line)
+  for dl:=m.topLine; dl<NUM_LINES && row<WR; dl++ {
+
+    G_ROW := pV.Row_Win_2_GL( row )
+    DT := m.DiffType( pV, dl )
+
+    if( DT == DT_UNKN0WN ) {
+      m.PrintWorkingView_DT_UNKN0WN( pV, WC, G_ROW )
+    } else if( DT == DT_DELETED ) {
+      m.PrintWorkingView_DT_DELETED( pV, WC, G_ROW )
+    } else if( DT == DT_CHANGED ) {
+      m.PrintWorkingView_DT_CHANGED( pV, WC, G_ROW, dl )
+    } else if( DT == DT_DIFF_FILES ) {
+      m.PrintWorkingView_DT_DIFF_FILES( pV, WC, G_ROW, dl )
+    } else { // DT == DT_INSERTED || DT == DT_SAME
+      m.PrintWorkingView_DT_INSERTED_SAME( pV, WC, G_ROW, dl, DT )
+    }
+    row++
+  }
+  m.PrintWorkingView_EOF( pV, WR, WC, row )
+}
+
+func (m *Diff) PrintWorkingView_DT_UNKN0WN( pV *FileView, WC, G_ROW int ) {
+
+  for col:=0; col<WC; col++ {
+    m_console.SetR( G_ROW, pV.Col_Win_2_GL( col ), '~', &TS_DIFF_DEL )
+  }
+}
+
+func (m *Diff) PrintWorkingView_DT_DELETED( pV *FileView, WC, G_ROW int ) {
+
+  for col:=0; col<WC; col++ {
+    m_console.SetR( G_ROW, pV.Col_Win_2_GL( col ), '-', &TS_DIFF_DEL )
+  }
+}
+
+func (m *Diff) PrintWorkingView_DT_CHANGED( pV *FileView, WC, G_ROW, dl int ) {
+
+  vl := m.ViewLine( pV, dl ) //(vl=view line)
+  LL := pV.p_fb.LineLen( vl )
+
+  var di Diff_Info = m.DiffInfo( pV, dl )
+
+  col := 0
+
+  if( nil != di.pLineInfo ) {
+    LIL := di.pLineInfo.Len()
+    cp := m.leftChar // char position
+    for i:=m.leftChar; cp<LL && i<LIL && col<WC; i++ {
+      G_COL := pV.Col_Win_2_GL( col )
+      var dt Diff_Type = di.pLineInfo.Get(i)
+
+      if( DT_SAME == dt ) {
+        var p_TS *tcell.Style = m.Get_Style( pV, dl, vl, cp )
+        R := pV.p_fb.GetR( vl, cp )
+        pV.PrintWorkingView_Set( LL, G_ROW, G_COL, cp, R, p_TS )
+        cp++
+
+      } else if( DT_CHANGED == dt || DT_INSERTED == dt ) {
+        var p_TS *tcell.Style = m.Get_Style( pV, dl, vl, cp )
+        p_TS = DiffStyle( p_TS )
+        R := pV.p_fb.GetR( vl, cp )
+        pV.PrintWorkingView_Set( LL, G_ROW, G_COL, cp, R, p_TS )
+        cp++
+
+      } else if( DT_DELETED == dt ) {
+        m_console.SetR( G_ROW, G_COL, '-', &TS_DIFF_DEL )
+
+      } else { //( DT_UNKN0WN  == dt )
+        m_console.SetR( G_ROW, G_COL, '~', &TS_DIFF_DEL )
+      }
+      col++
+    }
+    for ; col<WC; col++ {
+      G_COL := pV.Col_Win_2_GL( col )
+      m_console.SetR( G_ROW, G_COL, ' ', &TS_EMPTY );
+    }
+  } else {
+    for i:=m.leftChar; i<LL && col<WC; i++ {
+      var p_TS *tcell.Style = m.Get_Style( pV, dl, vl, i ); p_TS = DiffStyle( p_TS )
+      G_COL := pV.Col_Win_2_GL( col )
+      R := pV.p_fb.GetR( vl, i )
+      pV.PrintWorkingView_Set( LL, G_ROW, G_COL, i, R, p_TS )
+      col++
+    }
+    for ; col<WC; col++ {
+      G_COL := pV.Col_Win_2_GL( col )
+      m_console.SetR( G_ROW, G_COL, ' ', &TS_DIFF_NORMAL )
+    }
+  }
+}
+
+func (m *Diff) PrintWorkingView_DT_DIFF_FILES( pV *FileView, WC, G_ROW, dl int ) {
+
+  vl := m.ViewLine( pV, dl ) //(vl=view line)
+  LL := pV.p_fb.LineLen( vl )
+  col := 0
+
+  for i:=m.leftChar; i<LL && col<WC; i++ {
+    G_COL := pV.Col_Win_2_GL( col )
+    R := pV.p_fb.GetR( vl, i )
+    var p_TS *tcell.Style = m.Get_Style( pV, dl, vl, i )
+
+    pV.PrintWorkingView_Set( LL, G_ROW, G_COL, i, R, p_TS )
+    col++
+  }
+  for ; col<WC; col++ {
+    G_COL := pV.Col_Win_2_GL( col )
+    if( col%2==0 ) {
+      m_console.SetR( G_ROW, G_COL, ' ', &TS_NORMAL )
+    } else {
+      m_console.SetR( G_ROW, G_COL, ' ', &TS_DIFF_NORMAL )
+    }
+  }
+}
+
+func (m *Diff) PrintWorkingView_DT_INSERTED_SAME( pV *FileView, WC, G_ROW, dl int, DT Diff_Type ) {
+
+  vl := m.ViewLine( pV, dl ) //(vl=view line)
+  LL := pV.p_fb.LineLen( vl )
+  col := 0
+
+  for i:=m.leftChar; i<LL && col<WC; i++ {
+    R := pV.p_fb.GetR( vl, i )
+    var p_TS *tcell.Style = m.Get_Style( pV, dl, vl, i )
+
+    if( DT == DT_INSERTED ) {
+      p_TS = DiffStyle( p_TS )
+    }
+    G_COL := pV.Col_Win_2_GL( col )
+    pV.PrintWorkingView_Set( LL, G_ROW, G_COL, i, R, p_TS );
+    col++
+  }
+  for ; col<WC; col++ {
+    if( DT==DT_SAME ) {
+      m_console.SetR( G_ROW, pV.Col_Win_2_GL( col ), ' ', &TS_EMPTY )
+    } else {
+      m_console.SetR( G_ROW, pV.Col_Win_2_GL( col ), ' ', &TS_DIFF_NORMAL )
+    }
+  }
+}
+
+func (m *Diff) PrintWorkingView_EOF( pV *FileView, WR, WC, row int ) {
+
+  // Not enough lines to display, fill in with ~
+  for ; row < WR; row++ {
+    G_ROW := pV.Row_Win_2_GL( row )
+
+    m_console.SetR( G_ROW, pV.Col_Win_2_GL( 0 ), '~', &TS_EOF )
+
+    for col:=1; col<WC; col++ {
+      m_console.SetR( G_ROW, pV.Col_Win_2_GL( col ), ' ', &TS_EOF )
+    }
+  }
 }
 
 func (m *Diff) PrintCursor( pV *FileView ) {
-  // FIXME:
+
+  m_console.ShowCursor( pV.Row_Win_2_GL( m.crsRow ), pV.Col_Win_2_GL( m.crsCol ) )
+  m_console.Show()
+}
+
+func (m *Diff) PrintStsLine( pV *FileView ) {
+}
+
+func (m *Diff) PrintCmdLine( pV *FileView ) {
+  // Prints "--INSERT--" banner, and/or clears command line
+  i:=0
+  // Draw insert banner if needed
+  if( pV.inInsertMode ) {
+    i=10 // Strlen of "--INSERT--"
+    m_console.SetString( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( 0 ), "--INSERT--", &TS_BANNER )
+  }
+  WC := pV.WorkingCols()
+
+  for ; i<WC-7; i++ {
+    m_console.SetR( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( i ), ' ', &TS_NORMAL )
+  }
+  m_console.SetString( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( WC-8 ), "--DIFF--", &TS_BANNER )
+}
+
+func (m *Diff) InVisualArea( pV *FileView, DL, pos int ) bool {
+
+  // Only one diff view, current view, can be in visual mode.
+  if( m_vis.CV() == pV && m.inVisualMode ) {
+    if( m.inVisualBlock ) { return m.InVisualBlock( DL, pos )
+    } else                { return m.InVisualStFn ( DL, pos )
+    }
+  }
+  return false
+}
+
+func (m *Diff) InVisualBlock( DL, pos int ) bool {
+
+  return ( m.v_st_line <= DL  && DL  <= m.v_fn_line &&
+           m.v_st_char <= pos && pos <= m.v_fn_char ) || // bot rite
+         ( m.v_st_line <= DL  && DL  <= m.v_fn_line &&
+           m.v_fn_char <= pos && pos <= m.v_st_char ) || // bot left
+         ( m.v_fn_line <= DL  && DL  <= m.v_st_line &&
+           m.v_st_char <= pos && pos <= m.v_fn_char ) || // top rite
+         ( m.v_fn_line <= DL  && DL  <= m.v_st_line &&
+           m.v_fn_char <= pos && pos <= m.v_st_char );// top left
+}
+
+func (m *Diff) InVisualStFn( DL, pos int ) bool {
+
+  if( !m.inVisualMode ) { return false }
+
+  if( m.v_st_line == DL && DL == m.v_fn_line ) {
+    return (m.v_st_char <= pos && pos <= m.v_fn_char) ||
+           (m.v_fn_char <= pos && pos <= m.v_st_char)
+
+  } else if( (m.v_st_line < DL && DL < m.v_fn_line) ||
+           (m.v_fn_line < DL && DL < m.v_st_line) ) {
+    return true
+
+  } else if( m.v_st_line == DL && DL < m.v_fn_line ) {
+    return m.v_st_char <= pos
+
+  } else if( m.v_fn_line == DL && DL < m.v_st_line ) {
+    return m.v_fn_char <= pos
+
+  } else if( m.v_st_line < DL && DL == m.v_fn_line ) {
+    return pos <= m.v_fn_char
+
+  } else if( m.v_fn_line < DL && DL == m.v_st_line ) {
+    return pos <= m.v_st_char
+  }
+  return false
+}
+
+func (m *Diff) Get_Style( pV *FileView, DL, VL, pos int ) *tcell.Style {
+
+  var p_TS *tcell.Style = &TS_EMPTY
+
+  if( VL < pV.p_fb.NumLines() && pos < pV.p_fb.LineLen( VL ) ) {
+    p_TS = &TS_NORMAL;
+
+    if       ( m.InVisualArea( pV, DL, pos ) ) { p_TS = &TS_RV_VISUAL
+    } else if( pV.InStar   ( VL, pos ) ) { p_TS = &TS_STAR
+    } else if( pV.InStarInF( VL, pos ) ) { p_TS = &TS_STAR_IN_F
+    } else if( pV.InDefine ( VL, pos ) ) { p_TS = &TS_DEFINE
+    } else if( pV.InComment( VL, pos ) ) { p_TS = &TS_COMMENT
+    } else if( pV.InConst  ( VL, pos ) ) { p_TS = &TS_CONST
+    } else if( pV.InControl( VL, pos ) ) { p_TS = &TS_CONTROL
+    } else if( pV.InVarType( VL, pos ) ) { p_TS = &TS_VARTYPE
+    }
+  }
+  return p_TS
 }
 
 func (m *Diff) Do_i() {
 }
 
 func ( m *Diff ) GoDown( num int ) {
+
+  NUM_LINES := m.NumLines()
+  OCL       := m.CrsLine() // Old cursor line
+
+  if( 0 < NUM_LINES && OCL < NUM_LINES-1 ) {
+    NCL := OCL+num // New cursor line
+
+    if( NUM_LINES-1 < NCL ) { NCL = NUM_LINES-1 }
+
+    m.GoToCrsPos_Write( NCL, m.CrsChar() )
+  }
 }
 
 func ( m *Diff ) GoUp( num int ) {
+
+  NUM_LINES := m.NumLines()
+  OCL       := m.CrsLine() // Old cursor line
+
+  if( 0 < NUM_LINES && 0 < OCL ) {
+    NCL := OCL-num // New cursor line
+
+    if( NCL < 0 ) { NCL = 0 }
+
+    m.GoToCrsPos_Write( NCL, m.CrsChar() )
+  }
 }
 
-func ( m *Diff ) GoRight() {
+func ( m *Diff ) GoRight( num int ) {
+
+  if( 0<m.NumLines() ) {
+    LL  := m.LineLen()
+    OCP := m.CrsChar() // Old cursor position
+
+    if( 0<LL && OCP < LL-1 ) {
+      NCP := OCP+num // New cursor position
+
+      if( LL-1 < NCP ) { NCP = LL-1 }
+
+      m.GoToCrsPos_Write( m.CrsLine(), NCP )
+    }
+  }
 }
 
-func ( m *Diff ) GoLeft() {
+func ( m *Diff ) GoLeft( num int ) {
+
+  OCP := m.CrsChar() // Old cursor position
+
+  if( 0 < m.NumLines() && 0 < OCP ) {
+    NCP := OCP-num // New cursor position
+
+    if( NCP < 0 ) { NCP = 0 }
+
+    m.GoToCrsPos_Write( m.CrsLine(), NCP )
+  }
 }
 
 func (m *Diff) Do_n() {
+
+  if( 0<len(m_vis.regex_str) ) { m.Do_n_Pattern()
+  } else                       { m.Do_n_Diff(true)
+  }
 }
 
 func (m *Diff) Do_N() {
+
+  if( 0<len(m_vis.regex_str) ) { m.Do_N_Pattern()
+  } else                       { m.Do_N_Diff()
+  }
 }
 
 func (m *Diff) Do_v() bool {
@@ -164,9 +883,1203 @@ func (m *Diff) Do_U() {
 func (m *Diff) MoveCurrLineToTop() {
 }
 
-func (m *Diff) MoveCurrLineCenter() {
+func (m *Diff) MoveCurrLineCenter( write bool ) {
 }
 
 func (m *Diff) MoveCurrLineToBottom() {
+}
+
+func (m *Diff) RunDiff( DA DiffArea ) {
+
+  var t1 time.Time = time.Now()
+
+  m.Popu_SameList( DA )
+  m.Sort_SameList()
+//PrintSameList();
+  m.Popu_DiffList( DA )
+//PrintDiffList();
+  m.Popu_DI_List( DA )
+//PrintDI_List( DA );
+
+  var t2 time.Time = time.Now()
+  m.diff_dur = t2.Sub( t1 )
+  m.printed_diff_ms = false
+}
+
+// Find the largest SameArea in the DiffArea, da.
+// Largest SameArea is determined by the most matching bytes.
+//
+func (m *Diff) Find_Max_Same( da DiffArea ) SameArea {
+
+  var max_same SameArea
+
+  for _ln_s := da.ln_s; _ln_s<da.fnl_s()-max_same.nlines; _ln_s++ {
+    var ln_s int = _ln_s;
+    var cur_same SameArea
+    for ln_l := da.ln_l; ln_s<da.fnl_s() && ln_l<da.fnl_l(); ln_l++ {
+      var ls *FLine = m.pfS.GetLP( ln_s )
+      var ll *FLine = m.pfL.GetLP( ln_l )
+
+      if( ls.Chksum() != ll.Chksum() ) { cur_same.Clear(); ln_s = _ln_s;
+      } else {
+        if( 0 == max_same.nlines || // First line match
+            0 == cur_same.nlines ) {// First line match this outer loop
+          cur_same.Init( ln_s, ln_l, ls.Len()+1 ); // Add one to account for line delimiter
+
+        } else { // Continuation of cur_same
+          cur_same.Inc( Min_i( ls.Len()+1, ll.Len()+1 ) ); // Add one to account for line delimiter
+        }
+        if( max_same.nbytes < cur_same.nbytes ) { max_same.Set( cur_same ); }
+        ln_s++;
+      }
+    }
+    // This line makes the diff run faster:
+    if( 0 < max_same.nlines ) { _ln_s = Max_i( _ln_s, max_same.ln_s+max_same.nlines-1 ); }
+  }
+  return max_same;
+}
+
+func (m *Diff) Popu_SameList( DA DiffArea ) {
+
+  m.sameList.Clear()
+  var compList Vector[DiffArea]
+      compList.Push( DA )
+
+  var da DiffArea
+  for compList.Pop( &da ) {
+    var same SameArea = m.Find_Max_Same( da )
+
+    if( 0<same.nlines && 0<same.nbytes ) { //< Dont count a single empty line as a same area
+      m.sameList.Push( same )
+
+      SAME_FNL_S := same.ln_s+same.nlines // Same finish line short
+      SAME_FNL_L := same.ln_l+same.nlines // Same finish line long
+
+      if( ( same.ln_s == da.ln_s || same.ln_l == da.ln_l ) &&
+          SAME_FNL_S < da.fnl_s() &&
+          SAME_FNL_L < da.fnl_l() ) {
+        // Only one new DiffArea after same:
+        ca1 := DiffArea{ SAME_FNL_S, da.fnl_s()-SAME_FNL_S,
+                         SAME_FNL_L, da.fnl_l()-SAME_FNL_L }
+        compList.Push( ca1 )
+
+      } else if( ( SAME_FNL_S == da.fnl_s() || SAME_FNL_L == da.fnl_l() ) &&
+                 da.ln_s < same.ln_s &&
+                 da.ln_l < same.ln_l ) {
+        // Only one new DiffArea before same:
+        ca1 := DiffArea{ da.ln_s, same.ln_s-da.ln_s,
+                         da.ln_l, same.ln_l-da.ln_l }
+        compList.Push( ca1 );
+      } else if( da.ln_s < same.ln_s && SAME_FNL_S < da.fnl_s() &&
+                 da.ln_l < same.ln_l && SAME_FNL_L < da.fnl_l() ) {
+        // Two new DiffArea's, one before same, and one after same:
+        ca1 := DiffArea{ da.ln_s, same.ln_s-da.ln_s, da.ln_l, same.ln_l-da.ln_l }
+        ca2 := DiffArea{ SAME_FNL_S, da.fnl_s()-SAME_FNL_S, SAME_FNL_L, da.fnl_l()-SAME_FNL_L }
+        compList.Push( ca1 )
+        compList.Push( ca2 )
+      }
+    }
+  }
+}
+
+// Sort m.sameList from least ln_l to greatest ln_l.
+// DiffArea.ln_l is beginning line number in long file.
+//
+func (m *Diff) Sort_SameList() {
+
+  SLL := m.sameList.Len()
+
+  for k:=0; k<SLL; k++  {
+    for j:=SLL-1; k<j; j-- {
+      var sa0 SameArea = m.sameList.Get( j-1 )
+      var sa1 SameArea = m.sameList.Get( j   )
+
+      if( sa1.ln_l < sa0.ln_l ) {
+        m.sameList.Set( j-1, sa1 )
+        m.sameList.Set( j  , sa0 )
+      }
+    }
+  }
+}
+
+func (m *Diff) Popu_DiffList( CA DiffArea ) {
+
+  m.diffList.Clear()
+
+  m.Popu_DiffList_Begin( CA )
+
+  SLL := m.sameList.Len()
+
+  for k:=1; k<SLL; k++ {
+    var sa0 SameArea = m.sameList.Get( k-1 )
+    var sa1 SameArea = m.sameList.Get( k   )
+
+    da_ln_s := sa0.ln_s+sa0.nlines;
+    da_ln_l := sa0.ln_l+sa0.nlines;
+
+    da := DiffArea{ da_ln_s, sa1.ln_s - da_ln_s,
+                    da_ln_l, sa1.ln_l - da_ln_l }
+
+    m.diffList.Push( da )
+  }
+  m.Popu_DiffList_End( CA )
+}
+
+func (m *Diff) Popu_DiffList_Begin( CA DiffArea ) {
+  // Add DiffArea before first SameArea if needed:
+  if( 0 < m.sameList.Len() ) {
+    var sa SameArea = m.sameList.Get( 0 )
+
+    nlines_s_da := sa.ln_s - CA.ln_s // Num lines in short diff area
+    nlines_l_da := sa.ln_l - CA.ln_l // Num lines in long  diff area
+
+    if( 0 < nlines_s_da || 0 < nlines_l_da ) {
+      // DiffArea at beginning of DiffArea:
+      da := DiffArea{ CA.ln_s, nlines_s_da, CA.ln_l, nlines_l_da }
+      m.diffList.Push( da )
+    }
+  }
+}
+
+func (m *Diff) Popu_DiffList_End( CA DiffArea ) {
+
+  SLL := m.sameList.Len()
+
+  if( 0 < SLL ) { // Add DiffArea after last SameArea if needed:
+    var sa SameArea = m.sameList.Get( SLL-1 )
+    sa_s_end := sa.ln_s + sa.nlines
+    sa_l_end := sa.ln_l + sa.nlines
+
+    if( sa_s_end < CA.fnl_s() ||
+        sa_l_end < CA.fnl_l() ) { // DiffArea at end of file:
+      // Number of lines of short and long equal to
+      // start of SameArea short and long
+      da := DiffArea{ sa_s_end, CA.fnl_s() - sa_s_end,
+                      sa_l_end, CA.fnl_l() - sa_l_end }
+      m.diffList.Push( da )
+    }
+  } else { // No SameArea, so whole DiffArea is a DiffArea:
+    da := DiffArea{ CA.ln_s, CA.nlines_s, CA.ln_l, CA.nlines_l }
+    m.diffList.Push( da )
+  }
+}
+
+func (m *Diff) Popu_DI_List( CA DiffArea ) {
+
+  SLL := m.sameList.Len()
+  DLL := m.diffList.Len()
+
+  if       ( SLL == 0 ) { m.Popu_DI_List_NoSameArea()
+  } else if( DLL == 0 ) { m.Popu_DI_List_NoDiffArea()
+  } else                { m.Popu_DI_List_DiffAndSame( CA )
+  }
+}
+
+func (m *Diff) Popu_DI_List_NoSameArea() {
+
+  // Should only be one DiffArea, which is the whole DiffArea:
+  // DLL := m.diffList.Len()
+  // ASSERT( DLL==1 )
+
+  m.Popu_DI_List_AddDiff( m.diffList.Get(0) )
+}
+
+func (m *Diff) Popu_DI_List_AddDiff( da DiffArea ) {
+
+  if( da.nlines_s < da.nlines_l ) {
+    m.Popu_DI_List_AddDiff_Common( da.ln_s,
+                                   da.ln_l,
+                                   da.nlines_s,
+                                   da.nlines_l,
+                                   &m.DI_List_S,
+                                   &m.DI_List_L,
+                                   m.pfS, m.pfL )
+
+  } else if( da.nlines_l < da.nlines_s ) {
+    m.Popu_DI_List_AddDiff_Common( da.ln_l,
+                                   da.ln_s,
+                                   da.nlines_l,
+                                   da.nlines_s,
+                                   &m.DI_List_L,
+                                   &m.DI_List_S,
+                                   m.pfL, m.pfS )
+  } else { // da.nlines_s == da.nlines_l
+    for k:=0; k<da.nlines_l; k++ {
+      var ls *FLine = m.pfS.GetLP( da.ln_s+k )
+      var ll *FLine = m.pfL.GetLP( da.ln_l+k )
+
+      var li_s LineInfo
+      var li_l LineInfo
+
+      m.Compare_Lines( ls, &li_s, ll, &li_l )
+
+      dis := Diff_Info{ DT_CHANGED, da.ln_s+k, &li_s }
+      dil := Diff_Info{ DT_CHANGED, da.ln_l+k, &li_l }
+
+      m.DI_List_S.Insert( m.DI_L_ins_idx, dis )
+      m.DI_List_L.Insert( m.DI_L_ins_idx, dil ); m.DI_L_ins_idx++
+    }
+  }
+}
+
+func (m *Diff) Popu_DI_List_NoDiffArea() {
+  // Should only be one SameArea, which is the whole DiffArea:
+  // SLL := m.sameList.Len()
+  // ASSERT( 1 == SLL )
+  m.Popu_DI_List_AddSame( m.sameList.Get(0) )
+}
+
+func (m *Diff) Popu_DI_List_DiffAndSame( CA DiffArea ) {
+
+  SLL := m.sameList.Len()
+  DLL := m.diffList.Len()
+
+  var da DiffArea = m.diffList.Get( 0 )
+
+  if( CA.ln_s==da.ln_s && CA.ln_l==da.ln_l ) {
+    // Start with DiffArea, and then alternate between SameArea and DiffArea.
+    // There should be at least as many DiffArea's as SameArea's.
+    // ASSERT( SLL<=DLL )
+    for k:=0; k<SLL; k++ {
+      var da DiffArea = m.diffList.Get( k ); m.Popu_DI_List_AddDiff( da )
+      var sa SameArea = m.sameList.Get( k ); m.Popu_DI_List_AddSame( sa )
+    }
+    if( SLL < DLL ) {
+      // ASSERT( SLL+1==DLL )
+      var da DiffArea = m.diffList.Get( DLL-1 ); m.Popu_DI_List_AddDiff( da )
+    }
+  } else {
+    // Start with SameArea, and then alternate between DiffArea and SameArea.
+    // There should be at least as many SameArea's as DiffArea's.
+    // ASSERT( DLL<=SLL )
+
+    for k:=0; k<DLL; k++ {
+      var sa SameArea = m.sameList.Get( k ); m.Popu_DI_List_AddSame( sa )
+      var da DiffArea = m.diffList.Get( k ); m.Popu_DI_List_AddDiff( da )
+    }
+    if( DLL < SLL ) {
+      // ASSERT( DLL+1==SLL )
+      var sa SameArea = m.sameList.Get( SLL-1 ); m.Popu_DI_List_AddSame( sa )
+    }
+  }
+}
+
+func (m *Diff) Popu_DI_List_AddDiff_Common( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
+                                            p_DI_List_s, p_DI_List_l *Vector[Diff_Info],
+                                            pfs, pfl *FileBuf ) {
+  m.Popu_SimiList( da_ln_s,
+                   da_ln_l,
+                   da_nlines_s,
+                   da_nlines_l,
+                   pfs,
+                   pfl )
+  m.Sort_SimiList()
+//PrintSimiList();
+
+  m.SimiList_2_DI_Lists( da_ln_s,
+                         da_ln_l,
+                         da_nlines_s,
+                         da_nlines_l,
+                         p_DI_List_s,
+                         p_DI_List_l )
+}
+
+// Returns number of bytes that are the same between the two lines
+// and fills in li_s and li_l
+func (m *Diff) Compare_Lines( ls *FLine, li_s *LineInfo,
+                              ll *FLine, li_l *LineInfo ) int {
+  if( 0==ls.Len() && 0==ll.Len() ) { return 1 }
+
+  li_s.Clear(); li_l.Clear()
+  var pls *FLine = ls; var pli_s *LineInfo = li_s;
+  var pll *FLine = ll; var pli_l *LineInfo = li_l;
+  if( ll.Len() < ls.Len() ) { pls = ll; pli_s = li_l;
+                              pll = ls; pli_l = li_s; }
+  SLL := pls.Len()
+  LLL := pll.Len()
+
+  pli_l.SetLen( LLL )
+  pli_s.SetLen( LLL )
+
+  num_same := 0
+  i_s := 0
+  i_l := 0
+
+  for i_s < SLL && i_l < LLL {
+    cs := pls.GetR( i_s )
+    cl := pll.GetR( i_l )
+
+    if( cs == cl ) {
+      num_same++
+      pli_s.Set( i_s, DT_SAME ); i_s++
+      pli_l.Set( i_l, DT_SAME ); i_l++
+    } else {
+      remaining_s := SLL - i_s
+      remaining_l := LLL - i_l
+
+      if( 0<remaining_s &&
+          0<remaining_l &&
+          remaining_s == remaining_l ) {
+
+        pli_s.Set( i_s, DT_CHANGED ); i_s++
+        pli_l.Set( i_l, DT_CHANGED ); i_l++
+
+      } else if( remaining_s < remaining_l ) { pli_l.Set( i_l, DT_INSERTED ); i_l++
+      } else if( remaining_l < remaining_s ) { pli_s.Set( i_s, DT_INSERTED ); i_s++
+      }
+    }
+  }
+  for k:=SLL; k<LLL; k++ { pli_s.Set( k, DT_DELETED )  }
+  for k:=i_l; k<LLL; k++ { pli_l.Set( k, DT_INSERTED ) }
+
+  return num_same
+}
+
+// Returns true if the two lines, line_s and line_l, in the two files
+// being compared, are the names of files that differ
+func (m *Diff) Popu_DI_List_Have_Diff_Files( line_s, line_l int ) bool {
+  files_differ := false
+
+  if( m.pfS.is_dir && m.pfL.is_dir ) {
+    // fname_s and fname_l are head names
+    var fname_s string = m.pfS.GetLP( line_s ).to_str()
+    var fname_l string = m.pfL.GetLP( line_l ).to_str()
+
+    if( (fname_s != "..") && !strings.HasSuffix( fname_s, DIR_DELIM_S ) &&
+        (fname_l != "..") && !strings.HasSuffix( fname_l, DIR_DELIM_S ) ) {
+      // fname_s and fname_l should now be full path names,
+      // tail and head, of regular files
+      fname_s =  m.pfS.dir_name + fname_s
+      fname_l =  m.pfL.dir_name + fname_l
+
+      var pfb_s *FileBuf = m_vis.GetFileBuf_s( fname_s )
+      var pfb_l *FileBuf = m_vis.GetFileBuf_s( fname_l )
+
+      // If one side is in ram, read in the other side:
+      if       ( (nil == pfb_s) && (nil != pfb_l) ) { m_vis.NotHaveFileAddFile( fname_s );
+      } else if( (nil != pfb_s) && (nil == pfb_l) ) { m_vis.NotHaveFileAddFile( fname_l );
+      } else if( (nil == pfb_s) && (nil == pfb_l) ) {
+        // Adding files is slow because of all the new'ing, so limit
+        // the number of files that can be added per diff:
+        if( m.num_files_added_this_diff < max_files_added_per_diff ) {
+          var added_s bool = m_vis.NotHaveFileAddFile( fname_s )
+          var added_l bool = m_vis.NotHaveFileAddFile( fname_l )
+
+          if( added_s ) { m.num_files_added_this_diff++ }
+          if( added_l ) { m.num_files_added_this_diff++ }
+        }
+      }
+      pfb_s = m_vis.GetFileBuf_s( fname_s );
+      pfb_l = m_vis.GetFileBuf_s( fname_l );
+
+      if( (nil == pfb_s) || (nil == pfb_l) ) {
+        // Slow: Compare the files in NVM:
+        same,_ := Files_Are_Same_p( fname_s, fname_l )
+        files_differ = !same
+      } else {
+        // Fast: Compare files already cached in memory:
+        same := Files_Are_Same_o( pfb_s, pfb_l )
+        files_differ = !same
+      }
+    }
+  }
+  return files_differ;
+}
+
+func (m *Diff) Popu_DI_List_AddSame( sa SameArea ) {
+
+  for k:=0; k<sa.nlines; k++ {
+    var DT Diff_Type = DT_SAME
+    if( m.Popu_DI_List_Have_Diff_Files( sa.ln_s+k, sa.ln_l+k ) ) {
+      DT = DT_DIFF_FILES
+    }
+    dis := Diff_Info{ DT, sa.ln_s+k, nil }
+    dil := Diff_Info{ DT, sa.ln_l+k, nil }
+
+    m.DI_List_S.Insert( m.DI_L_ins_idx, dis )
+    m.DI_List_L.Insert( m.DI_L_ins_idx, dil ); m.DI_L_ins_idx++
+  }
+}
+
+func (m *Diff) Popu_SimiList( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
+                              pfs, pfl *FileBuf ) {
+  m.simiList.Clear()
+
+  if( 0<da_nlines_s && 0<da_nlines_l ) {
+    ca := DiffArea{ da_ln_s, da_ln_l, da_nlines_s, da_nlines_l }
+
+    var compList Vector[DiffArea]
+    compList.Push( ca )
+
+    for compList.Pop( &ca ) {
+      var siml SimLines = m.Find_Lines_Most_Same( ca, pfs, pfl )
+
+      if( m.simiList.Len() == da_nlines_s ) {
+        // Not putting siml into simiList, so delete any new'ed memory:
+        siml.li_s = nil
+        siml.li_l = nil
+        return
+      }
+      m.simiList.Push( siml )
+      if( ( siml.ln_s == ca.ln_s || siml.ln_l == ca.ln_l ) &&
+          siml.ln_s+1 < ca.fnl_s() &&
+          siml.ln_l+1 < ca.fnl_l() ) {
+        // Only one new DiffArea after siml:
+        ca1 := DiffArea{ siml.ln_s+1, ca.fnl_s()-siml.ln_s-1,
+                         siml.ln_l+1, ca.fnl_l()-siml.ln_l-1 }
+        compList.Push( ca1 )
+
+      } else if( ( siml.ln_s+1 == ca.fnl_s() || siml.ln_l+1 == ca.fnl_l() ) &&
+                 ca.ln_s < siml.ln_s &&
+                 ca.ln_l < siml.ln_l ) {
+        // Only one new DiffArea before siml:
+        ca1 := DiffArea{ ca.ln_s, siml.ln_s-ca.ln_s,
+                         ca.ln_l, siml.ln_l-ca.ln_l }
+        compList.Push( ca1 )
+
+      } else if( ca.ln_s < siml.ln_s && siml.ln_s+1 < ca.fnl_s() &&
+                 ca.ln_l < siml.ln_l && siml.ln_l+1 < ca.fnl_l() ) {
+        // Two new DiffArea's, one before siml, and one after siml:
+        ca1 := DiffArea{ ca.ln_s, siml.ln_s-ca.ln_s,
+                         ca.ln_l, siml.ln_l-ca.ln_l }
+        ca2 := DiffArea{ siml.ln_s+1, ca.fnl_s()-siml.ln_s-1,
+                         siml.ln_l+1, ca.fnl_l()-siml.ln_l-1 }
+        compList.Push( ca1 )
+        compList.Push( ca2 )
+      }
+    }
+  }
+}
+
+func (m *Diff) Sort_SimiList() {
+
+  SLL := m.simiList.Len()
+
+  for k:=0; k<SLL; k++ {
+    for j:=SLL-1; k<j; j-- {
+      var sl0 SimLines = m.simiList.Get( j-1 )
+      var sl1 SimLines = m.simiList.Get( j   )
+
+      if sl1.ln_l < sl0.ln_l {
+        m.simiList.Set( j-1, sl1 )
+        m.simiList.Set( j  , sl0 )
+      }
+    }
+  }
+}
+
+func (m *Diff) SimiList_2_DI_Lists( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
+                                    p_DI_List_s, p_DI_List_l *Vector[Diff_Info] ) {
+  // Diff info short line number:
+  dis_ln := 0
+  if( 0<da_ln_s ) { dis_ln = da_ln_s-1 }
+
+  for k:=0; k<da_nlines_l; k++ {
+    dis := Diff_Info{ DT_DELETED , dis_ln   , nil }
+    dil := Diff_Info{ DT_INSERTED, da_ln_l+k, nil }
+
+    for j:=0; j<m.simiList.Len(); j++ {
+      var p_siml *SimLines = m.simiList.GetP( j )
+
+      if( p_siml.ln_l == da_ln_l+k ) {
+        dis.diff_type = DT_CHANGED
+        dis.line_num  = p_siml.ln_s
+        dis.pLineInfo = p_siml.li_s; p_siml.li_s = nil; // Transfer ownership of LineInfo from p_siml to dis
+
+        dil.diff_type = DT_CHANGED
+        dil.pLineInfo = p_siml.li_l; p_siml.li_l = nil; // Transfer ownership of LineInfo from p_siml to dil
+
+        dis_ln = dis.line_num
+        break
+      }
+    }
+    // DI_List_s and DI_List_l now own LineInfo objects:
+    p_DI_List_s.Insert( m.DI_L_ins_idx, dis )
+    p_DI_List_l.Insert( m.DI_L_ins_idx, dil ); m.DI_L_ins_idx++
+  }
+}
+
+func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
+
+  // LD = Length Difference between long area and short area
+  var LD int = ca.nlines_l - ca.nlines_s
+
+  most_same := SimLines{ 0, 0, 0, nil, nil }
+  for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
+    var ST_L int = ca.ln_l+(ln_s-ca.ln_s)
+
+    for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1; ln_l++ {
+      var ls *FLine = pfs.GetLP( ln_s ) // Line from short area
+      var ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
+
+      var li_s LineInfo
+      var li_l LineInfo
+      var bytes_same int = m.Compare_Lines( ls, &li_s, ll, &li_l )
+
+      if( most_same.nbytes < bytes_same ) {
+        most_same.ln_s   = ln_s
+        most_same.ln_l   = ln_l
+        most_same.nbytes = bytes_same
+        most_same.li_s   = &li_s; // Hand off li_s
+        most_same.li_l   = &li_l; // and      li_l
+      }
+    }
+  }
+  if( 0==most_same.nbytes ) {
+    // This if() block ensures that each line in the short DiffArea is
+    // matched to a line in the long DiffArea.  Each line in the short
+    // DiffArea must be matched to a line in the long DiffArea or else
+    // SimiList_2_DI_Lists wont work right.
+    most_same.ln_s   = ca.ln_s
+    most_same.ln_l   = ca.ln_l
+    most_same.nbytes = 1
+  }
+  return most_same
+}
+
+func (m *Diff) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
+
+  pV := m_vis.CV()
+
+  OCL := m.CrsLine()
+  OCP := m.CrsChar()
+  NCL := ncp_crsLine
+  NCP := ncp_crsChar
+
+  if( OCL == NCL && OCP == NCP ) {
+    // Not moving to new cursor line so just put cursor back where is was
+    m.PrintCursor( pV )
+  } else {
+    if( m.inVisualMode ) {
+      m.v_fn_line = NCL
+      m.v_fn_char = NCP
+    }
+    // These moves refer to View of buffer:
+    MOVE_DOWN  := m.BotLine( pV )   < NCL
+    MOVE_RIGHT := m.RightChar( pV ) < NCP
+    MOVE_UP    := NCL < m.topLine
+    MOVE_LEFT  := NCP < m.leftChar
+
+    redraw := MOVE_DOWN || MOVE_RIGHT || MOVE_UP || MOVE_LEFT
+
+    if( redraw ) {
+      if       ( MOVE_DOWN ) { m.topLine = NCL - m.WorkingRows( pV ) + 1
+      } else if( MOVE_UP )   { m.topLine = NCL
+      }
+      if       ( MOVE_RIGHT ) { m.leftChar = NCP - m.WorkingCols( pV ) + 1
+      } else if( MOVE_LEFT  ) { m.leftChar = NCP
+      }
+      // crsRow and crsCol must be set to new values before calling CalcNewCrsByte
+      m.crsRow = NCL - m.topLine
+      m.crsCol = NCP - m.leftChar
+
+      m.UpdateS(); m.UpdateL()
+      m_console.Show()
+
+    } else if( m.inVisualMode ) {
+      if( m.inVisualBlock ) { m.GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP )
+      } else                { m.GoToCrsPos_Write_Visual     ( OCL, OCP, NCL, NCP )
+      }
+    } else {
+      // crsRow and crsCol must be set to new values before calling CalcNewCrsByte and PrintCursor
+      m.crsRow = NCL - m.topLine
+      m.crsCol = NCP - m.leftChar
+
+      m.PrintCursor( pV )  // Put cursor into position.
+    }
+  }
+}
+
+func (m *Diff) GoToCrsPos_NoWrite( ncp_crsLine, ncp_crsChar int ) {
+
+  pV := m_vis.CV()
+
+  // These moves refer to View of buffer:
+  MOVE_DOWN  := m.BotLine( pV )   < ncp_crsLine
+  MOVE_RIGHT := m.RightChar( pV ) < ncp_crsChar
+  MOVE_UP    := ncp_crsLine < m.topLine
+  MOVE_LEFT  := ncp_crsChar < m.leftChar
+
+  if     ( MOVE_DOWN ) { m.topLine = ncp_crsLine - m.WorkingRows( pV ) + 1
+  } else if( MOVE_UP ) { m.topLine = ncp_crsLine
+  }
+  m.crsRow = ncp_crsLine - m.topLine
+
+  if       ( MOVE_RIGHT ) { m.leftChar = ncp_crsChar - m.WorkingCols( pV ) + 1
+  } else if( MOVE_LEFT  ) { m.leftChar = ncp_crsChar
+  }
+  m.crsCol = ncp_crsChar - m.leftChar
+}
+
+func (m *Diff) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
+  // FIXME:
+}
+
+func (m *Diff) GoToCrsPos_Write_Visual( OCL, OCP, NCL, NCP int ) {
+  // FIXME:
+}
+
+func (m *Diff) Do_n_Diff( write bool ) {
+
+  if( 0 < m.NumLines() ) {
+  //m.Set_Cmd_Line_Msg("Searching down for diff");
+
+    dl := m.CrsLine() // Diff line, changed by search methods below
+
+    pV := m_vis.CV()
+
+    p_DI_List := m.View_2_DI_List( pV )
+
+    var DT Diff_Type = p_DI_List.Get(dl).diff_type // Current diff type
+
+    found_same := true
+
+    if( DT == DT_CHANGED ||
+        DT == DT_INSERTED ||
+        DT == DT_DELETED ||
+        DT == DT_DIFF_FILES ) {
+      // If currently on a diff, search for same before searching for diff
+      found_same = m.Do_n_Search_for_Same( &dl, p_DI_List )
+    }
+    if( found_same ) {
+      found_diff := m.Do_n_Search_for_Diff( &dl, p_DI_List )
+
+      var NCL, NCP int
+      if( found_diff ) {
+        NCL = dl;
+        NCP = m.Do_n_Find_Crs_Pos( NCL, p_DI_List )
+      } else { // Could not find a difference.
+               // Check if one file ends in LF and the other does not:
+        if( m.pfS.lines.LF_at_EOF != m.pfL.lines.LF_at_EOF ) {
+          found_diff = true
+          NCL = p_DI_List.Len() - 1
+          NCP = pV.p_fb.LineLen( p_DI_List.Get( NCL ).line_num )
+        }
+      }
+      if( found_diff ) {
+        if( write ) { m.GoToCrsPos_Write( NCL, NCP )
+        } else      { m.GoToCrsPos_NoWrite( NCL, NCP )
+        }
+      }
+    }
+  }
+}
+
+func (m *Diff) Do_N_Diff() {
+
+  if( 0 < m.NumLines() ) {
+  //m.diff.Set_Cmd_Line_Msg("Searching up for diff");
+
+    dl := m.CrsLine() // Diff line, changed by search methods below
+
+    pV := m_vis.CV()
+
+    p_DI_List := m.View_2_DI_List( pV )
+
+    var DT Diff_Type = p_DI_List.Get(dl).diff_type // Current diff type
+
+    found_same := true
+
+    if( DT == DT_CHANGED ||
+        DT == DT_INSERTED ||
+        DT == DT_DELETED ||
+        DT == DT_DIFF_FILES ) {
+      // If currently on a diff, search for same before searching for diff
+      found_same = m.Do_N_Search_for_Same( &dl, p_DI_List )
+    }
+    if( found_same ) {
+      found_diff := m.Do_N_Search_for_Diff( &dl, p_DI_List )
+
+      if( found_diff ) {
+        NCL := dl
+        NCP := m.Do_n_Find_Crs_Pos( NCL, p_DI_List )
+
+        m.GoToCrsPos_Write( NCL, NCP )
+      }
+    }
+  }
+}
+
+func (m *Diff) Do_n_Pattern() {
+
+  pV := m_vis.CV();
+
+  NUM_LINES := pV.p_fb.NumLines()
+
+  if( 0 < NUM_LINES ) {
+  //String msg("/");
+  //m.diff.Set_Cmd_Line_Msg( msg += m.vis.GetRegex() );
+
+    ncp := CrsPos{ 0, 0 } // Next cursor position
+
+    if( m.Do_n_FindNextPattern( &ncp ) ) {
+      m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
+    }
+  }
+}
+
+func (m *Diff) Do_N_Pattern() {
+
+  pV := m_vis.CV();
+
+  NUM_LINES := pV.p_fb.NumLines()
+
+  if( 0 < NUM_LINES ) {
+  //String msg("/");
+  //m.diff.Set_Cmd_Line_Msg( msg += m.vis.GetRegex() );
+
+    ncp := CrsPos{ 0, 0 } // Next cursor position
+
+    if( m.Do_N_FindPrevPattern( &ncp ) ) {
+      m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
+    }
+  }
+}
+
+func (m *Diff) Do_n_Search_for_Same( p_dl *int,
+                                     p_DI_List *Vector[Diff_Info] ) bool {
+
+  NUM_LINES := m.NumLines()
+  dl_st := *p_dl
+
+  // Search forward for DT_SAME
+  found := false
+
+  if( 1 < NUM_LINES ) {
+    for !found && *p_dl<NUM_LINES {
+      var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+      if( DT == DT_SAME ) { found = true
+      } else              { *p_dl++
+      }
+    }
+    if( !found ) {
+      // Wrap around back to top and search again:
+      *p_dl = 0
+      for( !found && *p_dl<dl_st ) {
+        var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+        if( DT == DT_SAME ) { found = true
+        } else              { *p_dl++
+        }
+      }
+    }
+  }
+  return found
+}
+
+func (m *Diff) Do_n_Search_for_Diff( p_dl *int,
+                                     p_DI_List *Vector[Diff_Info] ) bool {
+
+  dl_st := *p_dl
+
+  // Search forward for non-DT_SAME
+  found_diff := false
+
+  if( 1 < m.NumLines() ) {
+    found_diff = m.Do_n_Search_for_Diff_DT( p_dl, p_DI_List )
+
+    if( !found_diff ) {
+      *p_dl = dl_st
+      found_diff = m.Do_n_Search_for_Diff_WhiteSpace( p_dl, p_DI_List )
+    }
+  }
+  return found_diff
+}
+
+func (m *Diff) Do_n_Find_Crs_Pos( NCL int,
+                                  p_DI_List *Vector[Diff_Info] ) int {
+  NCP := 0
+
+  var DT_new Diff_Type = p_DI_List.Get( NCL ).diff_type
+
+  if( DT_new == DT_CHANGED ) {
+    var pLI_s *LineInfo = m.DI_List_S.Get( NCL ).pLineInfo
+    var pLI_l *LineInfo = m.DI_List_L.Get( NCL ).pLineInfo
+
+    for k:=0; nil != pLI_s && k<pLI_s.Len() &&
+              nil != pLI_l && k<pLI_l.Len(); k++ {
+
+      var dt_s Diff_Type = pLI_s.Get( k )
+      var dt_l Diff_Type = pLI_l.Get( k )
+
+      if( dt_s != DT_SAME || dt_l != DT_SAME ) {
+        NCP = k
+        break
+      }
+    }
+  }
+  return NCP
+}
+
+func (m *Diff) Do_N_Search_for_Same( p_dl *int,
+                                     p_DI_List *Vector[Diff_Info] ) bool {
+
+  NUM_LINES := m.NumLines()
+  dl_st := *p_dl
+
+  // Search backwards for DT_SAME
+  found := false
+
+  if( 1 < NUM_LINES ) {
+    for !found && 0<=*p_dl {
+      var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+      if( DT == DT_SAME ) { found = true
+      } else              { *p_dl--
+      }
+    }
+    if( !found ) {
+      // Wrap around back to bottom and search again:
+      *p_dl = NUM_LINES-1
+      for !found && dl_st<*p_dl  {
+        var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+        if( DT == DT_SAME ) { found = true
+        } else              { *p_dl--
+        }
+      }
+    }
+  }
+  return found
+}
+
+func (m *Diff) Do_N_Search_for_Diff( p_dl *int,
+                                     p_DI_List *Vector[Diff_Info] ) bool {
+
+  dl_st := *p_dl
+
+  // Search backwards for non-DT_SAME
+  found_diff := false
+
+  if( 1 < m.NumLines() ) {
+    found_diff = m.Do_N_Search_for_Diff_DT( p_dl, p_DI_List )
+
+    if( !found_diff ) {
+      *p_dl = dl_st
+      found_diff = m.Do_N_Search_for_Diff_WhiteSpace( p_dl, p_DI_List )
+    }
+  }
+  return found_diff;
+}
+
+func (m *Diff) Do_n_FindNextPattern( p_ncp *CrsPos ) bool {
+
+  pV := m_vis.CV()
+  pfb := pV.p_fb
+
+  NUM_LINES := pfb.NumLines()
+
+  OCL := m.CrsLine() // Diff line
+  OCC := m.CrsChar()
+
+  OCLv := m.ViewLine( pV, OCL ) // View line
+
+  st_l := OCLv
+  st_c := OCC
+
+  found_next_star := false
+
+  // Move past current star:
+  LL := pfb.LineLen( OCLv )
+
+  pfb.Check_4_New_Regex()
+  pfb.Find_Regexs_4_Line( OCL )
+
+  // Move past current pattern:
+  for ; st_c<LL && pV.InStarOrStarInF(OCLv,st_c); st_c++ {
+  }
+  // If at end of current line, go down to next line
+  if( LL <= st_c ) { st_c=0; st_l++ }
+
+  // Search for first pattern position past current position
+  for l:=st_l; !found_next_star && l<NUM_LINES; l++ {
+    pfb.Find_Regexs_4_Line( l )
+
+    LL := pfb.LineLen( l )
+
+    for p:=st_c; !found_next_star && p<LL; p++ {
+      if( pV.InStarOrStarInF(l,p) ) {
+        found_next_star = true;
+        // Convert from view line back to diff line:
+        dl := m.DiffLine( pV, l )
+        p_ncp.crsLine = dl
+        p_ncp.crsChar = p
+      }
+    }
+    // After first line, always start at beginning of line
+    st_c = 0
+  }
+  // Near end of file and did not find any patterns, so go to first pattern in file
+  if( !found_next_star ) {
+    for l:=0; !found_next_star && l<=OCLv; l++ {
+      pfb.Find_Regexs_4_Line( l )
+
+      LL := pfb.LineLen( l )
+      END_C := LL
+      if( OCLv==l ) { END_C = Min_i( OCC, LL ) }
+
+      for p:=0; !found_next_star && p<END_C; p++ {
+        if( pV.InStarOrStarInF(l,p) ) {
+          found_next_star = true;
+          // Convert from view line back to diff line:
+          dl := m.DiffLine( pV, l )
+          p_ncp.crsLine = dl
+          p_ncp.crsChar = p
+        }
+      }
+    }
+  }
+  return found_next_star
+}
+
+func (m *Diff) Do_N_FindPrevPattern( p_ncp *CrsPos ) bool {
+
+  m.MoveInBounds_Line()
+
+  pV := m_vis.CV()
+  pfb := pV.p_fb
+
+  NUM_LINES := pfb.NumLines()
+
+  OCL := m.CrsLine()
+  OCC := m.CrsChar()
+
+  OCLv := m.ViewLine( pV, OCL ) // View line
+
+  pfb.Check_4_New_Regex()
+
+  found_prev_star := false
+
+  // Search for first star position before current position
+  for l:=OCLv; !found_prev_star && 0<=l; l-- {
+    pfb.Find_Regexs_4_Line( l )
+
+    LL := pfb.LineLen( l )
+
+    p := LL-1
+    if( OCLv==l ) {
+      p = 0
+      if( 0<OCC ) { p = OCC-1 }
+    }
+    for ; 0<p && !found_prev_star; p-- {
+      for ; 0<=p && pV.InStarOrStarInF(l,p); p-- {
+        found_prev_star = true
+        // Convert from view line back to diff line:
+        dl := m.DiffLine( pV, l )
+        p_ncp.crsLine = dl
+        p_ncp.crsChar = p
+      }
+    }
+  }
+  // Near beginning of file and did not find any patterns, so go to last pattern in file
+  if( !found_prev_star ) {
+    for l:=NUM_LINES-1; !found_prev_star && OCLv<l; l-- {
+      pfb.Find_Regexs_4_Line( l )
+
+      LL := pfb.LineLen( l )
+
+      p := LL-1
+      if( OCLv==l ) {
+        p = 0
+        if( 0<OCC ) { p = OCC-1 }
+      }
+      for ; 0<p && !found_prev_star; p-- {
+        for ; 0<=p && pV.InStarOrStarInF(l,p); p-- {
+          found_prev_star = true;
+          // Convert from view line back to diff line:
+          dl := m.DiffLine( pV, l )
+          p_ncp.crsLine = dl
+          p_ncp.crsChar = p
+        }
+      }
+    }
+  }
+  return found_prev_star
+}
+
+// Look for difference based on Diff_Info:
+func (m *Diff) Do_n_Search_for_Diff_DT( p_dl *int,
+                                        p_DI_List *Vector[Diff_Info] ) bool {
+  found_diff := false
+
+  NUM_LINES := m.NumLines()
+  dl_st := *p_dl
+
+  for !found_diff && *p_dl<NUM_LINES {
+    var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+    if( DT == DT_CHANGED ||
+        DT == DT_INSERTED ||
+        DT == DT_DELETED ||
+        DT == DT_DIFF_FILES ) { found_diff = true
+    } else                    { *p_dl++
+    }
+  }
+  if( !found_diff ) {
+    // Wrap around back to top and search again:
+    *p_dl = 0
+    for !found_diff && *p_dl<dl_st {
+      var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+      if( DT == DT_CHANGED ||
+          DT == DT_INSERTED ||
+          DT == DT_DELETED ||
+          DT == DT_DIFF_FILES ) { found_diff = true
+      } else                    { *p_dl++
+      }
+    }
+  }
+  return found_diff
+}
+
+// Look for difference in white space at beginning or ending of lines:
+func (m *Diff) Do_n_Search_for_Diff_WhiteSpace( p_dl *int,
+                                                p_DI_List *Vector[Diff_Info] ) bool {
+
+  found_diff := false
+
+  NUM_LINES := m.NumLines()
+
+  p_DI_List_o := &m.DI_List_S
+  pF_o := m.pfS
+  pF_m := m.pfL
+
+  if( p_DI_List == &m.DI_List_S ) {
+    p_DI_List_o = &m.DI_List_L
+    pF_o = m.pfL
+    pF_m = m.pfS
+  }
+  // If the current line has a difference in white space at beginning or end, start
+  // searching on next line so the current line number is not automatically returned.
+  var curr_line_has_LT_WS_diff bool =
+    m.Line_Has_Leading_or_Trailing_WS_Diff( p_dl, *p_dl, p_DI_List, p_DI_List_o, pF_m, pF_o )
+  dl_st := *p_dl
+  if( curr_line_has_LT_WS_diff ) { dl_st = (*p_dl + 1) % NUM_LINES }
+
+  // Search from dl_st to end for lines of different length:
+  for k:=dl_st; !found_diff && k<NUM_LINES; k++ {
+    found_diff = m.Line_Has_Leading_or_Trailing_WS_Diff( p_dl, k, p_DI_List, p_DI_List_o, pF_m, pF_o )
+  }
+  if( !found_diff ) {
+    // Search from top to dl_st for lines of different length:
+    for k:=0; !found_diff && k<dl_st; k++ {
+      found_diff = m.Line_Has_Leading_or_Trailing_WS_Diff( p_dl, k, p_DI_List, p_DI_List_o, pF_m, pF_o )
+    }
+  }
+  return found_diff;
+}
+
+func (m *Diff) Line_Has_Leading_or_Trailing_WS_Diff( p_dl *int,
+                                                     k int,
+                                                     p_DI_List, p_DI_List_o *Vector[Diff_Info],
+                                                     pF_m, pF_o *FileBuf ) bool {
+  L_T_WS_diff := false
+
+  var Di_m Diff_Info = p_DI_List.Get( k )
+  var Di_o Diff_Info = p_DI_List_o.Get( k )
+
+  if( Di_m.diff_type == DT_SAME && Di_o.diff_type == DT_SAME ) {
+    var p_lm *FLine = pF_m.GetLP( Di_m.line_num ) // Line from my    view
+    var p_lo *FLine = pF_o.GetLP( Di_o.line_num ) // Line from other view
+
+    if( p_lm.Len() != p_lo.Len() ) {
+      L_T_WS_diff = true
+      *p_dl = k
+    }
+  }
+  return L_T_WS_diff
+}
+
+// If past end of line, move back to end of line.
+// Returns true if moved, false otherwise.
+//
+func (m *Diff) MoveInBounds_Line() {
+
+  pV := m_vis.CV()
+
+  DL  := m.CrsLine()  // Diff line
+  VL  := m.ViewLine( pV, DL )      // View line
+  LL  := pV.p_fb.LineLen( VL )
+  EOL := 0; if( 0<LL ) { EOL = LL-1 }
+
+  if( EOL < m.CrsChar() ) { // Since cursor is now allowed past EOL,
+                            // it may need to be moved back:
+    m.GoToCrsPos_NoWrite( DL, EOL )
+  }
+}
+
+// Look for difference based on Diff_Info:
+func (m *Diff) Do_N_Search_for_Diff_DT( p_dl *int,
+                                        p_DI_List *Vector[Diff_Info] ) bool {
+  found_diff := false
+
+  NUM_LINES := m.NumLines()
+  dl_st := *p_dl
+
+  for( !found_diff && 0<=*p_dl ) {
+    var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+    if( DT == DT_CHANGED ||
+        DT == DT_INSERTED ||
+        DT == DT_DELETED ||
+        DT == DT_DIFF_FILES ) { found_diff = true
+    } else                    { *p_dl--
+    }
+  }
+  if( !found_diff ) {
+    // Wrap around back to bottom and search again:
+    *p_dl = NUM_LINES-1
+    for !found_diff && dl_st<*p_dl {
+      var DT Diff_Type = p_DI_List.Get(*p_dl).diff_type
+
+      if( DT == DT_CHANGED ||
+          DT == DT_INSERTED ||
+          DT == DT_DELETED ||
+          DT == DT_DIFF_FILES ) { found_diff = true
+      } else                    { *p_dl--
+      }
+    }
+  }
+  return found_diff;
+}
+
+// Look for difference in white space at beginning or ending of lines:
+func (m *Diff) Do_N_Search_for_Diff_WhiteSpace( p_dl *int,
+                                                p_DI_List *Vector[Diff_Info] ) bool {
+  found_diff := false
+
+  NUM_LINES := m.NumLines()
+
+  p_DI_List_o := &m.DI_List_S
+  pF_o := m.pfS
+  pF_m := m.pfL
+
+  if( p_DI_List == &m.DI_List_S ) {
+    p_DI_List_o = &m.DI_List_L
+    pF_o = m.pfL
+    pF_m = m.pfS
+  }
+  // If the current line has a difference in white space at beginning or end, start
+  // searching on next line so the current line number is not automatically returned.
+  var curr_line_has_LT_WS_diff bool =
+    m.Line_Has_Leading_or_Trailing_WS_Diff( p_dl, *p_dl, p_DI_List, p_DI_List_o, pF_m, pF_o )
+
+  dl_st := *p_dl
+  if( curr_line_has_LT_WS_diff ) {
+    dl_st = NUM_LINES-1
+    if( 0 < *p_dl ) { dl_st = (*p_dl - 1) % NUM_LINES}
+  }
+  // Search from dl_st to end for lines of different length:
+  for k:=dl_st; !found_diff && 0<=k; k-- {
+    found_diff = m.Line_Has_Leading_or_Trailing_WS_Diff( p_dl, k, p_DI_List, p_DI_List_o, pF_m, pF_o )
+  }
+  if( !found_diff ) {
+    // Search from top to dl_st for lines of different length:
+    for k:=NUM_LINES-1; !found_diff && dl_st<k; k-- {
+      found_diff = m.Line_Has_Leading_or_Trailing_WS_Diff( p_dl, k, p_DI_List, p_DI_List_o, pF_m, pF_o )
+    }
+  }
+  return found_diff;
 }
 

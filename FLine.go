@@ -5,6 +5,8 @@ import (
 //"bytes"
 //"fmt"
 //"slices"
+//"hash/alder32"
+  "hash/crc32"
 )
 
 // File line
@@ -13,6 +15,9 @@ type FLine struct {
   runes  RLine // rune Line
   styles BLine // byte Line
   star_styles_valid bool // star styles is short for regex search styles
+
+  chksum uint32
+  chksum_valid bool
 }
 
 func (m *FLine) Init( length int ) {
@@ -25,12 +30,15 @@ func (m *FLine) Clear() {
   m.runes.Clear()
   m.styles.Clear()
   m.star_styles_valid = false
+  m.chksum_valid = false
 }
 
 // Copy *p_src_ln into self
 func (m *FLine) CopyP( p_src_ln *FLine ) {
   m.runes.Copy( p_src_ln.runes )
   m.styles.Copy( p_src_ln.styles )
+  m.star_styles_valid = false
+  m.chksum_valid = false
 }
 
 // Copy *p_src_ln into self
@@ -39,6 +47,7 @@ func (m *FLine) CopyPRL( p_src_ln *RLine ) {
   m.styles.SetLen( m.runes.Len() )
   m.styles.Zeroize()
   m.star_styles_valid = false
+  m.chksum_valid = false
 }
 
 func (m *FLine) Len() int {
@@ -59,6 +68,7 @@ func (m *FLine) GetStyle( idx int ) byte {
 func (m *FLine) SetR( idx int, R rune ) {
   m.runes.SetR( idx, R )
   m.star_styles_valid = false
+  m.chksum_valid = false
 }
 
 // Set style
@@ -72,6 +82,7 @@ func (m *FLine) RemoveR( idx int ) rune {
   var R rune = m.runes.RemoveR( idx )
                m.styles.RemoveB( idx )
   m.star_styles_valid = false
+  m.chksum_valid = false
   return R
 }
 
@@ -81,6 +92,7 @@ func (m *FLine) PushB( B byte ) {
   m.runes.PushB( B )
   m.styles.PushB( 0 )
   m.star_styles_valid = false
+  m.chksum_valid = false
 } 
 
 // Push rune
@@ -89,6 +101,7 @@ func (m *FLine) PushR( R rune ) {
   m.runes.PushR( R )
   m.styles.PushB( 0 )
   m.star_styles_valid = false
+  m.chksum_valid = false
 } 
 
 // Push a slice of runes(s_r)
@@ -99,6 +112,7 @@ func (m *FLine) PushSR( s_r []rune ) {
   m.runes.PushSR( s_r )
   m.styles.PushSB( s_b )
   m.star_styles_valid = false
+  m.chksum_valid = false
 } 
 
 // Push line
@@ -106,12 +120,14 @@ func (m *FLine) PushL( ln FLine ) {
   m.runes.PushL( ln.runes )
   m.styles.PushL( ln.styles ) // Should we push the styles ?
   m.star_styles_valid = false
+  m.chksum_valid = false
 }
 
 func (m *FLine) PushLP( p_fl *FLine ) {
   m.runes.PushL( p_fl.runes )
   m.styles.PushL( p_fl.styles ) // Should we push the styles ?
   m.star_styles_valid = false
+  m.chksum_valid = false
 }
 
 // Insert rune
@@ -120,11 +136,21 @@ func (m *FLine) InsertR( idx int, R rune ) {
   m.runes.InsertR( idx, R )
   m.styles.InsertB( idx, 0 )
   m.star_styles_valid = false
+  m.chksum_valid = false
 }
+
+// Equal line pointer
+//func (m *FLine) EqualLP( pln *FLine ) bool {
+//
+//  return m.runes.EqualL( pln.runes )
+//}
 
 // Equal line pointer
 func (m *FLine) EqualLP( pln *FLine ) bool {
 
+  if( m.chksum_valid && pln.chksum_valid ) {
+    return m.chksum == pln.chksum
+  }
   return m.runes.EqualL( pln.runes )
 }
 
@@ -197,5 +223,14 @@ func (m *FLine) Set__StarInFStyle( idx int ) {
 func (m *FLine) EndsWith( suffix string ) bool {
 
   return m.runes.EndsWith( suffix )
+}
+
+func (m *FLine) Chksum() uint32 {
+
+  if( !m.chksum_valid ) {
+    m.chksum = crc32.ChecksumIEEE( m.runes.data )
+    m.chksum_valid = true
+  }
+  return m.chksum
 }
 

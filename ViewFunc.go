@@ -135,14 +135,14 @@ func Handle_l( m *Vis ) {
 
   var p_cv *FileView = m.CV()
 
-  p_cv.GoRight()
+  p_cv.GoRight(1)
 }
 
 func Handle_h( m *Vis ) {
 
   var p_cv *FileView = m.CV()
 
-  p_cv.GoLeft()
+  p_cv.GoLeft(1)
 }
 
 func Handle_v( m *Vis ) {
@@ -522,7 +522,7 @@ func Handle_Dot( m *Vis ) {
     if( m_key.save_2_map_buf ) {
       // Pop '.' off map_buf, because the contents of m.key.dot_buf_n
       // will be saved to m.key.map_buf.
-      m_key.map_buf.Pop()
+      m_key.map_buf.Pop(nil)
     }
     m_key.get_from_dot_buf_n = true
 

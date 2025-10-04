@@ -28,14 +28,18 @@ type FileView struct {
 
   un_saved_change_sts bool
   external_change_sts bool
-}
 
-type IsWord_Func func(rune)bool
+  p_diff *Diff
+}
 
 func (m *FileView) Init( file_buf *FileBuf ) {
   m.p_fb = file_buf
+  m.nRows = m_console.Num_Rows()
+  m.nCols = m_console.Num_Cols()
   m.tile_pos = TP_FULL
 }
+
+type IsWord_Func func(rune)bool
 
 func (m *FileView) X() int { return m.x; }
 func (m *FileView) Y() int { return m.y; }
@@ -125,10 +129,20 @@ func (m *FileView) SetTilePos( tp Tile_Pos ) {
   m.SetViewPos()
 }
 
+//func (m *FileView) PrintCursor() {
+//
+//  m_console.ShowCursor( m.Row_Win_2_GL( m.crsRow ), m.Col_Win_2_GL( m.crsCol ) )
+//  m_console.Show()
+//}
+
 func (m *FileView) PrintCursor() {
 
-  m_console.ShowCursor( m.Row_Win_2_GL( m.crsRow ), m.Col_Win_2_GL( m.crsCol ) )
-  m_console.Show()
+  if( nil != m.p_diff ) {
+    m.p_diff.PrintCursor( m )
+  } else {
+    m_console.ShowCursor( m.Row_Win_2_GL( m.crsRow ), m.Col_Win_2_GL( m.crsCol ) )
+    m_console.Show()
+  }
 }
 
 func (m *FileView) RepositionView() {
@@ -151,15 +165,19 @@ func (m *FileView) Update_not_PrintCursor() {
 
   if( !m_key.RunningDot() ) {
 
-    m.p_fb.Find_Styles( m.topLine + m.WorkingRows() )
-    m.p_fb.Find_Regexs( m.topLine, m.WorkingRows() )
+    if( nil != m.p_diff ) {
+      m.p_diff.Update1V( m )
+    } else {
+      m.p_fb.Find_Styles( m.topLine + m.WorkingRows() )
+      m.p_fb.Find_Regexs( m.topLine, m.WorkingRows() )
 
-    m.RepositionView()
-    m.PrintBorders()
-    m.PrintWorkingView()
-    m.PrintStsLine()
-    m.PrintFileLine()
-    m.PrintCmdLine()
+      m.RepositionView()
+      m.PrintBorders()
+      m.PrintWorkingView()
+      m.PrintStsLine()
+      m.PrintFileLine()
+      m.PrintCmdLine()
+    }
   }
 }
 
@@ -183,11 +201,10 @@ func (m *FileView) PrintWorkingView() {
     var col int = 0
     for i:=m.leftChar; i<LL && col<WC; i++ {
       var p_TS *tcell.Style = m.Get_Style( k, i )
-      var ru rune = m.p_fb.GetR( k, i )
+      var R rune = m.p_fb.GetR( k, i )
 
-    //m_console.SetR( G_ROW, G_COL, ru, p_TS )
       var G_COL = m.Col_Win_2_GL( col )
-      m.PrintWorkingView_Set( LL, G_ROW, G_COL, i, ru, p_TS )
+      m.PrintWorkingView_Set( LL, G_ROW, G_COL, i, R, p_TS )
       col++
     }
     for ; col<WC; col++ {
@@ -208,13 +225,13 @@ func (m *FileView) PrintWorkingView() {
   }
 }
 
-func (m *FileView) PrintWorkingView_Set( LL, G_ROW, G_COL, i int, ru rune, p_TS *tcell.Style ) {
+func (m *FileView) PrintWorkingView_Set( LL, G_ROW, G_COL, i int, R rune, p_TS *tcell.Style ) {
 
-  if( '\r' == ru && i==(LL-1) ) {
+  if( '\r' == R && i==(LL-1) ) {
     // For readability, display carriage return at end of line as a space
     m_console.SetR( G_ROW, G_COL, ' ', &TS_NORMAL )
   } else {
-    m_console.SetR( G_ROW, G_COL, ru, p_TS )
+    m_console.SetR( G_ROW, G_COL, R, p_TS )
   }
 }
 
@@ -898,7 +915,9 @@ func (m *FileView) GoToLine( user_line_num int ) {
   }
 }
 
-func (m *FileView) GoDown( num int ) {
+// GoDown Internal
+//
+func (m *FileView) GoDown_i( num int ) {
   var NUM_LINES int = m.p_fb.NumLines()
   var OCL       int = m.CrsLine()
 
@@ -911,7 +930,18 @@ func (m *FileView) GoDown( num int ) {
   }
 }
 
-func (m *FileView) GoUp( num int ) {
+func (m *FileView) GoDown( num int ) {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoDown( num )
+  } else {
+    m.GoDown_i( num )
+  }
+}
+
+// GoUp Internal
+//
+func (m *FileView) GoUp_i( num int ) {
   var NUM_LINES int = m.p_fb.NumLines()
   var OCL       int = m.CrsLine()
 
@@ -924,7 +954,16 @@ func (m *FileView) GoUp( num int ) {
   }
 }
 
-func (m *FileView) GoRight() {
+func (m *FileView) GoUp( num int ) {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoUp( num )
+  } else {
+    m.GoUp_i( num )
+  }
+}
+
+func (m *FileView) GoRight_i( num int ) {
   var NUM_LINES int = m.p_fb.NumLines()
 
   if 0<NUM_LINES {
@@ -943,7 +982,16 @@ func (m *FileView) GoRight() {
   }
 }
 
-func (m *FileView) GoLeft() {
+func (m *FileView) GoRight( num int ) {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoRight( num )
+  } else {
+    m.GoRight_i( num )
+  }
+}
+
+func (m *FileView) GoLeft_i( num int ) {
   var NUM_LINES int = m.p_fb.NumLines()
 
   var OCP int = m.CrsChar(); // Old cursor position
@@ -955,6 +1003,15 @@ func (m *FileView) GoLeft() {
     if( NCP < 0 ) { NCP = 0; }
 
     m.GoToCrsPos_Write( m.CrsLine(), NCP )
+  }
+}
+
+func (m *FileView) GoLeft( num int ) {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoLeft( num )
+  } else {
+    m.GoLeft_i( num )
   }
 }
 
@@ -2222,7 +2279,7 @@ func (m *FileView) Do_Star_GetNewPattern() string {
 }
 
 // Goto next pattern or goto next dir in buffer editor or do nothing
-func (m *FileView) Do_n() {
+func (m *FileView) Do_n_i() {
 
   if( 0 < len(m_vis.regex_str) ) {
     m.Do_n_Pattern()
@@ -2232,14 +2289,32 @@ func (m *FileView) Do_n() {
   }
 }
 
+func (m *FileView) Do_n() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_n()
+  } else {
+    m.Do_n_i()
+  }
+}
+
 // Goto previous pattern or goto previous dir in buffer editor or do nothing
-func (m *FileView) Do_N() {
+func (m *FileView) Do_N_i() {
 
   if( 0 < len(m_vis.regex_str) ) {
     m.Do_N_Pattern()
 
   } else if( m.p_fb == m_vis.GetFileBuf( m_BE_FILE ) ) {
     m.Do_N_PrevDir()
+  }
+}
+
+func (m *FileView) Do_N() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_N()
+  } else {
+    m.Do_N_i()
   }
 }
 
@@ -2894,8 +2969,8 @@ func (m *FileView) Do_visualMode() bool {
   for ; m.inVisualMode || m.inVisualBlock; {
     kr := m_key.In()
 
-    if       ( kr.R == 'l' ) { m.GoRight()
-    } else if( kr.R == 'h' ) { m.GoLeft()
+    if       ( kr.R == 'l' ) { m.GoRight(1)
+    } else if( kr.R == 'h' ) { m.GoLeft(1)
     } else if( kr.R == 'j' ) { m.GoDown(1)
     } else if( kr.R == 'k' ) { m.GoUp(1)
     } else if( kr.R == 'H' ) { m.GoToTopLineInView()

@@ -161,8 +161,6 @@ func (m *Vis) GoToNextWindow() {
     pV2_old.PrintBorders()
     pV2    .PrintBorders()
 
-  //Console::Update()
-
     pV2.PrintCursor()
   }
 }

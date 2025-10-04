@@ -38,6 +38,18 @@ var TS_RV_CONST     tcell.Style
 var TS_RV_CONTROL   tcell.Style
 var TS_RV_VARTYPE   tcell.Style
 var TS_RV_NONASCII  tcell.Style
+var TS_RV_VISUAL    tcell.Style
+
+var TS_DIFF_NORMAL    tcell.Style
+var TS_DIFF_DEL       tcell.Style
+var TS_DIFF_STAR      tcell.Style
+var TS_DIFF_STAR_IN_F tcell.Style
+var TS_DIFF_COMMENT   tcell.Style
+var TS_DIFF_DEFINE    tcell.Style
+var TS_DIFF_CONST     tcell.Style
+var TS_DIFF_CONTROL   tcell.Style
+var TS_DIFF_VARTYPE   tcell.Style
+var TS_DIFF_VISUAL    tcell.Style
 
 // Windows is limited to the following colors:
 //
@@ -85,11 +97,6 @@ func (m *Console) Cleanup() {
 
   m.screen.Fini()
 }
-
-//func (m *Console) Size() (int, int) {
-//func (m *Console) Get_Cols_Rows() (int, int) {
-//  return m.screen.Size()
-//}
 
 func (m *Console) Num_Cols() int {
 
@@ -256,15 +263,27 @@ func (m *Console) Set_Color_Scheme_1() {
   TS_VARTYPE   = TS_VARTYPE  .Background( tcell.ColorBlack ).Foreground( tcell.ColorLime ).Bold(true)
   TS_NONASCII  = TS_NONASCII .Background( tcell.ColorPurple).Foreground( tcell.ColorAqua ).Bold(true)
 
-  TS_RV_NORMAL    = TS_RV_NORMAL   .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlack ).Bold(true)
-  TS_RV_STAR      = TS_RV_STAR     .Background( tcell.ColorWhite ).Foreground( tcell.ColorRed   ).Bold(true)
-  TS_RV_STAR_IN_F = TS_RV_STAR_IN_F.Background( tcell.ColorWhite ).Foreground( tcell.ColorBlue  ).Bold(true)
+  TS_RV_NORMAL    = TS_RV_NORMAL   .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlack  ).Bold(true)
+  TS_RV_STAR      = TS_RV_STAR     .Background( tcell.ColorWhite ).Foreground( tcell.ColorRed    ).Bold(true)
+  TS_RV_STAR_IN_F = TS_RV_STAR_IN_F.Background( tcell.ColorWhite ).Foreground( tcell.ColorBlue   ).Bold(true)
   TS_RV_DEFINE    = TS_RV_DEFINE   .Background( tcell.ColorWhite ).Foreground( tcell.ColorPurple ).Bold(true)
-  TS_RV_COMMENT   = TS_RV_COMMENT  .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlue ).Bold(true)
-  TS_RV_CONST     = TS_RV_CONST    .Background( tcell.ColorWhite ).Foreground( tcell.ColorAqua ).Bold(true)
-  TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorWhite ).Foreground( tcell.ColorFuchsia ).Bold(true)
-  TS_RV_VARTYPE   = TS_RV_VARTYPE  .Background( tcell.ColorWhite ).Foreground( tcell.ColorLime  ).Bold(true)
-  TS_RV_NONASCII  = TS_RV_NONASCII .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue ).Bold(true)
+  TS_RV_COMMENT   = TS_RV_COMMENT  .Background( tcell.ColorWhite ).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_RV_CONST     = TS_RV_CONST    .Background( tcell.ColorWhite ).Foreground( tcell.ColorAqua   ).Bold(true)
+  TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorWhite ).Foreground( tcell.ColorFuchsia).Bold(true)
+  TS_RV_VARTYPE   = TS_RV_VARTYPE  .Background( tcell.ColorWhite ).Foreground( tcell.ColorLime   ).Bold(true)
+  TS_RV_NONASCII  = TS_RV_NONASCII .Background( tcell.ColorRed   ).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_RV_VISUAL    = TS_RV_VISUAL   .Background( tcell.ColorWhite ).Foreground( tcell.ColorRed    ).Bold(true)
+
+  TS_DIFF_NORMAL    = TS_DIFF_NORMAL   .Background( tcell.ColorBlue ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_DEL       = TS_DIFF_DEL      .Background( tcell.ColorRed  ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_STAR      = TS_DIFF_STAR     .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_DIFF_STAR_IN_F = TS_DIFF_STAR_IN_F.Background( tcell.ColorWhite).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_DIFF_COMMENT   = TS_DIFF_COMMENT  .Background( tcell.ColorBlue ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_DEFINE    = TS_DIFF_DEFINE   .Background( tcell.ColorBlue ).Foreground( tcell.ColorMaroon ).Bold(true)
+  TS_DIFF_CONST     = TS_DIFF_CONST    .Background( tcell.ColorBlue ).Foreground( tcell.ColorAqua   ).Bold(true)
+  TS_DIFF_CONTROL   = TS_DIFF_CONTROL  .Background( tcell.ColorBlue ).Foreground( tcell.ColorYellow ).Bold(true)
+  TS_DIFF_VARTYPE   = TS_DIFF_VARTYPE  .Background( tcell.ColorBlue ).Foreground( tcell.ColorGreen  ).Bold(true)
+  TS_DIFF_VISUAL    = TS_DIFF_VISUAL   .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue   ).Bold(true)
 }
 
 func (m *Console) Set_Color_Scheme_2() {
@@ -295,6 +314,18 @@ func (m *Console) Set_Color_Scheme_2() {
   TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorWhite ).Foreground( tcell.ColorFuchsia ).Bold(true)
   TS_RV_VARTYPE   = TS_RV_VARTYPE  .Background( tcell.ColorWhite ).Foreground( tcell.ColorLime  ).Bold(true)
   TS_RV_NONASCII  = TS_RV_NONASCII .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue ).Bold(true)
+  TS_RV_VISUAL    = TS_RV_VISUAL   .Background( tcell.ColorWhite ).Foreground( tcell.ColorRed    ).Bold(true)
+
+  TS_DIFF_NORMAL    = TS_DIFF_NORMAL   .Background( tcell.ColorBlue ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_DEL       = TS_DIFF_DEL      .Background( tcell.ColorRed  ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_STAR      = TS_DIFF_STAR     .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_DIFF_STAR_IN_F = TS_DIFF_STAR_IN_F.Background( tcell.ColorWhite).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_DIFF_COMMENT   = TS_DIFF_COMMENT  .Background( tcell.ColorBlue ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_DEFINE    = TS_DIFF_DEFINE   .Background( tcell.ColorBlue ).Foreground( tcell.ColorMaroon ).Bold(true)
+  TS_DIFF_CONST     = TS_DIFF_CONST    .Background( tcell.ColorBlue ).Foreground( tcell.ColorAqua   ).Bold(true)
+  TS_DIFF_CONTROL   = TS_DIFF_CONTROL  .Background( tcell.ColorBlue ).Foreground( tcell.ColorYellow ).Bold(true)
+  TS_DIFF_VARTYPE   = TS_DIFF_VARTYPE  .Background( tcell.ColorBlue ).Foreground( tcell.ColorGreen  ).Bold(true)
+  TS_DIFF_VISUAL    = TS_DIFF_VISUAL   .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue   ).Bold(true)
 }
 
 func (m *Console) Set_Color_Scheme_3() {
@@ -326,6 +357,17 @@ func (m *Console) Set_Color_Scheme_3() {
   TS_RV_CONTROL   = TS_RV_CONTROL  .Background( tcell.ColorFuchsia).Foreground( tcell.ColorWhite ).Bold(true)
   TS_RV_VARTYPE   = TS_RV_VARTYPE  .Background( tcell.ColorLime   ).Foreground( tcell.ColorWhite ).Bold(true)
   TS_RV_NONASCII  = TS_RV_NONASCII .Background( tcell.ColorBlue   ).Foreground( tcell.ColorRed   ).Bold(true)
+
+  TS_DIFF_NORMAL    = TS_DIFF_NORMAL   .Background( tcell.ColorBlue ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_DEL       = TS_DIFF_DEL      .Background( tcell.ColorRed  ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_STAR      = TS_DIFF_STAR     .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_DIFF_STAR_IN_F = TS_DIFF_STAR_IN_F.Background( tcell.ColorWhite).Foreground( tcell.ColorBlue   ).Bold(true)
+  TS_DIFF_COMMENT   = TS_DIFF_COMMENT  .Background( tcell.ColorBlue ).Foreground( tcell.ColorWhite  ).Bold(true)
+  TS_DIFF_DEFINE    = TS_DIFF_DEFINE   .Background( tcell.ColorBlue ).Foreground( tcell.ColorMaroon ).Bold(true)
+  TS_DIFF_CONST     = TS_DIFF_CONST    .Background( tcell.ColorBlue ).Foreground( tcell.ColorAqua   ).Bold(true)
+  TS_DIFF_CONTROL   = TS_DIFF_CONTROL  .Background( tcell.ColorBlue ).Foreground( tcell.ColorYellow ).Bold(true)
+  TS_DIFF_VARTYPE   = TS_DIFF_VARTYPE  .Background( tcell.ColorBlue ).Foreground( tcell.ColorGreen  ).Bold(true)
+  TS_DIFF_VISUAL    = TS_DIFF_VISUAL   .Background( tcell.ColorRed  ).Foreground( tcell.ColorBlue   ).Bold(true)
 }
 
 func (m *Console) Set_Color_Scheme_4() {
