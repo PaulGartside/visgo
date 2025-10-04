@@ -28,14 +28,18 @@ type FileView struct {
 
   un_saved_change_sts bool
   external_change_sts bool
-}
 
-type IsWord_Func func(rune)bool
+  p_diff *Diff
+}
 
 func (m *FileView) Init( file_buf *FileBuf ) {
   m.p_fb = file_buf
+  m.nRows = m_console.Num_Rows()
+  m.nCols = m_console.Num_Cols()
   m.tile_pos = TP_FULL
 }
+
+type IsWord_Func func(rune)bool
 
 func (m *FileView) X() int { return m.x; }
 func (m *FileView) Y() int { return m.y; }
@@ -151,15 +155,19 @@ func (m *FileView) Update_not_PrintCursor() {
 
   if( !m_key.RunningDot() ) {
 
-    m.p_fb.Find_Styles( m.topLine + m.WorkingRows() )
-    m.p_fb.Find_Regexs( m.topLine, m.WorkingRows() )
+    if( nil != m.p_diff ) {
+      m.p_diff.Update( m )
+    } else {
+      m.p_fb.Find_Styles( m.topLine + m.WorkingRows() )
+      m.p_fb.Find_Regexs( m.topLine, m.WorkingRows() )
 
-    m.RepositionView()
-    m.PrintBorders()
-    m.PrintWorkingView()
-    m.PrintStsLine()
-    m.PrintFileLine()
-    m.PrintCmdLine()
+      m.RepositionView()
+      m.PrintBorders()
+      m.PrintWorkingView()
+      m.PrintStsLine()
+      m.PrintFileLine()
+      m.PrintCmdLine()
+    }
   }
 }
 

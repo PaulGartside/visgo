@@ -43,7 +43,7 @@ type Vis struct {
 
   regex_str string
 
-  diff Diff
+//diffs []Diff
 }
 
 func (m *Vis) HaveFile( path string, p_file_index *int ) bool {
@@ -478,9 +478,10 @@ func (m *Vis) GoToBuffer( buf_idx int ) {
           m.file_hist[m.win].Remove( k )
         }
       }
-      // FIXME:
       var p_nv *FileView = m.CV(); // New FileView to display
       var p_pv *FileView = m.PV(); // FileView of previous file
+
+      p_nv.SetTilePos( m.PV().GetTilePos() )
 
       m.GoToBuffer_SetContext( buf_idx, p_nv, p_pv );
 
@@ -491,7 +492,7 @@ func (m *Vis) GoToBuffer( buf_idx int ) {
 
         p_nv.p_fb.Invalidate_Regexs()
       }
-      p_nv.SetTilePos( m.PV().GetTilePos() )
+    //p_nv.SetTilePos( m.PV().GetTilePos() )
       p_nv.Update_and_PrintCursor()
     }
   }
@@ -1010,6 +1011,117 @@ func ( m *Vis ) MoveToLine() {
   }
 }
 
+func ( m *Vis ) Diff_Files_Displayed() {
+
+  d_win := m.DoDiff_Find_Win_2_Diff(); // Diff win number
+  if( 0 <= d_win ) {
+    pv0 := m.GetView_Win( m.win )
+    pv1 := m.GetView_Win( d_win )
+    pfb0 := pv0.p_fb
+    pfb1 := pv1.p_fb
+
+    // New code in progress:
+    ok := true
+
+    if( (pfb0.is_dir && pfb1.is_dir) ||
+        (!pfb0.is_dir && !pfb1.is_dir) ) {
+
+      if( (pfb0.file_name != m_SHELL_BUF_NAME) &&
+          !FileExists( pfb0.path_name ) ) {
+        ok = false
+        m.Window_Message( fmt.Sprintf("\n%s does not exist\n\n", pfb0.file_name) )
+      }
+      if( (pfb1.file_name != m_SHELL_BUF_NAME) &&
+          !FileExists( pfb1.path_name ) ) {
+        ok = false
+        m.Window_Message( fmt.Sprintf("\n%s does not exist\n\n", pfb1.file_name) )
+      }
+    }
+    if( ok ) {
+      p_diff := new( Diff )
+    //m.diffs = append( m.diffs, *p_diff )
+      p_diff.Init( pv0, pv1 )
+      ok = p_diff.Run()
+      if( ok ) {
+        m.UpdateViews( false )
+      }
+    }
+  }
+}
+
+func ( m *Vis ) NoDiff() {
+
+  p_cv := m.CV()
+  p_diff := p_cv.p_diff
+  if( nil != p_diff ) {
+    pvS := p_diff.pvS
+    pvL := p_diff.pvL
+  //p_diff.NoDiff()
+    pvS.p_diff = nil
+    pvL.p_diff = nil
+
+    pvS.Update_not_PrintCursor()
+    pvL.Update_not_PrintCursor()
+
+    p_cv.PrintCursor();
+  }
+}
+
+func ( m *Vis ) DoDiff_Find_Win_2_Diff() int {
+
+  diff_win_num := -1; // Failure value
+
+  // Must have at least 2 buffers to do diff:
+  if( 2 <= m.num_wins ) {
+    p_v_c := m.GetView_Win( m.win );        // Current View
+    var tp_c Tile_Pos = p_v_c.GetTilePos(); // Current Tile_Pos
+
+    // tp_m = matching Tile_Pos to tp_c
+    var tp_m Tile_Pos = DoDiff_Find_Matching_Tile_Pos( tp_c )
+
+    if( TP_NONE != tp_m ) {
+      // See if one of the other views is in tp_m
+      for k:=0; -1 == diff_win_num && k<m.num_wins; k++ {
+        if( k != m.win ) {
+          v_k := m.GetView_Win( k )
+          if( tp_m == v_k.GetTilePos() ) {
+            diff_win_num = k
+          }
+        }
+      }
+    }
+  }
+  return diff_win_num
+}
+
+func DoDiff_Find_Matching_Tile_Pos( tp_c Tile_Pos ) Tile_Pos {
+
+  var tp_m Tile_Pos = TP_NONE // Matching tile pos
+
+  if       ( tp_c == TP_LEFT_HALF         ) { tp_m = TP_RITE_HALF
+  } else if( tp_c == TP_RITE_HALF         ) { tp_m = TP_LEFT_HALF
+  } else if( tp_c == TP_TOP__HALF         ) { tp_m = TP_BOT__HALF
+  } else if( tp_c == TP_BOT__HALF         ) { tp_m = TP_TOP__HALF
+  } else if( tp_c == TP_TOP__LEFT_QTR     ) { tp_m = TP_TOP__RITE_QTR
+  } else if( tp_c == TP_TOP__RITE_QTR     ) { tp_m = TP_TOP__LEFT_QTR
+  } else if( tp_c == TP_BOT__LEFT_QTR     ) { tp_m = TP_BOT__RITE_QTR
+  } else if( tp_c == TP_BOT__RITE_QTR     ) { tp_m = TP_BOT__LEFT_QTR
+  } else if( tp_c == TP_LEFT_QTR          ) { tp_m = TP_LEFT_CTR__QTR
+  } else if( tp_c == TP_LEFT_CTR__QTR     ) { tp_m = TP_LEFT_QTR
+  } else if( tp_c == TP_RITE_CTR__QTR     ) { tp_m = TP_RITE_QTR
+  } else if( tp_c == TP_RITE_QTR          ) { tp_m = TP_RITE_CTR__QTR
+  } else if( tp_c == TP_TOP__LEFT_8TH     ) { tp_m = TP_TOP__LEFT_CTR_8TH
+  } else if( tp_c == TP_TOP__LEFT_CTR_8TH ) { tp_m = TP_TOP__LEFT_8TH
+  } else if( tp_c == TP_TOP__RITE_CTR_8TH ) { tp_m = TP_TOP__RITE_8TH
+  } else if( tp_c == TP_TOP__RITE_8TH     ) { tp_m = TP_TOP__RITE_CTR_8TH
+  } else if( tp_c == TP_BOT__LEFT_8TH     ) { tp_m = TP_BOT__LEFT_CTR_8TH
+  } else if( tp_c == TP_BOT__LEFT_CTR_8TH ) { tp_m = TP_BOT__LEFT_8TH
+  } else if( tp_c == TP_BOT__RITE_CTR_8TH ) { tp_m = TP_BOT__RITE_8TH
+  } else if( tp_c == TP_BOT__RITE_8TH     ) { tp_m = TP_BOT__RITE_CTR_8TH
+  }
+  return tp_m
+}
+
 func ( m *Vis ) Handle_Colon_Cmd() {
 
   m_rbuf.RemoveSpaces()
@@ -1021,6 +1133,8 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     if       ( m_rbuf.EqualStr("q") )        { m.Quit()
     } else if( m_rbuf.EqualStr("qa") )       { m.QuitAll()
     } else if( m_rbuf.EqualStr("help") )     { m.Help()
+    } else if( m_rbuf.EqualStr("diff") )     { m.Diff_Files_Displayed()
+    } else if( m_rbuf.EqualStr("nodiff") )   { m.NoDiff()
     } else if( m_rbuf.EqualStr("n") )        { m.GoToNextBuffer()
     } else if( m_rbuf.EqualStr("re") )       { m.Refresh()
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
