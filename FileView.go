@@ -263,10 +263,10 @@ func (m *FileView) PrintStsLine() {
 
   fmt.Fprintf( &buf, "Pos=(%d,%d)  (%d%%, %d/%d)  Char=(",
                      CL+1, CC+1,
-                     percent, crsByte, m.p_fb.GetSize() )
+                     percent, crsByte, fileSize )
   if 0 < LL && CC < LL {
     var R rune = m.p_fb.GetR( CL, CC )
-    fmt.Fprintf( &buf, "%d,%c", R, rune(R) )
+    fmt.Fprintf( &buf, "%d,%c", R, R )
   }
   fmt.Fprintf( &buf, ")" )
 
@@ -1138,12 +1138,20 @@ func (m *FileView) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
 //m.sts_line_needs_update = true
 }
 
-func (m *FileView) GoToTopLineInView() {
+func (m *FileView) GoToTopLineInView_i() {
 
   m.GoToCrsPos_Write( m.topLine, m.CrsChar() )
 }
 
-func (m *FileView) GoToBotLineInView() {
+func (m *FileView) GoToTopLineInView() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToTopLineInView()
+  } else {
+    m.GoToTopLineInView_i()
+  }
+}
+
+func (m *FileView) GoToBotLineInView_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1154,7 +1162,15 @@ func (m *FileView) GoToBotLineInView() {
   m.GoToCrsPos_Write( bottom_line_in_view, m.CrsChar() )
 }
 
-func (m *FileView) GoToMidLineInView() {
+func (m *FileView) GoToBotLineInView() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToBotLineInView()
+  } else {
+    m.GoToBotLineInView_i()
+  }
+}
+
+func (m *FileView) GoToMidLineInView_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1168,7 +1184,15 @@ func (m *FileView) GoToMidLineInView() {
   m.GoToCrsPos_Write( NCL, 0 )
 }
 
-func (m *FileView) GoToEndOfLine() {
+func (m *FileView) GoToMidLineInView() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToMidLineInView()
+  } else {
+    m.GoToMidLineInView_i()
+  }
+}
+
+func (m *FileView) GoToEndOfLine_i() {
 
   if( 0<m.p_fb.NumLines() ) {
 
@@ -1190,7 +1214,15 @@ func (m *FileView) GoToEndOfLine() {
   }
 }
 
-func (m *FileView) GoToBegOfLine() {
+func (m *FileView) GoToEndOfLine() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfLine()
+  } else {
+    m.GoToEndOfLine_i()
+  }
+}
+
+func (m *FileView) GoToBegOfLine_i() {
 
   if( 0<m.p_fb.NumLines() ) {
     var OCL int = m.CrsLine(); // Old cursor line
@@ -1199,7 +1231,15 @@ func (m *FileView) GoToBegOfLine() {
   }
 }
 
-func (m *FileView) GoToEndOfNextLine() {
+func (m *FileView) GoToBegOfLine() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToBegOfLine()
+  } else {
+    m.GoToBegOfLine_i()
+  }
+}
+
+func (m *FileView) GoToEndOfNextLine_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1215,7 +1255,15 @@ func (m *FileView) GoToEndOfNextLine() {
   }
 }
 
-func (m *FileView) GoToEndOfFile() {
+func (m *FileView) GoToEndOfNextLine() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfNextLine()
+  } else {
+    m.GoToEndOfNextLine_i()
+  }
+}
+
+func (m *FileView) GoToEndOfFile_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1224,12 +1272,28 @@ func (m *FileView) GoToEndOfFile() {
   }
 }
 
-func (m *FileView) GoToTopOfFile() {
+func (m *FileView) GoToEndOfFile() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfFile()
+  } else {
+    m.GoToEndOfFile_i()
+  }
+}
+
+func (m *FileView) GoToTopOfFile_i() {
 
   m.GoToCrsPos_Write( 0, 0 )
 }
 
-func (m *FileView) GoToStartOfRow() {
+func (m *FileView) GoToTopOfFile() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToTopOfFile()
+  } else {
+    m.GoToTopOfFile_i()
+  }
+}
+
+func (m *FileView) GoToStartOfRow_i() {
 
   if( 0<m.p_fb.NumLines() ) {
     var OCL int = m.CrsLine(); // Old cursor line
@@ -1238,7 +1302,16 @@ func (m *FileView) GoToStartOfRow() {
   }
 }
 
-func (m *FileView) GoToEndOfRow() {
+func (m *FileView) GoToStartOfRow() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToStartOfRow()
+  } else {
+    m.GoToStartOfRow_i()
+  }
+}
+
+func (m *FileView) GoToEndOfRow_i() {
 
   if( 0 < m.p_fb.NumLines() ) {
     var OCL int = m.CrsLine(); // Old cursor line
@@ -1249,6 +1322,15 @@ func (m *FileView) GoToEndOfRow() {
 
       m.GoToCrsPos_Write( OCL, NCP )
     }
+  }
+}
+
+func (m *FileView) GoToEndOfRow() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfRow()
+  } else {
+    m.GoToEndOfRow_i()
   }
 }
 
@@ -1426,7 +1508,7 @@ func (m *FileView) GoToEndOfWord_GetPosition( ncp *CrsPos ) bool {
   return true
 }
 
-func (m *FileView) GoToNextWord() {
+func (m *FileView) GoToNextWord_i() {
 
   var ncp = CrsPos{ 0, 0 }
 
@@ -1436,7 +1518,16 @@ func (m *FileView) GoToNextWord() {
   }
 }
 
-func (m *FileView) GoToPrevWord() {
+func (m *FileView) GoToNextWord() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToNextWord()
+  } else {
+    m.GoToNextWord_i()
+  }
+}
+
+func (m *FileView) GoToPrevWord_i() {
 
   var ncp = CrsPos{ 0, 0 }
 
@@ -1446,7 +1537,16 @@ func (m *FileView) GoToPrevWord() {
   }
 }
 
-func (m *FileView) GoToEndOfWord() {
+func (m *FileView) GoToPrevWord() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToPrevWord()
+  } else {
+    m.GoToPrevWord_i()
+  }
+}
+
+func (m *FileView) GoToEndOfWord_i() {
 
   var ncp = CrsPos{ 0, 0 }
 
@@ -1456,7 +1556,16 @@ func (m *FileView) GoToEndOfWord() {
   }
 }
 
-func (m *FileView) GoToOppositeBracket() {
+func (m *FileView) GoToEndOfWord() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfWord()
+  } else {
+    m.GoToEndOfWord_i()
+  }
+}
+
+func (m *FileView) GoToOppositeBracket_i() {
 
   m.MoveInBounds_Line()
 
@@ -1485,6 +1594,15 @@ func (m *FileView) GoToOppositeBracket() {
       }
       m.GoToOppositeBracket_Backward( R, finish_rune )
     }
+  }
+}
+
+func (m *FileView) GoToOppositeBracket() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToOppositeBracket()
+  } else {
+    m.GoToOppositeBracket_i()
   }
 }
 
@@ -1549,7 +1667,7 @@ func (m *FileView) GoToOppositeBracket_Backward( ST_R, FN_R rune ) {
   }
 }
 
-func (m *FileView) GoToLeftSquigglyBracket() {
+func (m *FileView) GoToLeftSquigglyBracket_i() {
 
   m.MoveInBounds_Line()
 
@@ -1558,13 +1676,31 @@ func (m *FileView) GoToLeftSquigglyBracket() {
   m.GoToOppositeBracket_Backward( start_rune, finish_rune )
 }
 
-func (m *FileView) GoToRightSquigglyBracket() {
+func (m *FileView) GoToLeftSquigglyBracket() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToLeftSquigglyBracket()
+  } else {
+    m.GoToLeftSquigglyBracket_i()
+  }
+}
+
+func (m *FileView) GoToRightSquigglyBracket_i() {
 
   m.MoveInBounds_Line()
 
   var  start_rune rune = '{'
   var finish_rune rune = '}'
   m.GoToOppositeBracket_Forward( start_rune, finish_rune )
+}
+
+func (m *FileView) GoToRightSquigglyBracket() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToRightSquigglyBracket()
+  } else {
+    m.GoToRightSquigglyBracket_i()
+  }
 }
 
 // Cursor is moving forward
@@ -1650,7 +1786,7 @@ func (m *FileView) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
   }
 }
 
-func (m *FileView) PageDown() {
+func (m *FileView) PageDown_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1672,6 +1808,14 @@ func (m *FileView) PageDown() {
   }
 }
 
+func (m *FileView) PageDown() {
+  if( nil != m.p_diff ) {
+    m.p_diff.PageDown()
+  } else {
+    m.PageDown_i()
+  }
+}
+
 func (m *FileView) PageDown_v() {
 
   NUM_LINES := m.p_fb.NumLines()
@@ -1688,7 +1832,7 @@ func (m *FileView) PageDown_v() {
   }
 }
 
-func (m *FileView) PageUp() {
+func (m *FileView) PageUp_i() {
 
   // Dont scroll if we are at the top of the file:
   if( 0 < m.topLine ) {
@@ -1702,6 +1846,14 @@ func (m *FileView) PageUp() {
       m.topLine -= m.WorkingRows() - 1
     }
     m.Update_and_PrintCursor()
+  }
+}
+
+func (m *FileView) PageUp() {
+  if( nil != m.p_diff ) {
+    m.p_diff.PageUp()
+  } else {
+    m.PageUp_i()
   }
 }
 
@@ -1721,7 +1873,7 @@ func (m *FileView) PageUp_v() {
   }
 }
 
-func (m *FileView) MoveCurrLineToTop() {
+func (m *FileView) MoveCurrLineToTop_i() {
 
   if( 0 < m.crsRow ) {
     m.topLine += m.crsRow
@@ -1730,7 +1882,15 @@ func (m *FileView) MoveCurrLineToTop() {
   }
 }
 
-func (m *FileView) MoveCurrLineCenter() {
+func (m *FileView) MoveCurrLineToTop() {
+  if( nil != m.p_diff ) {
+    m.p_diff.MoveCurrLineToTop()
+  } else {
+    m.MoveCurrLineToTop_i()
+  }
+}
+
+func (m *FileView) MoveCurrLineCenter_i() {
 
   var center int = int( 0.5*float32(m.WorkingRows()) + 0.5 )
 
@@ -1752,7 +1912,15 @@ func (m *FileView) MoveCurrLineCenter() {
   }
 }
 
-func (m *FileView) MoveCurrLineToBottom() {
+func (m *FileView) MoveCurrLineCenter() {
+  if( nil != m.p_diff ) {
+    m.p_diff.MoveCurrLineCenter( true )
+  } else {
+    m.MoveCurrLineCenter_i()
+  }
+}
+
+func (m *FileView) MoveCurrLineToBottom_i() {
 
   if( 0 < m.topLine ) {
     var WR  int = m.WorkingRows()
@@ -1770,6 +1938,14 @@ func (m *FileView) MoveCurrLineToBottom() {
       m.topLine = 0
       m.Update_and_PrintCursor()
     }
+  }
+}
+
+func (m *FileView) MoveCurrLineToBottom() {
+  if( nil != m.p_diff ) {
+    m.p_diff.MoveCurrLineToBottom()
+  } else {
+    m.MoveCurrLineToBottom_i()
   }
 }
 
@@ -2148,18 +2324,16 @@ func (m *FileView) Do_x_range_post( st_line, st_char int ) {
   m.Undo_v()
 }
 
-func (m *FileView) Do_f( FAST_RUNE rune ) {
+func (m *FileView) Do_f_i( FAST_RUNE rune ) {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
-  if( 0< NUM_LINES ) {
-
-    var OCL int = m.CrsLine();           // Old cursor line
-    var LL  int = m.p_fb.LineLen( OCL ); // Line length
-    var OCP int = m.CrsChar();           // Old cursor position
+  if( 0 < NUM_LINES ) {
+    var OCL int = m.CrsLine()           // Old cursor line
+    var LL  int = m.p_fb.LineLen( OCL ) // Line length
+    var OCP int = m.CrsChar()           // Old cursor position
 
     if( OCP < LLM1(LL) ) {
-
       var NCP int = 0
       var found_rune bool = false
 
@@ -2176,6 +2350,15 @@ func (m *FileView) Do_f( FAST_RUNE rune ) {
         m.GoToCrsPos_Write( OCL, NCP )
       }
     }
+  }
+}
+
+func (m *FileView) Do_f( FAST_RUNE rune ) {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_f( FAST_RUNE )
+  } else {
+    m.Do_f_i( FAST_RUNE )
   }
 }
 
@@ -2969,25 +3152,25 @@ func (m *FileView) Do_visualMode() bool {
   for ; m.inVisualMode || m.inVisualBlock; {
     kr := m_key.In()
 
-    if       ( kr.R == 'l' ) { m.GoRight(1)
-    } else if( kr.R == 'h' ) { m.GoLeft(1)
-    } else if( kr.R == 'j' ) { m.GoDown(1)
-    } else if( kr.R == 'k' ) { m.GoUp(1)
-    } else if( kr.R == 'H' ) { m.GoToTopLineInView()
-    } else if( kr.R == 'L' ) { m.GoToBotLineInView()
-    } else if( kr.R == 'M' ) { m.GoToMidLineInView()
-    } else if( kr.R == 'n' ) { m.Do_n()
-    } else if( kr.R == 'N' ) { m.Do_N()
-    } else if( kr.R == '0' ) { m.GoToBegOfLine()
-    } else if( kr.R == '$' ) { m.GoToEndOfLine()
+    if       ( kr.R == 'l' ) { m.GoRight_i(1)
+    } else if( kr.R == 'h' ) { m.GoLeft_i(1)
+    } else if( kr.R == 'j' ) { m.GoDown_i(1)
+    } else if( kr.R == 'k' ) { m.GoUp_i(1)
+    } else if( kr.R == 'H' ) { m.GoToTopLineInView_i()
+    } else if( kr.R == 'L' ) { m.GoToBotLineInView_i()
+    } else if( kr.R == 'M' ) { m.GoToMidLineInView_i()
+    } else if( kr.R == 'n' ) { m.Do_n_i()
+    } else if( kr.R == 'N' ) { m.Do_N_i()
+    } else if( kr.R == '0' ) { m.GoToBegOfLine_i()
+    } else if( kr.R == '$' ) { m.GoToEndOfLine_i()
     } else if( kr.R == 'g' ) { m.Do_v_Handle_g()
-    } else if( kr.R == 'G' ) { m.GoToEndOfFile()
+    } else if( kr.R == 'G' ) { m.GoToEndOfFile_i()
     } else if( kr.R == 'F' ) { m.PageDown_v()
     } else if( kr.R == 'B' ) { m.PageUp_v()
-    } else if( kr.R == 'b' ) { m.GoToPrevWord()
-    } else if( kr.R == 'w' ) { m.GoToNextWord()
-    } else if( kr.R == 'e' ) { m.GoToEndOfWord()
-    } else if( kr.R == '%' ) { m.GoToOppositeBracket()
+    } else if( kr.R == 'b' ) { m.GoToPrevWord_i()
+    } else if( kr.R == 'w' ) { m.GoToNextWord_i()
+    } else if( kr.R == 'e' ) { m.GoToEndOfWord_i()
+    } else if( kr.R == '%' ) { m.GoToOppositeBracket_i()
     } else if( kr.R == 'z' ) { m_vis.Handle_z()
     } else if( kr.R == 'f' ) { m_vis.Handle_f()
     } else if( kr.R == ';' ) { m_vis.Handle_SemiColon()
@@ -3014,7 +3197,7 @@ func (m *FileView) Do_v_Handle_g() {
 
   if       ( kr.R == 'g' ) { m.GoToTopOfFile()
   } else if( kr.R == '0' ) { m.GoToStartOfRow()
-  } else if( kr.R == '$' ) { m.GoToEndOfRow()
+  } else if( kr.R == '$' ) { m.GoToEndOfRow_i()
   } else if( kr.R == 'f' ) { m.Do_v_Handle_gf()
   } else if( kr.R == 'p' ) { m.Do_v_Handle_gp()
   }

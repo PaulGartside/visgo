@@ -2,6 +2,7 @@
 package main
 
 import (
+  "bytes"
   "fmt"
   "github.com/gdamore/tcell/v2"
   "strings"
@@ -188,12 +189,12 @@ func (m *Diff) DiffType( pV *FileView, diff_line int ) Diff_Type {
 
 func (m *Diff) WorkingRows( pV *FileView ) int {
 
-  return pV.WinRows() -5
+  return pV.WinRows() - 5
 }
 
 func (m *Diff) WorkingCols( pV *FileView ) int {
 
-  return pV.WinCols() -2
+  return pV.WinCols() - 2
 }
 
 func (m *Diff) BotLine( pV *FileView ) int {
@@ -342,6 +343,8 @@ func (m *Diff) UpdateBV() {
     m_vis.CmdLineMessage( msg )
 
     m.printed_diff_ms = true
+  } else {
+    m.PrintCursor( m_vis.CV() )  // Put cursor into position.
   }
 }
 
@@ -586,6 +589,37 @@ func (m *Diff) PrintCursor( pV *FileView ) {
 }
 
 func (m *Diff) PrintStsLine( pV *FileView ) {
+
+  var p_DI_List *Vector[Diff_Info] = m.View_2_DI_List( pV )
+  pfb := pV.p_fb
+  CLd := m.CrsLine()                   // Line position diff
+  CLv := p_DI_List.Get( CLd ).line_num // Line position view
+  CC  := m.CrsChar()                   // Char position
+  LL := 0
+  if( 0 < m.NumLines() &&  0 < pfb.NumLines() ) {
+    LL = pfb.LineLen( CLv )
+  }
+  WC := m.WorkingCols( pV )
+
+  fileSize := pfb.GetSize()
+  crsByte  := pfb.GetCursorByte( CLv, CC )
+  percent := int(100*float64(crsByte)/float64(fileSize) + 0.5)
+
+ var buf bytes.Buffer
+
+  fmt.Fprintf( &buf, "Pos=(%d,%d)  (%d%%, %d/%d)  Char=(",
+                     CLv+1, CC+1,
+                     percent, crsByte, fileSize )
+  if 0 < LL && CC < LL {
+    var R rune = pfb.GetR( CLv, CC )
+    fmt.Fprintf( &buf, "%d,%c", R, R )
+  }
+  fmt.Fprintf( &buf, ")" )
+
+  for k:=buf.Len(); k<WC; k++ {
+    fmt.Fprintf( &buf, " " )
+  }
+  m_console.SetBuffer( pV.Sts__Line_Row(), pV.Col_Win_2_GL( 0 ), &buf, &TS_BORDER )
 }
 
 func (m *Diff) PrintCmdLine( pV *FileView ) {
@@ -675,6 +709,7 @@ func (m *Diff) Get_Style( pV *FileView, DL, VL, pos int ) *tcell.Style {
 }
 
 func (m *Diff) Do_i() {
+  // FIXME
 }
 
 func ( m *Diff ) GoDown( num int ) {
@@ -749,83 +784,286 @@ func (m *Diff) Do_N() {
 }
 
 func (m *Diff) Do_v() bool {
+  // FIXME
   return false
 }
 
 func (m *Diff) Do_V() bool {
+  // FIXME
   return false
 }
 
 func (m *Diff) Do_a() {
+  // FIXME
 }
 
 func (m *Diff) Do_A() {
+  // FIXME
 }
 
 func (m *Diff) Do_o() {
+  // FIXME
 }
 
 func (m *Diff) Do_O() {
+  // FIXME
 }
 
 func (m *Diff) Do_x() {
+  // FIXME
 }
 
 func (m *Diff) Do_s() {
+  // FIXME
 }
 
 func (m *Diff) Do_cw() {
+  // FIXME
 }
 
 func (m *Diff) Do_D() {
+  // FIXME
 }
 
 func (m *Diff) GoToTopLineInView() {
+
+  m.GoToCrsPos_Write( m.topLine, m.CrsChar() )
 }
 
 func (m *Diff) GoToBotLineInView() {
+
+  pV := m_vis.CV()
+
+  NUM_LINES := m.NumLines()
+
+  bottom_line_in_view := m.topLine + m.WorkingRows( pV )-1
+
+  bottom_line_in_view = Min_i( NUM_LINES-1, bottom_line_in_view )
+
+  m.GoToCrsPos_Write( bottom_line_in_view, m.CrsChar() )
 }
 
 func (m *Diff) GoToMidLineInView() {
+
+  pV := m_vis.CV()
+
+  NUM_LINES := m.NumLines()
+
+  // Default: Last line in file is not in view
+  crsLine := m.topLine + m.WorkingRows( pV )/2
+
+  if( NUM_LINES-1 < m.BotLine( pV ) ) {
+    // Last line in file above bottom of view
+    crsLine = m.topLine + (NUM_LINES-1 - m.topLine)/2
+  }
+  m.GoToCrsPos_Write( crsLine, 0 )
 }
 
 func (m *Diff) GoToBegOfLine() {
+
+  if( 0 < m.NumLines() ) {
+    CL := m.CrsLine() // Cursor line
+
+    m.GoToCrsPos_Write( CL, 0 )
+  }
 }
 
 func (m *Diff) GoToEndOfLine() {
+
+  if( 0 < m.NumLines() ) {
+    LL := m.LineLen()
+
+    OCL := m.CrsLine() // Old cursor line
+    NCP := LLM1(LL)
+
+    m.GoToCrsPos_Write( OCL, NCP );
+  }
 }
 
 func (m *Diff) GoToEndOfNextLine() {
+
+  NUM_LINES := m.NumLines() // Diff
+
+  if( 0<NUM_LINES ) {
+    OCL := m.CrsLine() // Old cursor diff line
+
+    if( OCL < (NUM_LINES-1) ) {
+      // Before last line, so can go down
+      pV  := m_vis.CV()
+      pfb := pV.p_fb
+      VL := m.ViewLine( pV, OCL+1 ) // View line
+      LL := pfb.LineLen( VL )
+
+      m.GoToCrsPos_Write( OCL+1, LLM1(LL) )
+    }
+  }
 }
 
 func (m *Diff) GoToEndOfFile() {
-}
 
-func (m *Diff) GoToPrevWord() {
+  NUM_LINES := m.NumLines()
+
+  if( 0<NUM_LINES ) {
+    m.GoToCrsPos_Write( NUM_LINES-1, 0 )
+  }
 }
 
 func (m *Diff) GoToNextWord() {
+
+  ncp := CrsPos{ 0, 0 }
+
+  if( m.GoToNextWord_GetPosition( &ncp ) ) {
+    m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
+  }
+}
+
+func (m *Diff) GoToPrevWord() {
+
+  ncp := CrsPos{ 0, 0 }
+
+  if( m.GoToPrevWord_GetPosition( &ncp ) ) {
+    m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
+  }
 }
 
 func (m *Diff) GoToEndOfWord() {
+
+  ncp := CrsPos{ 0, 0 }
+
+  if( m.GoToEndOfWord_GetPosition( &ncp ) ) {
+    m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
+  }
 }
 
 func (m *Diff) Do_f( FAST_RUNE rune ) {
+
+  NUM_LINES := m.NumLines()
+
+  if( 0 < NUM_LINES ) {
+    pV := m_vis.CV()
+    pfb := pV.p_fb
+
+    DL  := m.CrsLine()          // Diff line
+    VL  := m.ViewLine( pV, DL ) // View line
+    LL  := pfb.LineLen( VL )    // Line length
+    OCP := m.CrsChar()          // Old cursor position
+
+    if( OCP < LL-1 ) {
+      NCP := 0
+      found_rune := false
+      for p:=OCP+1; !found_rune && p<LL; p++ {
+        R := pfb.GetR( VL, p )
+
+        if( R == FAST_RUNE ) {
+          NCP = p
+          found_rune = true
+        }
+      }
+      if( found_rune ) {
+        m.GoToCrsPos_Write( DL, NCP )
+      }
+    }
+  }
 }
 
 func (m *Diff) GoToOppositeBracket() {
+
+  pV := m_vis.CV()
+
+  m.MoveInBounds_Line()
+
+  NUM_LINES := pV.p_fb.NumLines()
+  CL        := m.ViewLine( pV, m.CrsLine() ) //< View line
+  CC        := m.CrsChar()
+  LL        := m.LineLen()
+
+  if( 0 < NUM_LINES && 0 < LL ) {
+
+    R := pV.p_fb.GetR( CL, CC )
+
+    if( R=='{' || R=='[' || R=='(' ) {
+      var finish_rune rune = 0
+      if       ( R=='{' ) { finish_rune = '}'
+      } else if( R=='[' ) { finish_rune = ']'
+      } else if( R=='(' ) { finish_rune = ')'
+      } else              { ; // Un-handled case
+      }
+      m.GoToOppositeBracket_Forward( R, finish_rune )
+
+    } else if( R=='}' || R==']' || R==')' ) {
+      var finish_rune rune = 0
+      if       ( R=='}' ) { finish_rune = '{'
+      } else if( R==']' ) { finish_rune = '['
+      } else if( R==')' ) { finish_rune = '('
+      } else              { ; // Un-handled case
+      }
+      m.GoToOppositeBracket_Backward( R, finish_rune )
+    }
+  }
 }
 
 func (m *Diff) GoToLeftSquigglyBracket() {
+
+  m.MoveInBounds_Line()
+
+  var  start_char rune = '}'
+  var finish_char rune = '{'
+
+  m.GoToOppositeBracket_Backward( start_char, finish_char )
 }
 
 func (m *Diff) GoToRightSquigglyBracket() {
+
+  m.MoveInBounds_Line()
+
+  var  start_char rune = '{'
+  var finish_char rune = '}'
+
+  m.GoToOppositeBracket_Forward( start_char, finish_char )
 }
 
 func (m *Diff) PageDown() {
+
+  NUM_LINES := m.NumLines()
+  if( 0 < NUM_LINES ) {
+
+    pV := m_vis.CV()
+
+    // new diff top line:
+    newTopLine := m.topLine + m.WorkingRows( pV ) - 1
+    // Subtracting 1 above leaves one line in common between the 2 pages.
+
+    if( newTopLine < NUM_LINES ) {
+      m.crsCol = 0
+      m.topLine = newTopLine
+
+      // Dont let cursor go past the end of the file:
+      if( NUM_LINES <= m.CrsLine() ) {
+        // This line places the cursor at the top of the screen, which I prefer:
+        m.crsRow = 0
+      }
+      m.UpdateBV();
+    }
+  }
 }
 
 func (m *Diff) PageUp() {
+
+  // Dont scroll if we are at the top of the file:
+  if( 0 < m.topLine ) {
+    //Leave crsRow unchanged.
+    m.crsCol = 0
+
+    pV := m_vis.CV()
+
+    // Dont scroll past the top of the file:
+    if( m.topLine < m.WorkingRows( pV ) - 1 ) {
+      m.topLine = 0;
+    } else {
+      m.topLine -= m.WorkingRows( pV ) - 1
+    }
+    m.UpdateBV()
+  }
 }
 
 func (m *Diff) Do_Star_GetNewPattern() string {
@@ -833,60 +1071,142 @@ func (m *Diff) Do_Star_GetNewPattern() string {
 }
 
 func (m *Diff) GoToTopOfFile() {
+
+  m.GoToCrsPos_Write( 0, 0 )
 }
 
 func (m *Diff) GoToStartOfRow() {
+
+  if( 0 < m.NumLines() ) {
+    OCL := m.CrsLine() // Old cursor line
+
+    m.GoToCrsPos_Write( OCL, m.leftChar )
+  }
 }
 
 func (m *Diff) GoToEndOfRow() {
+
+  if( 0 < m.NumLines() ) {
+    pV  := m_vis.CV()
+    pfb := pV.p_fb
+
+    DL := m.CrsLine()          // Diff line
+    VL := m.ViewLine( pV, DL ) // View line
+
+    LL := pfb.LineLen( VL )
+    if( 0 < LL ) {
+      NCP := Min_i( LL-1, m.leftChar + m.WorkingCols( pV ) - 1 )
+
+      m.GoToCrsPos_Write( DL, NCP )
+    }
+  }
 }
 
 func (m *Diff) GoToFile() {
+  // FIXME
 }
 
 func (m *Diff) Do_dd() {
+  // FIXME
 }
 
 func (m *Diff) Do_dw() {
+  // FIXME
 }
 
 func (m *Diff) Do_yy() {
+  // FIXME
 }
 
 func (m *Diff) Do_yw() {
+  // FIXME
 }
 
 func (m *Diff) Do_p() {
+  // FIXME
 }
 
 func (m *Diff) Do_P() {
+  // FIXME
 }
 
 func (m *Diff) Do_r() {
+  // FIXME
 }
 
 func (m *Diff) Do_R() {
+  // FIXME
 }
 
 func (m *Diff) Do_J() {
+  // FIXME
 }
 
 func (m *Diff) Do_Tilda() {
+  // FIXME
 }
 
 func (m *Diff) Do_u() {
+  // FIXME
 }
 
 func (m *Diff) Do_U() {
+  // FIXME
 }
 
 func (m *Diff) MoveCurrLineToTop() {
+
+  if( 0<m.crsRow ) {
+    m.topLine += m.crsRow
+    m.crsRow = 0
+    m.UpdateBV()
+  }
 }
 
 func (m *Diff) MoveCurrLineCenter( write bool ) {
+
+  pV := m_vis.CV()
+
+  center := int(0.5*float64(m.WorkingRows(pV)) + 0.5)
+
+  OCL := m.CrsLine() // Old cursor line
+
+  if( 0 < OCL && OCL < center && 0 < m.topLine ) {
+    // Cursor line cannot be moved to center, but can be moved closer to center
+    // CrsLine(m) does not change:
+    m.crsRow += m.topLine
+    m.topLine = 0
+
+    if( write ) { m.UpdateBV() }
+
+  } else if( center < OCL && center != m.crsRow ) {
+    m.topLine += m.crsRow - center
+    m.crsRow = center
+
+    if( write ) { m.UpdateBV() }
+  }
 }
 
 func (m *Diff) MoveCurrLineToBottom() {
+
+  if( 0 < m.topLine ) {
+    pV := m_vis.CV()
+
+    WR  := m.WorkingRows( pV )
+    OCL := m.CrsLine() // Old cursor line
+
+    if( WR-1 <= OCL ) {
+      m.topLine -= WR - m.crsRow - 1
+      m.crsRow = WR-1
+      m.UpdateBV()
+    } else {
+      // Cursor line cannot be moved to bottom, but can be moved closer to bottom
+      // CrsLine(m) does not change:
+      m.crsRow += m.topLine
+      m.topLine = 0;
+      m.UpdateBV()
+    }
+  }
 }
 
 func (m *Diff) RunDiff( DA DiffArea ) {
@@ -1473,8 +1793,7 @@ func (m *Diff) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
       m.crsRow = NCL - m.topLine
       m.crsCol = NCP - m.leftChar
 
-      m.UpdateS(); m.UpdateL()
-      m_console.Show()
+      m.UpdateBV()
 
     } else if( m.inVisualMode ) {
       if( m.inVisualBlock ) { m.GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP )
@@ -1485,6 +1804,8 @@ func (m *Diff) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
       m.crsRow = NCL - m.topLine
       m.crsCol = NCP - m.leftChar
 
+      m.PrintStsLine( m.pvS )
+      m.PrintStsLine( m.pvL )
       m.PrintCursor( pV )  // Put cursor into position.
     }
   }
@@ -1608,7 +1929,7 @@ func (m *Diff) Do_n_Pattern() {
 
   if( 0 < NUM_LINES ) {
   //String msg("/");
-  //m.diff.Set_Cmd_Line_Msg( msg += m.vis.GetRegex() );
+  //m.diff.Set_Cmd_Line_Msg( msg += m_vis.GetRegex() );
 
     ncp := CrsPos{ 0, 0 } // Next cursor position
 
@@ -1626,7 +1947,7 @@ func (m *Diff) Do_N_Pattern() {
 
   if( 0 < NUM_LINES ) {
   //String msg("/");
-  //m.diff.Set_Cmd_Line_Msg( msg += m.vis.GetRegex() );
+  //m.diff.Set_Cmd_Line_Msg( msg += m_vis.GetRegex() );
 
     ncp := CrsPos{ 0, 0 } // Next cursor position
 
@@ -2081,5 +2402,251 @@ func (m *Diff) Do_N_Search_for_Diff_WhiteSpace( p_dl *int,
     }
   }
   return found_diff;
+}
+
+// Returns true if found next word, else false
+//
+func (m *Diff) GoToNextWord_GetPosition( ncp *CrsPos ) bool {
+
+  pV := m_vis.CV()
+
+  NUM_LINES := pV.p_fb.NumLines()
+  if( 0==NUM_LINES ) { return false }
+
+  found_space := false
+  found_word  := false
+
+  // Convert from diff line (CrsLine(m)), to view line:
+  OCL := m.ViewLine( pV, m.CrsLine() ) //< Old cursor view line
+  OCP := m.CrsChar()                   //< Old cursor position
+
+  var isWord IsWord_Func = IsWord_Ident
+
+  // Find white space, and then find non-white space
+  for vl:=OCL; (!found_space || !found_word) && vl<NUM_LINES; vl++ {
+    LL := pV.p_fb.LineLen( vl )
+    if( LL == 0 || OCL < vl ) {
+      found_space = true
+      // Once we have encountered a space, word is anything non-space.
+      // An empty line is considered to be a space.
+      isWord = NotSpace
+    }
+    START_C := 0; if( OCL==vl ) { START_C = OCP }
+
+    for p:=START_C; (!found_space || !found_word) && p<LL; p++ {
+      R := pV.p_fb.GetR( vl, p )
+
+      if( found_space  ) {
+        if( isWord( R ) ) { found_word = true }
+      } else {
+        if( !isWord( R ) ) { found_space = true }
+      }
+      // Once we have encountered a space, word is anything non-space
+      if( IsSpace( R ) ) { isWord = NotSpace }
+
+      if( found_space && found_word ) {
+        // Convert from view line back to diff line:
+        dl := m.DiffLine( pV, vl )
+
+        ncp.crsLine = dl
+        ncp.crsChar = p
+      }
+    }
+  }
+  return found_space && found_word
+}
+
+// Return true if new cursor position found, else false
+func (m *Diff) GoToPrevWord_GetPosition( ncp *CrsPos ) bool {
+
+  pV := m_vis.CV()
+
+  NUM_LINES := pV.p_fb.NumLines()
+  if( 0==NUM_LINES ) { return false }
+
+  // Convert from diff line (CrsLine(m)), to view line:
+  OCL := m.ViewLine( pV, m.CrsLine() )
+  LL  := pV.p_fb.LineLen( OCL )
+
+  if( LL < m.CrsChar() ) { // Since cursor is now allowed past EOL,
+                           // it may need to be moved back:
+    if( 0 < LL && !IsSpace( pV.p_fb.GetR( OCL, LL-1 ) ) ) {
+      // Backed up to non-white space, which is previous word, so return true
+      // Convert from view line back to diff line:
+      ncp.crsLine = m.CrsLine() //< diff line
+      ncp.crsChar = LL-1
+      return true
+    } else {
+      m.GoToCrsPos_NoWrite( m.CrsLine(), LLM1( LL ) )
+    }
+  }
+  found_space := false
+  found_word  := false
+  OCP := m.CrsChar() // Old cursor position
+
+  var isWord IsWord_Func = NotSpace
+
+  // Find word to non-word transition
+  for vl:=OCL; (!found_space || !found_word) && -1<vl; vl-- {
+    LL := pV.p_fb.LineLen( vl )
+    if( LL==0 || vl<OCL ) {
+      // Once we have encountered a space, word is anything non-space.
+      // An empty line is considered to be a space.
+      isWord = NotSpace
+    }
+    START_C := LL-1; if( OCL==vl ) { START_C = OCP-1 }
+
+    for p:=START_C; (!found_space || !found_word) && -1<p; p-- {
+      R := pV.p_fb.GetR( vl, p)
+
+      if( found_word  ) {
+        if( !isWord( R ) || p==0 ) { found_space = true }
+      } else {
+        if( isWord( R ) ) {
+          found_word = true
+          if( 0==p ) { found_space = true }
+        }
+      }
+      // Once we have encountered a space, word is anything non-space
+      if( IsIdent( R ) ) { isWord = IsWord_Ident }
+
+      if( found_space && found_word ) {
+        // Convert from view line back to diff line:
+        dl := m.DiffLine( pV, vl )
+
+        ncp.crsLine = dl
+        ncp.crsChar = p
+      }
+    }
+    if( found_space && found_word ) {
+      if( 0 < ncp.crsChar && ncp.crsChar < LL-1 ) { ncp.crsChar++ }
+    }
+  }
+  return found_space && found_word;
+}
+
+// Returns true if found end of word, else false
+// 1. If at end of word, or end of non-word, move to next char
+// 2. If on white space, skip past white space
+// 3. If on word, go to end of word
+// 4. If on non-white-non-word, go to end of non-white-non-word
+func (m *Diff) GoToEndOfWord_GetPosition( ncp *CrsPos ) bool {
+
+  pV := m_vis.CV()
+  pfb := pV.p_fb
+
+  NUM_LINES := pfb.NumLines()
+  if( 0==NUM_LINES ) { return false }
+
+  // Convert from diff line (CrsLine(m)), to view line:
+  CL := m.ViewLine( pV, m.CrsLine() )
+  LL := pfb.LineLen( CL )
+  CP := m.CrsChar() // Cursor position
+
+  // At end of line, or line too short:
+  if( (LL-1) <= CP || LL < 2 ) { return false }
+
+  CR := pfb.GetR( CL, CP )   // Current rune
+  NR := pfb.GetR( CL, CP+1 ) // Next rune
+
+  // 1. If at end of word, or end of non-word, move to next char
+  if( (IsWord_Ident   ( CR ) && !IsWord_Ident   ( NR )) ||
+      (IsWord_NonIdent( CR ) && !IsWord_NonIdent( NR )) ) {
+    CP++
+  }
+  // 2. If on white space, skip past white space
+  if( IsSpace( pfb.GetR(CL, CP) ) ) {
+    for ; CP<LL && IsSpace( pfb.GetR(CL, CP) ); CP++ {;}
+    if( LL <= CP ) { return false } // Did not find non-white space
+  }
+  // At this point (CL,CP) should be non-white space
+  CR = pfb.GetR( CL, CP )  // Current char
+
+  ncp.crsLine = m.CrsLine() // Diff line
+
+  if( IsWord_Ident( CR ) ) { // On identity
+    // 3. If on word space, go to end of word space
+    for ; CP<LL && IsWord_Ident( pfb.GetR(CL, CP) ); CP++ {
+      ncp.crsChar = CP
+    }
+  } else if( IsWord_NonIdent( CR ) ) { // On Non-identity, non-white space
+    // 4. If on non-white-non-word, go to end of non-white-non-word
+    for ; CP<LL && IsWord_NonIdent( pfb.GetR(CL, CP) ); CP++ {
+      ncp.crsChar = CP
+    }
+  } else { // Should never get here:
+    return false
+  }
+  return true
+}
+
+func (m *Diff)  GoToOppositeBracket_Forward( ST_R, FN_R rune ) {
+
+  pV := m_vis.CV()
+
+  NUM_LINES := pV.p_fb.NumLines()
+
+  // Convert from diff line (CrsLine(m)), to view line:
+  CL := m.ViewLine( pV, m.CrsLine() )
+  CC := m.CrsChar()
+
+  // Search forward
+  level := 0
+  found := false
+
+  for vl:=CL; !found && vl<NUM_LINES; vl++ {
+    LL := pV.p_fb.LineLen( vl )
+
+    p := 0; if( CL==vl ) { p = CC+1 }
+
+    for ; !found && p<LL; p++ {
+      R := pV.p_fb.GetR( vl, p )
+      if       ( R==ST_R ) { level++;
+      } else if( R==FN_R ) {
+        if( 0 < level ) { level--
+        } else {
+          found = true
+          // Convert from view line back to diff line:
+          dl := m.DiffLine(pV, vl)
+
+          m.GoToCrsPos_Write( dl, p )
+        }
+      }
+    }
+  }
+}
+
+func (m *Diff) GoToOppositeBracket_Backward( ST_R, FN_R rune ) {
+
+  pV := m_vis.CV()
+
+  // Convert from diff line (CrsLine(m)), to view line:
+  CL := m.ViewLine( pV, m.CrsLine() )
+  CC := m.CrsChar()
+
+  // Search backward
+  level := 0
+  found := false
+
+  for vl:=CL; !found && 0<=vl; vl-- {
+    LL := pV.p_fb.LineLen( vl )
+
+    p := LL-1; if( CL==vl ) { p = CC-1 }
+    for ; !found && 0<=p; p-- {
+      R := pV.p_fb.GetR( vl, p )
+
+      if       ( R==ST_R ) { level++
+      } else if( R==FN_R ) {
+        if( 0 < level ) { level--
+        } else {
+          found = true
+          // Convert from view line back to dif line:
+          dl := m.DiffLine(pV, vl)
+
+          m.GoToCrsPos_Write( dl, p )
+        }
+      }
+    }
+  }
 }
 
