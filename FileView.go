@@ -263,10 +263,10 @@ func (m *FileView) PrintStsLine() {
 
   fmt.Fprintf( &buf, "Pos=(%d,%d)  (%d%%, %d/%d)  Char=(",
                      CL+1, CC+1,
-                     percent, crsByte, m.p_fb.GetSize() )
+                     percent, crsByte, fileSize )
   if 0 < LL && CC < LL {
     var R rune = m.p_fb.GetR( CL, CC )
-    fmt.Fprintf( &buf, "%d,%c", R, rune(R) )
+    fmt.Fprintf( &buf, "%d,%c", R, R )
   }
   fmt.Fprintf( &buf, ")" )
 
@@ -1138,12 +1138,20 @@ func (m *FileView) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
 //m.sts_line_needs_update = true
 }
 
-func (m *FileView) GoToTopLineInView() {
+func (m *FileView) GoToTopLineInView_i() {
 
   m.GoToCrsPos_Write( m.topLine, m.CrsChar() )
 }
 
-func (m *FileView) GoToBotLineInView() {
+func (m *FileView) GoToTopLineInView() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToTopLineInView()
+  } else {
+    m.GoToTopLineInView_i()
+  }
+}
+
+func (m *FileView) GoToBotLineInView_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1154,7 +1162,15 @@ func (m *FileView) GoToBotLineInView() {
   m.GoToCrsPos_Write( bottom_line_in_view, m.CrsChar() )
 }
 
-func (m *FileView) GoToMidLineInView() {
+func (m *FileView) GoToBotLineInView() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToBotLineInView()
+  } else {
+    m.GoToBotLineInView_i()
+  }
+}
+
+func (m *FileView) GoToMidLineInView_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1168,7 +1184,15 @@ func (m *FileView) GoToMidLineInView() {
   m.GoToCrsPos_Write( NCL, 0 )
 }
 
-func (m *FileView) GoToEndOfLine() {
+func (m *FileView) GoToMidLineInView() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToMidLineInView()
+  } else {
+    m.GoToMidLineInView_i()
+  }
+}
+
+func (m *FileView) GoToEndOfLine_i() {
 
   if( 0<m.p_fb.NumLines() ) {
 
@@ -1190,7 +1214,15 @@ func (m *FileView) GoToEndOfLine() {
   }
 }
 
-func (m *FileView) GoToBegOfLine() {
+func (m *FileView) GoToEndOfLine() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfLine()
+  } else {
+    m.GoToEndOfLine_i()
+  }
+}
+
+func (m *FileView) GoToBegOfLine_i() {
 
   if( 0<m.p_fb.NumLines() ) {
     var OCL int = m.CrsLine(); // Old cursor line
@@ -1199,7 +1231,15 @@ func (m *FileView) GoToBegOfLine() {
   }
 }
 
-func (m *FileView) GoToEndOfNextLine() {
+func (m *FileView) GoToBegOfLine() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToBegOfLine()
+  } else {
+    m.GoToBegOfLine_i()
+  }
+}
+
+func (m *FileView) GoToEndOfNextLine_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1215,7 +1255,15 @@ func (m *FileView) GoToEndOfNextLine() {
   }
 }
 
-func (m *FileView) GoToEndOfFile() {
+func (m *FileView) GoToEndOfNextLine() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfNextLine()
+  } else {
+    m.GoToEndOfNextLine_i()
+  }
+}
+
+func (m *FileView) GoToEndOfFile_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1224,9 +1272,25 @@ func (m *FileView) GoToEndOfFile() {
   }
 }
 
-func (m *FileView) GoToTopOfFile() {
+func (m *FileView) GoToEndOfFile() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToEndOfFile()
+  } else {
+    m.GoToEndOfFile_i()
+  }
+}
+
+func (m *FileView) GoToTopOfFile_i() {
 
   m.GoToCrsPos_Write( 0, 0 )
+}
+
+func (m *FileView) GoToTopOfFile() {
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToTopOfFile()
+  } else {
+    m.GoToTopOfFile_i()
+  }
 }
 
 func (m *FileView) GoToStartOfRow() {
@@ -1426,7 +1490,7 @@ func (m *FileView) GoToEndOfWord_GetPosition( ncp *CrsPos ) bool {
   return true
 }
 
-func (m *FileView) GoToNextWord() {
+func (m *FileView) GoToNextWord_i() {
 
   var ncp = CrsPos{ 0, 0 }
 
@@ -1436,13 +1500,31 @@ func (m *FileView) GoToNextWord() {
   }
 }
 
-func (m *FileView) GoToPrevWord() {
+func (m *FileView) GoToNextWord() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToNextWord()
+  } else {
+    m.GoToNextWord_i()
+  }
+}
+
+func (m *FileView) GoToPrevWord_i() {
 
   var ncp = CrsPos{ 0, 0 }
 
   if( m.GoToPrevWord_GetPosition( &ncp ) ) {
 
     m.GoToCrsPos_Write( ncp.crsLine, ncp.crsChar )
+  }
+}
+
+func (m *FileView) GoToPrevWord() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToPrevWord()
+  } else {
+    m.GoToPrevWord_i()
   }
 }
 
@@ -1650,7 +1732,7 @@ func (m *FileView) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
   }
 }
 
-func (m *FileView) PageDown() {
+func (m *FileView) PageDown_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
 
@@ -1672,6 +1754,14 @@ func (m *FileView) PageDown() {
   }
 }
 
+func (m *FileView) PageDown() {
+  if( nil != m.p_diff ) {
+    m.p_diff.PageDown()
+  } else {
+    m.PageDown_i()
+  }
+}
+
 func (m *FileView) PageDown_v() {
 
   NUM_LINES := m.p_fb.NumLines()
@@ -1688,7 +1778,7 @@ func (m *FileView) PageDown_v() {
   }
 }
 
-func (m *FileView) PageUp() {
+func (m *FileView) PageUp_i() {
 
   // Dont scroll if we are at the top of the file:
   if( 0 < m.topLine ) {
@@ -1702,6 +1792,14 @@ func (m *FileView) PageUp() {
       m.topLine -= m.WorkingRows() - 1
     }
     m.Update_and_PrintCursor()
+  }
+}
+
+func (m *FileView) PageUp() {
+  if( nil != m.p_diff ) {
+    m.p_diff.PageUp()
+  } else {
+    m.PageUp_i()
   }
 }
 
@@ -1721,7 +1819,7 @@ func (m *FileView) PageUp_v() {
   }
 }
 
-func (m *FileView) MoveCurrLineToTop() {
+func (m *FileView) MoveCurrLineToTop_i() {
 
   if( 0 < m.crsRow ) {
     m.topLine += m.crsRow
@@ -1730,7 +1828,15 @@ func (m *FileView) MoveCurrLineToTop() {
   }
 }
 
-func (m *FileView) MoveCurrLineCenter() {
+func (m *FileView) MoveCurrLineToTop() {
+  if( nil != m.p_diff ) {
+    m.p_diff.MoveCurrLineToTop()
+  } else {
+    m.MoveCurrLineToTop_i()
+  }
+}
+
+func (m *FileView) MoveCurrLineCenter_i() {
 
   var center int = int( 0.5*float32(m.WorkingRows()) + 0.5 )
 
@@ -1752,7 +1858,15 @@ func (m *FileView) MoveCurrLineCenter() {
   }
 }
 
-func (m *FileView) MoveCurrLineToBottom() {
+func (m *FileView) MoveCurrLineCenter() {
+  if( nil != m.p_diff ) {
+    m.p_diff.MoveCurrLineCenter( true )
+  } else {
+    m.MoveCurrLineCenter_i()
+  }
+}
+
+func (m *FileView) MoveCurrLineToBottom_i() {
 
   if( 0 < m.topLine ) {
     var WR  int = m.WorkingRows()
@@ -1770,6 +1884,14 @@ func (m *FileView) MoveCurrLineToBottom() {
       m.topLine = 0
       m.Update_and_PrintCursor()
     }
+  }
+}
+
+func (m *FileView) MoveCurrLineToBottom() {
+  if( nil != m.p_diff ) {
+    m.p_diff.MoveCurrLineToBottom()
+  } else {
+    m.MoveCurrLineToBottom_i()
   }
 }
 
