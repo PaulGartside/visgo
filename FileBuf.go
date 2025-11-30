@@ -167,6 +167,20 @@ func (m *FileBuf) Find_File_Type_Go() bool {
   return false
 }
 
+func (m *FileBuf) Find_File_Type_IDL() bool {
+
+  if( strings.HasSuffix(m.path_name, ".idl") ||
+      strings.HasSuffix(m.path_name, ".idl.new") ||
+      strings.HasSuffix(m.path_name, ".idl.old") ) {
+
+    m.file_type = FT_IDL
+    m.Hi = new( Highlight_IDL )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
 func (m *FileBuf) Find_File_Type_SQL() bool {
 
   if( strings.HasSuffix(m.path_name, ".sql") ||
@@ -205,6 +219,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
   } else if( m.Find_File_Type_Bash() ||
              m.Find_File_Type_CPP() ||
              m.Find_File_Type_Go() ||
+             m.Find_File_Type_IDL() ||
              m.Find_File_Type_SQL() ||
              m.Find_File_Type_XML() ) {
     // File type found
@@ -1434,6 +1449,10 @@ func (m *FileBuf) Set_File_Type( syn string ) {
     } else if( syn == "go" ) {
       m.file_type = FT_GO
       m.Hi = new( Highlight_Go )
+
+    } else if( syn == "idl" ) {
+      m.file_type = FT_IDL
+      m.Hi = new( Highlight_IDL )
 
     } else if( syn == "sql" ) {
       m.file_type = FT_SQL
