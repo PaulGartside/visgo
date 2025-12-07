@@ -2690,7 +2690,7 @@ func (m *Diff) GoToFile() {
 
   var fname_vec Vector[rune]
   if( m.GetFileName_UnderCursor( &fname_vec ) ) {
-    fname := string( fname_vec.vals )
+    fname := string( fname_vec.data )
     did_diff := false
     // Special case, look at two files in diff mode:
     cV := m.View_C( pV ) // Current view

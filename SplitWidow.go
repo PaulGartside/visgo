@@ -25,7 +25,7 @@ func (m *Vis) VSplitWindow() {
         cv_tp == TP_BOT__RITE_QTR ) ) {
     // New window will be m.num_wins.
     // Duplicate file hist of current window into new window.
-    m.file_hist[m.num_wins].CopyP( &m.file_hist[m.win] )
+    m.file_hist[m.num_wins].Copy( m.file_hist[m.win] )
 
     // Copy current view context into new view
     var p_nv *FileView = m.GetView_Win( m.num_wins )
@@ -68,7 +68,7 @@ func (m *Vis) VSplitWindow() {
   } else if( m.num_wins+1 < MAX_WINS &&
              ( cv_tp == TP_LEFT_TWO_THIRDS ||
                cv_tp == TP_RITE_TWO_THIRDS ) ) {
-    m.file_hist[m.num_wins].CopyP( &m.file_hist[m.win] )
+    m.file_hist[m.num_wins].Copy( m.file_hist[m.win] )
 
     // Copy current view context into new view
     var p_nv *FileView = m.GetView_Win( m.num_wins )
@@ -108,7 +108,7 @@ func (m *Vis) HSplitWindow() {
         cv_tp == TP_RITE_CTR__QTR ) ) {
     // New window will be m.num_wins.
     // Duplicate file hist of current window into new window.
-    m.file_hist[m.num_wins].CopyP( &m.file_hist[m.win] )
+    m.file_hist[m.num_wins].Copy( m.file_hist[m.win] )
 
     // Copy current view context into new view
     var p_nv *FileView = m.GetView_Win( m.num_wins )
