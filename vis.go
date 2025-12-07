@@ -272,12 +272,11 @@ func (m *Vis) GoToPrevBuffer() {
   } else {
     var went_back_to_prev_dir_diff bool = false
 
-  //if( m.CV().in_diff_mode )
-  //{
-  //  went_back_to_prev_dir_diff = WentBackToPrevDirDiff(m)
-  //
-  //  if( !went_back_to_prev_dir_diff ) NoDiff_CV(m)
-  //}
+    if( m.CV().p_diff != nil ) {
+      went_back_to_prev_dir_diff = m.WentBackToPrevDirDiff()
+
+      if( !went_back_to_prev_dir_diff ) { m.NoDiff_CV() }
+    }
     if( !went_back_to_prev_dir_diff ) {
 
     //var pV_old *FileView = m.CV()
@@ -299,6 +298,95 @@ func (m *Vis) GoToPrevBuffer() {
       m.CV().Update_and_PrintCursor()
     }
   }
+}
+
+//func (m *Vis) WentBackToPrevDirDiff() bool {
+//  went_back := false
+//  pV := m.CV()
+//
+//  var pDiff_vS *FileView = pV.p_diff.pvS
+//  var pDiff_vL *FileView = pV.p_diff.pvL
+//
+//  var cV *FileView = pDiff_vL; if( pV == pDiff_vS ) { cV = pDiff_vS } // Current view
+//  var oV *FileView = pDiff_vS; if( pV == pDiff_vS ) { oV = pDiff_vL } // Other   view
+//
+//  // Get m_win for cV and oV
+//  c_win := m.GetWinNum_Of_View( cV )
+//  o_win := m.GetWinNum_Of_View( oV )
+//  var cV_prev *FileView = m.GetView_WinPrev( c_win, 1 )
+//  var oV_prev *FileView = m.GetView_WinPrev( o_win, 1 )
+//
+//  if( nil != cV_prev && cV_prev.p_fb.is_dir &&
+//      nil != oV_prev && oV_prev.p_fb.is_dir ) {
+//    var l_cV_prev *FLine = cV_prev.p_fb.GetLP( cV_prev.CrsLine() )
+//    var l_oV_prev *FLine = oV_prev.p_fb.GetLP( oV_prev.CrsLine() )
+//
+//    if( 0 == l_cV_prev.Compare( l_oV_prev ) ) {
+//      // Previous file one both sides were directories, and cursor was
+//      // on same file name on both sides, so go back to previous diff:
+//      c_file_idx := 0
+//      o_file_idx := 0
+//
+//      if( m.FName_2_FNum( cV_prev.p_fb.path_name, &c_file_idx ) &&
+//          m.FName_2_FNum( oV_prev.p_fb.path_name, &o_file_idx ) ) {
+//        // Move view indexes at front to back of m.file_hist
+//        c_view_index_old := m.file_hist[ c_win ].Remove( 0 )
+//        o_view_index_old := m.file_hist[ o_win ].Remove( 0 )
+//        m.file_hist[ c_win ].Push( c_view_index_old )
+//        m.file_hist[ o_win ].Push( o_view_index_old )
+//
+//        p_diff := new( Diff )
+//        p_diff.Init( cV_prev, oV_prev )
+//        went_back = p_diff.Run()
+//        if( went_back ) {
+//          p_diff.UpdateBV()
+//        }
+//      }
+//    }
+//  }
+//  return went_back
+//}
+
+func (m *Vis) WentBackToPrevDirDiff() bool {
+  went_back := false
+  pV := m.CV()
+
+  var pDiff_vS *FileView = pV.p_diff.pvS
+  var pDiff_vL *FileView = pV.p_diff.pvL
+
+  var cV *FileView = pDiff_vL; if( pV == pDiff_vS ) { cV = pDiff_vS } // Current view
+  var oV *FileView = pDiff_vS; if( pV == pDiff_vS ) { oV = pDiff_vL } // Other   view
+
+  // Get m_win for cV and oV
+  c_win := m.GetWinNum_Of_View( cV )
+  o_win := m.GetWinNum_Of_View( oV )
+  var cV_prev *FileView = m.GetView_WinPrev( c_win, 1 )
+  var oV_prev *FileView = m.GetView_WinPrev( o_win, 1 )
+
+  if( nil != cV_prev && cV_prev.p_fb.is_dir &&
+      nil != oV_prev && oV_prev.p_fb.is_dir ) {
+    var l_cV_prev *FLine = cV_prev.p_fb.GetLP( cV_prev.CrsLine() )
+    var l_oV_prev *FLine = oV_prev.p_fb.GetLP( oV_prev.CrsLine() )
+
+    if( 0 == l_cV_prev.Compare( l_oV_prev ) ) {
+      // Previous file one both sides were directories, and cursor was
+      // on same file name on both sides, so go back to previous diff:
+
+      // Move view indexes at front to back of m.file_hist
+      c_view_index_old := m.file_hist[ c_win ].Remove( 0 )
+      o_view_index_old := m.file_hist[ o_win ].Remove( 0 )
+      m.file_hist[ c_win ].Push( c_view_index_old )
+      m.file_hist[ o_win ].Push( o_view_index_old )
+
+      p_diff := new( Diff )
+      p_diff.Init( cV_prev, oV_prev )
+      went_back = p_diff.Run()
+      if( went_back ) {
+        p_diff.UpdateBV()
+      }
+    }
+  }
+  return went_back
 }
 
 func (m *Vis) GoToPoundBuffer() {
@@ -345,7 +433,9 @@ func (m *Vis) GoToMsgBuffer() {
 }
 
 func (m *Vis) NoDiff_CV() {
-  // FIXME
+
+  m.CV().NoDiff()
+  // FIXME: Might need a views update here
 }
 
 func (m *Vis) GetFullFileNameRelative2CurrFile( fname string ) (string, bool) {
@@ -1039,7 +1129,6 @@ func ( m *Vis ) Diff_Files_Displayed() {
     }
     if( ok ) {
       p_diff := new( Diff )
-    //m.diffs = append( m.diffs, *p_diff )
       p_diff.Init( pv0, pv1 )
       ok = p_diff.Run()
       if( ok ) {
@@ -1124,6 +1213,53 @@ func DoDiff_Find_Matching_Tile_Pos( tp_c Tile_Pos ) Tile_Pos {
   } else if( tp_c == TP_BOT__RITE_8TH     ) { tp_m = TP_BOT__RITE_CTR_8TH
   }
   return tp_m
+}
+
+// Given view of currently displayed on this side and other side,
+// and file indexes of files to diff on this side and other side,
+// perform diff of files identified by the file indexes.
+// vc_t - View of currently displayed file on this  side
+// vc_o - View of currently displayed file on other side
+// idx_n_file_t - Index of new file to diff on this side
+// idx_n_file_o - Index of new file to diff on other side
+func (m *Vis) Diff_By_File_Indexes( vc_t *FileView, idx_n_file_t int,
+                                    vc_o *FileView, idx_n_file_o int ) bool {
+  ok := false
+  // Get m_win for vc_t and vc_o
+  c_win_t := m.GetWinNum_Of_View( vc_t )
+  c_win_o := m.GetWinNum_Of_View( vc_o )
+
+  if( 0 <= c_win_t && 0 <= c_win_o ) {
+    m.file_hist[ c_win_t ].Insert( 0, idx_n_file_t )
+    m.file_hist[ c_win_o ].Insert( 0, idx_n_file_o )
+    // Remove subsequent idx_n_file_t's from m.file_hist[ c_win_t ]:
+    for k:=1; k<m.file_hist[ c_win_t ].Len(); k++ {
+      if( idx_n_file_t == m.file_hist[ c_win_t ].Get( k ) ) {
+        m.file_hist[ c_win_t ].Remove( k )
+      }
+    }
+    // Remove subsequent idx_n_file_t's from m.file_hist[ c_win_o ]:
+    for k:=1; k<m.file_hist[ c_win_o ].Len(); k++ {
+      if( idx_n_file_t == m.file_hist[ c_win_o ].Get( k ) ) {
+        m.file_hist[ c_win_o ].Remove( k )
+      }
+    }
+  //var nv_t *FileView = m.GetView_WinPrev( c_win_t, 0 )
+  //var nv_o *FileView = m.GetView_WinPrev( c_win_o, 0 )
+    var nv_t *FileView = m.views[ c_win_t ].GetPFv( idx_n_file_t )
+    var nv_o *FileView = m.views[ c_win_o ].GetPFv( idx_n_file_o )
+
+    nv_t.SetTilePos( vc_t.GetTilePos() )
+    nv_o.SetTilePos( vc_o.GetTilePos() )
+
+    p_diff := new( Diff )
+    p_diff.Init( nv_t, nv_o )
+    ok = p_diff.Run()
+    if( ok ) {
+      p_diff.UpdateBV()
+    }
+  }
+  return ok
 }
 
 func ( m *Vis ) Handle_Colon_Cmd() {
@@ -1262,6 +1398,27 @@ func (m *Vis) PV() *FileView {
 func (m *Vis) GetView_Win( w int ) *FileView {
 
   return m.views[w].GetPFv( m.file_hist[w].Get( 0 ) )
+}
+
+// Get view of window w, prev'th displayed file
+func (m *Vis) GetView_WinPrev( w, prev int ) *FileView {
+  var pV *FileView
+
+  if( prev < m.file_hist[w].Len() ) {
+    pV = m.views[w].GetPFv( m.file_hist[w].Get(prev) )
+  }
+  return pV
+}
+
+// Get window number of currently displayed View
+func (m *Vis) GetWinNum_Of_View( rV *FileView ) int {
+
+  for w:=0; w<m.num_wins; w++ {
+    if( rV == m.GetView_Win( w ) ) {
+      return w
+    }
+  }
+  return -1
 }
 
 func (m *Vis) Buf2FileNum( p_fb *FileBuf ) int {

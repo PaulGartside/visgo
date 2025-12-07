@@ -39,6 +39,13 @@ func (m *FileView) Init( file_buf *FileBuf ) {
   m.tile_pos = TP_FULL
 }
 
+func (m *FileView) NoDiff() {
+
+  if( m.p_diff != nil ) {
+    m.p_diff.NoDiff()
+  }
+}
+
 type IsWord_Func func(rune)bool
 
 func (m *FileView) X() int { return m.x; }
@@ -1334,7 +1341,7 @@ func (m *FileView) GoToEndOfRow() {
   }
 }
 
-func (m *FileView) GoToFile() {
+func (m *FileView) GoToFile_i() {
 
   var fname string
   var ok bool
@@ -1347,6 +1354,15 @@ func (m *FileView) GoToFile() {
   }
 
   if( ok ) { m_vis.GoToBuffer_Fname( fname ) }
+}
+
+func (m *FileView) GoToFile() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.GoToFile()
+  } else {
+    m.GoToFile_i()
+  }
 }
 
 // Returns true if found next word, else false

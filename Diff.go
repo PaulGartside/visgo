@@ -174,10 +174,38 @@ func (m *Diff) DiffInfo( pV *FileView, diff_line int ) Diff_Info {
   return di
 }
 
-func (m *Diff) View_2_DI_List( pV *FileView ) *Vector[Diff_Info] {
+func (m *Diff) View_C( pV *FileView ) *FileView {
+  var p_v *FileView
+  if       ( pV == m.pvS ) { p_v = m.pvS
+  } else if( pV == m.pvL ) { p_v = m.pvL
+  }
+  return p_v
+}
+
+func (m *Diff) View_O( pV *FileView ) *FileView {
+  var p_v *FileView
+  if       ( pV == m.pvS ) { p_v = m.pvL
+  } else if( pV == m.pvL ) { p_v = m.pvS
+  }
+  return p_v
+}
+
+// View to Diff Info List of Current View
+//
+func (m *Diff) View_2_DI_List_C( pV *FileView ) *Vector[Diff_Info] {
   var p_DI_List *Vector[Diff_Info] = nil
   if       ( pV == m.pvS ) { p_DI_List = &m.DI_List_S
   } else if( pV == m.pvL ) { p_DI_List = &m.DI_List_L
+  }
+  return p_DI_List
+}
+
+// View to Diff Info List of Other View
+//
+func (m *Diff) View_2_DI_List_O( pV *FileView ) *Vector[Diff_Info] {
+  var p_DI_List *Vector[Diff_Info] = nil
+  if       ( pV == m.pvS ) { p_DI_List = &m.DI_List_L
+  } else if( pV == m.pvL ) { p_DI_List = &m.DI_List_S
   }
   return p_DI_List
 }
@@ -590,7 +618,7 @@ func (m *Diff) PrintCursor( pV *FileView ) {
 
 func (m *Diff) PrintStsLine( pV *FileView ) {
 
-  var p_DI_List *Vector[Diff_Info] = m.View_2_DI_List( pV )
+  var p_DI_List *Vector[Diff_Info] = m.View_2_DI_List_C( pV )
   pfb := pV.p_fb
   CLd := m.CrsLine()                   // Line position diff
   CLv := p_DI_List.Get( CLd ).line_num // Line position view
@@ -1102,9 +1130,9 @@ func (m *Diff) GoToEndOfRow() {
   }
 }
 
-func (m *Diff) GoToFile() {
-  // FIXME
-}
+//func (m *Diff) GoToFile() {
+//  // FIXME
+//}
 
 func (m *Diff) Do_dd() {
   // FIXME
@@ -1849,7 +1877,7 @@ func (m *Diff) Do_n_Diff( write bool ) {
 
     pV := m_vis.CV()
 
-    p_DI_List := m.View_2_DI_List( pV )
+    p_DI_List := m.View_2_DI_List_C( pV )
 
     var DT Diff_Type = p_DI_List.Get(dl).diff_type // Current diff type
 
@@ -1895,7 +1923,7 @@ func (m *Diff) Do_N_Diff() {
 
     pV := m_vis.CV()
 
-    p_DI_List := m.View_2_DI_List( pV )
+    p_DI_List := m.View_2_DI_List_C( pV )
 
     var DT Diff_Type = p_DI_List.Get(dl).diff_type // Current diff type
 
@@ -2648,5 +2676,129 @@ func (m *Diff) GoToOppositeBracket_Backward( ST_R, FN_R rune ) {
       }
     }
   }
+}
+
+func (m *Diff) GoToFile() {
+
+  pV := m_vis.CV()
+
+  cDI_List := m.View_2_DI_List_C( pV )
+  oDI_List := m.View_2_DI_List_O( pV )
+
+  var cDT Diff_Type = cDI_List.Get( m.CrsLine() ).diff_type // Current diff type
+  var oDT Diff_Type = oDI_List.Get( m.CrsLine() ).diff_type // Other   diff type
+
+  var fname_vec Vector[rune]
+  if( m.GetFileName_UnderCursor( &fname_vec ) ) {
+    fname := string( fname_vec.vals )
+    did_diff := false
+    // Special case, look at two files in diff mode:
+    cV := m.View_C( pV ) // Current view
+    oV := m.View_O( pV ) // Other   view
+
+    var cPath string = FindFullFileNameRel2( cV.p_fb.dir_name, fname ) // Current side file to diff full fname
+    var oPath string = FindFullFileNameRel2( oV.p_fb.dir_name, fname ) // Other   side file to diff full fname
+
+    c_file_idx := 0 // Current side index of file to diff
+    o_file_idx := 0 // Other   side index of file to diff
+    if( m.GetBufferIndex( cPath, &c_file_idx ) &&
+        m.GetBufferIndex( oPath, &o_file_idx ) ) {
+
+      var c_file_buf *FileBuf = m_vis.GetFileBuf( c_file_idx )
+      var o_file_buf *FileBuf = m_vis.GetFileBuf( o_file_idx )
+      // Files with same name and different contents
+      // or directories with same name but different paths
+      if( (cDT == DT_DIFF_FILES && oDT == DT_DIFF_FILES) ||
+          (cV.p_fb.is_dir && oV.p_fb.is_dir &&
+           (c_file_buf.file_name == o_file_buf.file_name) &&
+           (c_file_buf.dir_name  != o_file_buf.dir_name) ) ) {
+        // Save current view context for when we come back
+        cV_vl_cl := m.ViewLine( cV, m.CrsLine() )
+        cV_vl_tl := m.ViewLine( cV, m.topLine )
+        cV.topLine  = cV_vl_tl
+        cV.crsRow   = cV_vl_cl - cV_vl_tl
+        cV.leftChar = m.leftChar
+        cV.crsCol   = m.crsCol
+
+        // Save other view context for when we come back
+        oV_vl_cl := m.ViewLine( oV, m.CrsLine() )
+        oV_vl_tl := m.ViewLine( oV, m.topLine )
+        oV.topLine  = oV_vl_tl
+        oV.crsRow   = oV_vl_cl - oV_vl_tl
+        oV.leftChar = m.leftChar
+        oV.crsCol   = m.crsCol
+
+        did_diff = m_vis.Diff_By_File_Indexes( cV, c_file_idx, oV, o_file_idx )
+      }
+    }
+    if( !did_diff ) {
+      // Normal case, dropping out of diff mode to look at file:
+      m_vis.GoToBuffer_Fname( fname )
+    }
+  }
+}
+
+func (m *Diff) GetFileName_UnderCursor( fname *Vector[rune] ) bool {
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+  got_filename := false
+
+  DL := m.CrsLine()            // Diff line number
+  VL := m.ViewLine( pV, DL ) // View line number
+  LL := pfb.LineLen( VL )
+
+  if( 0 < LL ) {
+    m.MoveInBounds_Line()
+    CP := m.CrsChar()
+    R := pfb.GetR( VL, CP )
+
+    if( IsFileNameChar( R ) ) {
+      // Get the file name:
+      got_filename = true
+
+      fname.Push( R )
+
+      // Search backwards, until white space is found:
+      for k:=CP-1; -1<k; k--  {
+        R = pfb.GetR( VL, k )
+
+        if( !IsFileNameChar( R ) ) { break
+        } else { fname.Insert( 0, R )
+        }
+      }
+      // Search forwards, until white space is found:
+      for k:=CP+1; k<LL; k++ {
+        R = pfb.GetR( VL, k )
+
+        if( !IsFileNameChar( R ) ) { break
+        } else { fname.Push( R )
+        }
+      }
+    //EnvKeys2Vals( fname );
+    }
+  }
+  return got_filename
+}
+
+func (m *Diff) GetBufferIndex( file_path string, file_index *int ) bool {
+
+  got_buffer_index := false
+
+  // 1. Search for file_path in buffer list
+  if( m_vis.HaveFile( file_path, file_index ) ) {
+    got_buffer_index = true
+
+  // 2. See if file exists, and if so, add a file buffer
+  } else if( FileExists( file_path ) ) {
+    // pfb gets added to m_vis.files in Add_FileBuf_2_Lists_Create_Views()
+    p_fb := new( FileBuf )
+    p_fb.Init_FB( file_path, FT_UNKNOWN )
+
+    if( m_vis.HaveFile( file_path, file_index ) ) {
+      got_buffer_index = true
+    }
+  }
+  return got_buffer_index
 }
 
