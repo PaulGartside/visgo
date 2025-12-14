@@ -242,7 +242,7 @@ func (m *Vis) GoToBuffer_Fname( fname string ) bool {
 //    // Nothing to do, so just put cursor back
 //    m.CV().PrintCursor()
 //  } else {
-//  //NoDiff_CV(m);
+//  //NoDiff_CV(m)
 //
 //    var pV_old *FileView = m.CV()
 //    var tp_old Tile_Pos  = pV_old.GetTilePos()
@@ -267,7 +267,7 @@ func (m *Vis) GoToNextBuffer() {
     // Nothing to do, so just put cursor back
     m.CV().PrintCursor()
   } else {
-  //NoDiff_CV(m);
+  //NoDiff_CV(m)
 
     var pV_old *FileView = m.CV()
     var tp_old Tile_Pos  = pV_old.GetTilePos()
@@ -398,7 +398,43 @@ func (m *Vis) GoToCurrBuffer() {
   }
 }
 
+func (m *Vis) Set_BufferEditor_Cursor_on_CurrentFile() {
+  p_cv    := m.CV()
+  p_cv_fb := p_cv.p_fb
+  CV_path := p_cv_fb.path_name
+  CV_dir  := p_cv_fb.dir_name
+
+  p_be_v  := m.views[m.win].GetPFv( m_BE_FILE )
+  p_be_fb := p_be_v.p_fb
+
+  BE_NUM_LINES := p_be_fb.NumLines()
+
+  for k:=0; k<BE_NUM_LINES; k++ {
+    var p_be_l_k *FLine = p_be_fb.GetLP( k )
+
+    if( p_be_l_k.EqualStr(CV_path) ) {
+      shift_down := Min_i( k, p_cv.WorkingRows()/2 )
+
+      topLine  := k - shift_down
+      leftChar := 0
+      crsRow   := 0 + shift_down
+      crsCol   := len(CV_dir)
+
+      if( p_cv.WorkingCols() < len(CV_path) ) {
+        shift_right := len(CV_path) - p_cv.WorkingCols()
+
+        leftChar += shift_right
+        crsCol   -= shift_right
+      }
+      p_be_v.Set_Context_4Is( topLine, leftChar, crsRow, crsCol )
+      break
+    }
+  }
+}
+
 func (m *Vis) GoToBufferEditor() {
+
+  m.Set_BufferEditor_Cursor_on_CurrentFile()
 
   m.GoToBuffer( m_BE_FILE )
 }
@@ -549,7 +585,7 @@ func (m *Vis) GoToBuffer( buf_idx int ) {
 
       p_nv.SetTilePos( m.PV().GetTilePos() )
 
-      m.GoToBuffer_SetContext( buf_idx, p_nv, p_pv );
+      m.GoToBuffer_SetContext( buf_idx, p_nv, p_pv )
 
       // For DIR and BUFFER_EDITOR, invalidate regex's so that files that
       // no longer contain the current regex are no longer highlighted
@@ -983,7 +1019,7 @@ func (m *Vis) Quit_JoinTiles( TP Tile_Pos ) {
 
 func ( m *Vis ) GoToSearchBuffer() {
 
-  m.GoToBuffer( m_SLASH_FILE );
+  m.GoToBuffer( m_SLASH_FILE )
 }
 
 func ( m *Vis ) Exe_Colon_e() {
@@ -1132,7 +1168,7 @@ func ( m *Vis ) NoDiff() {
     pvS.Update_not_PrintCursor()
     pvL.Update_not_PrintCursor()
 
-    p_cv.PrintCursor();
+    p_cv.PrintCursor()
   }
 }
 
@@ -1426,7 +1462,7 @@ func (m *Vis) UpdateViews( show_search bool ) {
   }
   var p_cv *FileView = m.CV()
 
-  p_cv.PrintCursor();
+  p_cv.PrintCursor()
 }
 
 func (m *Vis) UpdateViewsOfFile( p_fb *FileBuf ) {

@@ -28,16 +28,24 @@ func (m *FileViewList) Clear() {
   m.views = m.views[:0]
 }
 
-// Set length without guaranteeing existing contents remain the same:
+// Set length while guaranteeing existing contents remain the same:
+//
 func (m *FileViewList) SetLen( length int ) {
 
   if( length < m.Len() ) {
+    // Contents up to length-1 preserved:
     m.views = m.views[:length]
+
   } else if( m.Len() < length ) {
     if( length <= m.Cap() ) {
+      // Contents preserved, zero values appended to end:
       for ; m.Len() < length; { m.views = append( m.views, nil ) }
     } else {
+      // Capacity increased. Contents preserved, zero values appended to end:
+      var old []*FileView = m.views
+      len_old := len(old)
       m.Init( length )
+      for k:=0; k < len_old; k++ { m.views[k] = old[k] }
     }
   }
 }

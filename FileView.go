@@ -7,6 +7,7 @@ import (
   "github.com/gdamore/tcell/v2"
   "regexp"
   "unicode"
+  "unicode/utf8"
 )
 
 type FileView struct {
@@ -280,23 +281,29 @@ func (m *FileView) PrintStsLine() {
   for k:=buf.Len(); k<WC; k++ {
     fmt.Fprintf( &buf, " " )
   }
+  if( WC < buf.Len() ) {
+    buf.Truncate( WC )
+  }
   m_console.SetBuffer( m.Sts__Line_Row(), m.Col_Win_2_GL( 0 ), &buf, &TS_BORDER )
 }
 
 func (m *FileView) PrintFileLine() {
 
-  var WC int = m.WorkingCols()
-  var buf bytes.Buffer
+  WC := m.WorkingCols()
+  path := m.p_fb.GetPath()
+  path_len := len( path )
 
-  fmt.Fprintf( &buf, "%s", m.p_fb.GetPath() )
+  k_st := 0; if( WC < path_len ) { k_st = path_len - WC }
 
-  var s_b []byte = buf.Bytes()
-
-  for k:=0; k<WC; k++ {
-    if k < len( s_b ) {
-      m_console.SetR( m.File_Line_Row(), m.Col_Win_2_GL( k ), rune(s_b[k]), &TS_BORDER )
+  for k:=k_st; k<(k_st+WC); {
+    k_col := k - k_st
+    if k < path_len {
+      R,size := utf8.DecodeRuneInString( path[k:] )
+      m_console.SetR( m.File_Line_Row(), m.Col_Win_2_GL( k_col ), R, &TS_BORDER )
+      k += size
     } else {
-      m_console.SetR( m.File_Line_Row(), m.Col_Win_2_GL( k ), ' ', &TS_BORDER )
+      m_console.SetR( m.File_Line_Row(), m.Col_Win_2_GL( k_col ), ' ', &TS_BORDER )
+      k++
     }
   }
 }

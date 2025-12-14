@@ -43,16 +43,23 @@ func (m *BLine) Copy( src_ln BLine ) {
   copy( m.data[:], src_ln.data[:] )
 }
 
-// Set length without guaranteeing existing contents remain the same:
+// Set length while guaranteeing existing contents remain the same:
 func (m *BLine) SetLen( length int ) {
 
   if( length < m.Len() ) {
+    // Contents up to length-1 preserved:
     m.data = m.data[:length]
+
   } else if( m.Len() < length ) {
     if( length <= m.Cap() ) {
+      // Contents preserved, zero values appended to end:
       for ; m.Len() < length; { m.data = append( m.data, 0 ) }
     } else {
+      // Capacity increased. Contents preserved, zero values appended to end:
+      var old []byte = m.data
+      len_old := len(old)
       m.Init( length )
+      for k:=0; k < len_old; k++ { m.data[k] = old[k] }
     }
   }
 }

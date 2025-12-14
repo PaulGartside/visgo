@@ -647,6 +647,9 @@ func (m *Diff) PrintStsLine( pV *FileView ) {
   for k:=buf.Len(); k<WC; k++ {
     fmt.Fprintf( &buf, " " )
   }
+  if( WC < buf.Len() ) {
+    buf.Truncate( WC )
+  }
   m_console.SetBuffer( pV.Sts__Line_Row(), pV.Col_Win_2_GL( 0 ), &buf, &TS_BORDER )
 }
 
