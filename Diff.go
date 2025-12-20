@@ -1321,11 +1321,14 @@ func (m *Diff) Popu_SameList( DA DiffArea ) {
         ca1 := DiffArea{ da.ln_s, same.ln_s-da.ln_s,
                          da.ln_l, same.ln_l-da.ln_l }
         compList.Push( ca1 );
+
       } else if( da.ln_s < same.ln_s && SAME_FNL_S < da.fnl_s() &&
                  da.ln_l < same.ln_l && SAME_FNL_L < da.fnl_l() ) {
         // Two new DiffArea's, one before same, and one after same:
-        ca1 := DiffArea{ da.ln_s, same.ln_s-da.ln_s, da.ln_l, same.ln_l-da.ln_l }
-        ca2 := DiffArea{ SAME_FNL_S, da.fnl_s()-SAME_FNL_S, SAME_FNL_L, da.fnl_l()-SAME_FNL_L }
+        ca1 := DiffArea{ da.ln_s, same.ln_s-da.ln_s,
+                         da.ln_l, same.ln_l-da.ln_l }
+        ca2 := DiffArea{ SAME_FNL_S, da.fnl_s()-SAME_FNL_S,
+                         SAME_FNL_L, da.fnl_l()-SAME_FNL_L }
         compList.Push( ca1 )
         compList.Push( ca2 )
       }
@@ -1657,7 +1660,7 @@ func (m *Diff) Popu_SimiList( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
   m.simiList.Clear()
 
   if( 0<da_nlines_s && 0<da_nlines_l ) {
-    ca := DiffArea{ da_ln_s, da_ln_l, da_nlines_s, da_nlines_l }
+    ca := DiffArea{ da_ln_s, da_nlines_s, da_ln_l, da_nlines_l }
 
     var compList Vector[DiffArea]
     compList.Push( ca )
@@ -1759,8 +1762,11 @@ func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
   for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
     var ST_L int = ca.ln_l+(ln_s-ca.ln_s)
 
+//  for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1 && ln_l<pfl.NumLines(); ln_l++ {
     for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1; ln_l++ {
       var ls *FLine = pfs.GetLP( ln_s ) // Line from short area
+//Log( fmt.Sprintf("Find_Lines_Most_Same: ln_l=%v, pfl.NumLines()=%v, ca.fnl_l()=%v, ST_L+LD+1=%v",
+//                                        ln_l,    pfl.NumLines(),    ca.fnl_l(),    ST_L+LD+1) )
       var ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
 
       var li_s LineInfo

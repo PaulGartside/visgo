@@ -171,10 +171,27 @@ func (m *FileBuf) Find_File_Type_IDL() bool {
 
   if( strings.HasSuffix(m.path_name, ".idl") ||
       strings.HasSuffix(m.path_name, ".idl.new") ||
-      strings.HasSuffix(m.path_name, ".idl.old") ) {
+      strings.HasSuffix(m.path_name, ".idl.old") ||
+      strings.HasSuffix(m.path_name, ".idl.in") ||
+      strings.HasSuffix(m.path_name, ".idl.in.new") ||
+      strings.HasSuffix(m.path_name, ".idl.in.old") ) {
 
     m.file_type = FT_IDL
     m.Hi = new( Highlight_IDL )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
+func (m *FileBuf) Find_File_Type_Java() bool {
+
+  if( strings.HasSuffix(m.path_name, ".java") ||
+      strings.HasSuffix(m.path_name, ".java.new") ||
+      strings.HasSuffix(m.path_name, ".java.old") ) {
+
+    m.file_type = FT_JAVA
+    m.Hi = new( Highlight_Java )
     m.Hi.Init( m )
     return true
   }
@@ -220,6 +237,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
              m.Find_File_Type_CPP() ||
              m.Find_File_Type_Go() ||
              m.Find_File_Type_IDL() ||
+             m.Find_File_Type_Java() ||
              m.Find_File_Type_SQL() ||
              m.Find_File_Type_XML() ) {
     // File type found
@@ -1453,6 +1471,10 @@ func (m *FileBuf) Set_File_Type( syn string ) {
     } else if( syn == "idl" ) {
       m.file_type = FT_IDL
       m.Hi = new( Highlight_IDL )
+
+    } else if( syn == "java" ) {
+      m.file_type = FT_JAVA
+      m.Hi = new( Highlight_Java )
 
     } else if( syn == "sql" ) {
       m.file_type = FT_SQL

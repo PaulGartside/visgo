@@ -70,6 +70,7 @@ const (
   FT_CPP
   FT_GO
   FT_IDL
+  FT_JAVA
   FT_SQL
   FT_TEXT
   FT_XML
