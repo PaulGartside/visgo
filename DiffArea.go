@@ -21,10 +21,14 @@ type DiffArea struct {
 //  m.nlines_l = nlines_l
 //}
 
+// fnl_s() is one past last line of DiffArea on the short side
+//
 func (m *DiffArea) fnl_s() int {
   return m.ln_s + m.nlines_s
 }
 
+// fnl_l() is one past last line of DiffArea on the long side
+//
 func (m *DiffArea) fnl_l() int {
   return m.ln_l + m.nlines_l
 }

@@ -51,7 +51,6 @@ type Diff struct {
 
   DI_List_S Vector[Diff_Info] // One Diff_Info per diff line
   DI_List_L Vector[Diff_Info] // One Diff_Info per diff line
-  DI_L_ins_idx int
 
   inVisualMode bool
   inVisualBlock bool
@@ -64,7 +63,7 @@ type Diff struct {
 
   sameList Vector[SameArea]
   diffList Vector[DiffArea]
-  simiList Vector[SimLines]
+//simiList Vector[SimLines]
 
   num_files_added_this_diff int
 }
@@ -1343,7 +1342,7 @@ func (m *Diff) Sort_SameList() {
 
   SLL := m.sameList.Len()
 
-  for k:=0; k<SLL; k++  {
+  for k:=0; k<SLL; k++ {
     for j:=SLL-1; k<j; j-- {
       var sa0 SameArea = m.sameList.Get( j-1 )
       var sa1 SameArea = m.sameList.Get( j   )
@@ -1356,11 +1355,11 @@ func (m *Diff) Sort_SameList() {
   }
 }
 
-func (m *Diff) Popu_DiffList( CA DiffArea ) {
+func (m *Diff) Popu_DiffList( DA DiffArea ) {
 
   m.diffList.Clear()
 
-  m.Popu_DiffList_Begin( CA )
+  m.Popu_DiffList_Begin( DA )
 
   SLL := m.sameList.Len()
 
@@ -1376,26 +1375,26 @@ func (m *Diff) Popu_DiffList( CA DiffArea ) {
 
     m.diffList.Push( da )
   }
-  m.Popu_DiffList_End( CA )
+  m.Popu_DiffList_End( DA )
 }
 
-func (m *Diff) Popu_DiffList_Begin( CA DiffArea ) {
+func (m *Diff) Popu_DiffList_Begin( DA DiffArea ) {
   // Add DiffArea before first SameArea if needed:
   if( 0 < m.sameList.Len() ) {
     var sa SameArea = m.sameList.Get( 0 )
 
-    nlines_s_da := sa.ln_s - CA.ln_s // Num lines in short diff area
-    nlines_l_da := sa.ln_l - CA.ln_l // Num lines in long  diff area
+    nlines_s_da := sa.ln_s - DA.ln_s // Num lines in short diff area
+    nlines_l_da := sa.ln_l - DA.ln_l // Num lines in long  diff area
 
     if( 0 < nlines_s_da || 0 < nlines_l_da ) {
       // DiffArea at beginning of DiffArea:
-      da := DiffArea{ CA.ln_s, nlines_s_da, CA.ln_l, nlines_l_da }
+      da := DiffArea{ DA.ln_s, nlines_s_da, DA.ln_l, nlines_l_da }
       m.diffList.Push( da )
     }
   }
 }
 
-func (m *Diff) Popu_DiffList_End( CA DiffArea ) {
+func (m *Diff) Popu_DiffList_End( DA DiffArea ) {
 
   SLL := m.sameList.Len()
 
@@ -1404,17 +1403,16 @@ func (m *Diff) Popu_DiffList_End( CA DiffArea ) {
     sa_s_end := sa.ln_s + sa.nlines
     sa_l_end := sa.ln_l + sa.nlines
 
-    if( sa_s_end < CA.fnl_s() ||
-        sa_l_end < CA.fnl_l() ) { // DiffArea at end of file:
+    if( sa_s_end < DA.fnl_s() ||
+        sa_l_end < DA.fnl_l() ) { // DiffArea at end of file:
       // Number of lines of short and long equal to
       // start of SameArea short and long
-      da := DiffArea{ sa_s_end, CA.fnl_s() - sa_s_end,
-                      sa_l_end, CA.fnl_l() - sa_l_end }
+      da := DiffArea{ sa_s_end, DA.fnl_s() - sa_s_end,
+                      sa_l_end, DA.fnl_l() - sa_l_end }
       m.diffList.Push( da )
     }
   } else { // No SameArea, so whole DiffArea is a DiffArea:
-    da := DiffArea{ CA.ln_s, CA.nlines_s, CA.ln_l, CA.nlines_l }
-    m.diffList.Push( da )
+    m.diffList.Push( DA )
   }
 }
 
@@ -1441,19 +1439,17 @@ func (m *Diff) Popu_DI_List_NoSameArea() {
 func (m *Diff) Popu_DI_List_AddDiff( da DiffArea ) {
 
   if( da.nlines_s < da.nlines_l ) {
-    m.Popu_DI_List_AddDiff_Common( da.ln_s,
-                                   da.ln_l,
-                                   da.nlines_s,
-                                   da.nlines_l,
+    m.Popu_DI_List_AddDiff_Common( da,
                                    &m.DI_List_S,
                                    &m.DI_List_L,
                                    m.pfS, m.pfL )
 
   } else if( da.nlines_l < da.nlines_s ) {
-    m.Popu_DI_List_AddDiff_Common( da.ln_l,
-                                   da.ln_s,
-                                   da.nlines_l,
-                                   da.nlines_s,
+    // Since the long file has a shorter DiffArea than the short file,
+    // pass in a reversed DiffArea:
+    da_r := DiffArea{ da.ln_l, da.nlines_l, da.ln_s, da.nlines_s }
+
+    m.Popu_DI_List_AddDiff_Common( da_r,
                                    &m.DI_List_L,
                                    &m.DI_List_S,
                                    m.pfL, m.pfS )
@@ -1470,8 +1466,8 @@ func (m *Diff) Popu_DI_List_AddDiff( da DiffArea ) {
       dis := Diff_Info{ DT_CHANGED, da.ln_s+k, &li_s }
       dil := Diff_Info{ DT_CHANGED, da.ln_l+k, &li_l }
 
-      m.DI_List_S.Insert( m.DI_L_ins_idx, dis )
-      m.DI_List_L.Insert( m.DI_L_ins_idx, dil ); m.DI_L_ins_idx++
+      m.DI_List_S.Push( dis )
+      m.DI_List_L.Push( dil )
     }
   }
 }
@@ -1483,14 +1479,14 @@ func (m *Diff) Popu_DI_List_NoDiffArea() {
   m.Popu_DI_List_AddSame( m.sameList.Get(0) )
 }
 
-func (m *Diff) Popu_DI_List_DiffAndSame( CA DiffArea ) {
+func (m *Diff) Popu_DI_List_DiffAndSame( DA DiffArea ) {
 
   SLL := m.sameList.Len()
   DLL := m.diffList.Len()
 
   var da DiffArea = m.diffList.Get( 0 )
 
-  if( CA.ln_s==da.ln_s && CA.ln_l==da.ln_l ) {
+  if( DA.ln_s==da.ln_s && DA.ln_l==da.ln_l ) {
     // Start with DiffArea, and then alternate between SameArea and DiffArea.
     // There should be at least as many DiffArea's as SameArea's.
     // ASSERT( SLL<=DLL )
@@ -1506,7 +1502,6 @@ func (m *Diff) Popu_DI_List_DiffAndSame( CA DiffArea ) {
     // Start with SameArea, and then alternate between DiffArea and SameArea.
     // There should be at least as many SameArea's as DiffArea's.
     // ASSERT( DLL<=SLL )
-
     for k:=0; k<DLL; k++ {
       var sa SameArea = m.sameList.Get( k ); m.Popu_DI_List_AddSame( sa )
       var da DiffArea = m.diffList.Get( k ); m.Popu_DI_List_AddDiff( da )
@@ -1518,24 +1513,17 @@ func (m *Diff) Popu_DI_List_DiffAndSame( CA DiffArea ) {
   }
 }
 
-func (m *Diff) Popu_DI_List_AddDiff_Common( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
+func (m *Diff) Popu_DI_List_AddDiff_Common( da DiffArea,
                                             p_DI_List_s, p_DI_List_l *Vector[Diff_Info],
                                             pfs, pfl *FileBuf ) {
-  m.Popu_SimiList( da_ln_s,
-                   da_ln_l,
-                   da_nlines_s,
-                   da_nlines_l,
-                   pfs,
-                   pfl )
-  m.Sort_SimiList()
+  var simiList Vector[SimLines]
+
+  m.Popu_SimiList( da, pfs, pfl, &simiList )
+
+  m.Sort_SimiList( &simiList )
 //PrintSimiList();
 
-  m.SimiList_2_DI_Lists( da_ln_s,
-                         da_ln_l,
-                         da_nlines_s,
-                         da_nlines_l,
-                         p_DI_List_s,
-                         p_DI_List_l )
+  m.SimiList_2_DI_Lists( da, p_DI_List_s, p_DI_List_l, &simiList )
 }
 
 // Returns number of bytes that are the same between the two lines
@@ -1650,31 +1638,27 @@ func (m *Diff) Popu_DI_List_AddSame( sa SameArea ) {
     dis := Diff_Info{ DT, sa.ln_s+k, nil }
     dil := Diff_Info{ DT, sa.ln_l+k, nil }
 
-    m.DI_List_S.Insert( m.DI_L_ins_idx, dis )
-    m.DI_List_L.Insert( m.DI_L_ins_idx, dil ); m.DI_L_ins_idx++
+    m.DI_List_S.Push( dis )
+    m.DI_List_L.Push( dil )
   }
 }
 
-func (m *Diff) Popu_SimiList( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
-                              pfs, pfl *FileBuf ) {
-  m.simiList.Clear()
+func (m *Diff) Popu_SimiList( da DiffArea,
+                              pfs, pfl *FileBuf,
+                              p_simiList *Vector[SimLines] ) {
+//m.simiList.Clear()
 
-  if( 0<da_nlines_s && 0<da_nlines_l ) {
-    ca := DiffArea{ da_ln_s, da_nlines_s, da_ln_l, da_nlines_l }
+  if( 0<da.nlines_s && 0<da.nlines_l ) {
+    ca := da
 
     var compList Vector[DiffArea]
     compList.Push( ca )
 
-    for compList.Pop( &ca ) {
-      var siml SimLines = m.Find_Lines_Most_Same( ca, pfs, pfl )
+    for (p_simiList.Len() < da.nlines_s) && compList.Pop( &ca ) {
 
-      if( m.simiList.Len() == da_nlines_s ) {
-        // Not putting siml into simiList, so delete any new'ed memory:
-        siml.li_s = nil
-        siml.li_l = nil
-        return
-      }
-      m.simiList.Push( siml )
+      var siml SimLines = m.Find_Lines_Most_Same( ca, pfs, pfl )
+      p_simiList.Push( siml )
+
       if( ( siml.ln_s == ca.ln_s || siml.ln_l == ca.ln_l ) &&
           siml.ln_s+1 < ca.fnl_s() &&
           siml.ln_l+1 < ca.fnl_l() ) {
@@ -1705,65 +1689,111 @@ func (m *Diff) Popu_SimiList( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
   }
 }
 
-func (m *Diff) Sort_SimiList() {
+func (m *Diff) Sort_SimiList( p_simiList *Vector[SimLines] ) {
 
-  SLL := m.simiList.Len()
+  SLL := p_simiList.Len()
 
   for k:=0; k<SLL; k++ {
     for j:=SLL-1; k<j; j-- {
-      var sl0 SimLines = m.simiList.Get( j-1 )
-      var sl1 SimLines = m.simiList.Get( j   )
+      var sl0 SimLines = p_simiList.Get( j-1 )
+      var sl1 SimLines = p_simiList.Get( j   )
 
       if sl1.ln_l < sl0.ln_l {
-        m.simiList.Set( j-1, sl1 )
-        m.simiList.Set( j  , sl0 )
+        p_simiList.Set( j-1, sl1 )
+        p_simiList.Set( j  , sl0 )
       }
     }
   }
 }
 
-func (m *Diff) SimiList_2_DI_Lists( da_ln_s, da_ln_l, da_nlines_s, da_nlines_l int,
-                                    p_DI_List_s, p_DI_List_l *Vector[Diff_Info] ) {
-  // Diff info short line number:
-  dis_ln := 0
-  if( 0<da_ln_s ) { dis_ln = da_ln_s-1 }
+func (m *Diff) SimiList_2_DI_Lists( da DiffArea,
+                                    p_DI_List_s, p_DI_List_l *Vector[Diff_Info],
+                                    p_simiList *Vector[SimLines] ) {
+  // dis_ln = Diff info short line number.
+  // Diff_Info.diff_type on the short side defaults to DT_DELETED.
+  // A deleted line does not have a line number,
+  //   so use the line number of the previous line:
+  dis_ln := 0; if( 0<da.ln_s ) { dis_ln = da.ln_s-1 }
 
-  for k:=0; k<da_nlines_l; k++ {
-    dis := Diff_Info{ DT_DELETED , dis_ln   , nil }
-    dil := Diff_Info{ DT_INSERTED, da_ln_l+k, nil }
+  for ln_l:=da.ln_l; ln_l<da.fnl_l(); ln_l++ {
+    dis := Diff_Info{ DT_DELETED , dis_ln, nil }
+    dil := Diff_Info{ DT_INSERTED, ln_l  , nil }
 
-    for j:=0; j<m.simiList.Len(); j++ {
-      var p_siml *SimLines = m.simiList.GetP( j )
+    // j start. Used for loop optimization
+    j_st := 0
+    for j:=j_st; j<p_simiList.Len(); j++ {
+      var p_siml *SimLines = p_simiList.GetP( j )
 
-      if( p_siml.ln_l == da_ln_l+k ) {
-        dis.diff_type = DT_CHANGED
+      if( p_siml.ln_l == ln_l ) {
+        // The Diff_Info.diff_type on the short side is being set to DT_CHANGED,
+        // so a line numbe can be assigned:
         dis.line_num  = p_siml.ln_s
+        dis.diff_type = DT_CHANGED
         dis.pLineInfo = p_siml.li_s; p_siml.li_s = nil; // Transfer ownership of LineInfo from p_siml to dis
 
         dil.diff_type = DT_CHANGED
         dil.pLineInfo = p_siml.li_l; p_siml.li_l = nil; // Transfer ownership of LineInfo from p_siml to dil
 
         dis_ln = dis.line_num
+        j_st = j + 1
         break
       }
     }
     // DI_List_s and DI_List_l now own LineInfo objects:
-    p_DI_List_s.Insert( m.DI_L_ins_idx, dis )
-    p_DI_List_l.Insert( m.DI_L_ins_idx, dil ); m.DI_L_ins_idx++
+    p_DI_List_s.Push( dis )
+    p_DI_List_l.Push( dil )
   }
 }
 
-func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
+//func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
+//
+//  // LD = Length Difference between long area and short area
+//  var LD int = ca.nlines_l - ca.nlines_s
+//
+//  most_same := SimLines{ 0, 0, 0, nil, nil }
+//  for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
+//    var ST_L int = ca.ln_l+(ln_s-ca.ln_s)
+//
+////  for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1 && ln_l<pfl.NumLines(); ln_l++ {}
+//    for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1; ln_l++ {
+//
+//      var ls *FLine = pfs.GetLP( ln_s ) // Line from short area
+////Log( fmt.Sprintf("Find_Lines_Most_Same: ln_l=%v, pfl.NumLines()=%v, ca.fnl_l()=%v, ST_L+LD+1=%v",
+////                                        ln_l,    pfl.NumLines(),    ca.fnl_l(),    ST_L+LD+1) )
+//      var ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
+//
+//      var li_s LineInfo
+//      var li_l LineInfo
+//      var bytes_same int = m.Compare_Lines( ls, &li_s, ll, &li_l )
+//
+//      if( most_same.nbytes < bytes_same ) {
+//        most_same.ln_s   = ln_s
+//        most_same.ln_l   = ln_l
+//        most_same.nbytes = bytes_same
+//        most_same.li_s   = &li_s; // Hand off li_s
+//        most_same.li_l   = &li_l; // and      li_l
+//      }
+//    }
+//  }
+//  if( 0==most_same.nbytes ) {
+//    // This if() block ensures that each line in the short DiffArea is
+//    // matched to a line in the long DiffArea.  Each line in the short
+//    // DiffArea must be matched to a line in the long DiffArea or else
+//    // SimiList_2_DI_Lists wont work right.
+//    most_same.ln_s   = ca.ln_s
+//    most_same.ln_l   = ca.ln_l
+//    most_same.nbytes = 1
+//  }
+//  return most_same
+//}
 
-  // LD = Length Difference between long area and short area
-  var LD int = ca.nlines_l - ca.nlines_s
+func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
 
   most_same := SimLines{ 0, 0, 0, nil, nil }
   for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
-    var ST_L int = ca.ln_l+(ln_s-ca.ln_s)
 
-//  for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1 && ln_l<pfl.NumLines(); ln_l++ {
-    for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1; ln_l++ {
+    for ln_l := ca.ln_l; ln_l<ca.fnl_l(); ln_l++ {
+
       var ls *FLine = pfs.GetLP( ln_s ) // Line from short area
 //Log( fmt.Sprintf("Find_Lines_Most_Same: ln_l=%v, pfl.NumLines()=%v, ca.fnl_l()=%v, ST_L+LD+1=%v",
 //                                        ln_l,    pfl.NumLines(),    ca.fnl_l(),    ST_L+LD+1) )
