@@ -1056,8 +1056,6 @@ func ( m *Vis ) Exe_Colon_w() {
 
   var p_cv *FileView = m.CV()
 
-  var file_written bool = false
-
   if( m_rbuf.EqualStr("w") || m_rbuf.EqualStr("wq") ) {
 
     if( p_cv == m.views[ m.win ].GetPFv( m_SHELL_FILE ) ) {
@@ -1070,7 +1068,7 @@ func ( m *Vis ) Exe_Colon_w() {
       // which will put the cursor back in position,
       // else Window_Message will be called
       // which will put the cursor back in the message window
-      file_written = p_cv.p_fb.Write()
+      p_cv.p_fb.Write()
     }
     if( m_rbuf.EqualStr("wq") ) {
       m.Quit()
@@ -1090,14 +1088,7 @@ func ( m *Vis ) Exe_Colon_w() {
       p_fb := new( FileBuf )
       p_fb.Init_FB_2( pname, FT_UNKNOWN, p_cv.p_fb )
 
-      file_written = p_fb.Write()
-    }
-  }
-  if( file_written ) {
-    if( m.Update_Change_Statuses() ) {
-    //if( p_cv.m_in_diff ) {
-    //  m_diff.PrintCursor(); // Does m_console.Update()
-    //}
+      p_fb.Write()
     }
   }
 }
@@ -1169,6 +1160,21 @@ func ( m *Vis ) NoDiff() {
     pvL.Update_not_PrintCursor()
 
     p_cv.PrintCursor()
+  }
+}
+
+func ( m *Vis ) Full_ReDiff() {
+
+  p_cv := m.CV()
+  p_diff := p_cv.p_diff
+
+  if( nil != p_diff ) {
+    p_diff.Clear()
+
+    ok := p_diff.Run()
+    if( ok ) {
+      p_diff.UpdateBV()
+    }
   }
 }
 
@@ -1287,6 +1293,7 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("help") )     { m.Help()
     } else if( m_rbuf.EqualStr("diff") )     { m.Diff_Files_Displayed()
     } else if( m_rbuf.EqualStr("nodiff") )   { m.NoDiff()
+    } else if( m_rbuf.EqualStr("rediff") )   { m.Full_ReDiff()
     } else if( m_rbuf.EqualStr("n") )        { m.GoToNextBuffer()
     } else if( m_rbuf.EqualStr("re") )       { m.Refresh()
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()

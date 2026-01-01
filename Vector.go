@@ -114,11 +114,39 @@ func (m *Vector[T]) SetLen( length int ) {
   }
 }
 
+//func (m *Vector[T]) Insert2( idx int, val T ) {
+//  old_len := len(m.data)
+//  // First append val to make sure data is large enough:
+//  m.Push( val ) 
+//len_m_data_idx_1 := len(m.data[idx+1:])
+//len_m_data_idx   := len(m.data[idx:])
+//  n := copy( m.data[idx+1:], m.data[idx:] )
+//Log( fmt.Sprintf("old_len=%v, copy( m.data[%v:], m.data[%v:] => %v; len(m.data[idx+1:])=%v, len(m.data[idx:])=%v", old_len, idx+1, idx, n, len_m_data_idx_1, len_m_data_idx) )
+//  m.data[ idx ] = val
+//}
+
+// If idx is equal to or greater than m.Len(), Insert is the same as Push
+//
 func (m *Vector[T]) Insert( idx int, val T ) {
+  old_len := len(m.data)
   // First append val to make sure data is large enough:
   m.Push( val ) 
-  copy( m.data[idx+1:], m.data[idx:] )
-  m.data[ idx ] = val
+
+  if( idx < old_len ) {
+    copy( m.data[idx+1:], m.data[idx:] )
+    m.data[ idx ] = val
+  }
+}
+
+func (m *Vector[T]) Insert2( idx int, val T ) {
+  old_len := len(m.data)
+  // First append val to make sure data is large enough:
+  m.Push( val ) 
+
+  if( idx < old_len ) {
+    copy( m.data[idx+1:], m.data[idx:] )
+    m.data[ idx ] = val
+  }
 }
 
 func (m *Vector[T]) Remove( idx int ) T {

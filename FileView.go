@@ -1985,7 +1985,7 @@ func (m *FileView) MoveInBounds_Line() {
   }
 }
 
-func (m *FileView) Do_i() {
+func (m *FileView) Do_i_i() {
   m.Set_Insert_Mode( true )
 
   if( 0 == m.p_fb.NumLines() ) { m.p_fb.PushLE(); }
@@ -2020,7 +2020,16 @@ func (m *FileView) Do_i() {
   }
 }
 
-func (m *FileView) Do_a() {
+func (m *FileView) Do_i() {
+
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_i()
+  } else {
+    m.Do_i_i()
+  }
+}
+
+func (m *FileView) Do_a_i() {
 
   if( 0<m.p_fb.NumLines() ) {
     var CL int = m.CrsLine()
@@ -2038,14 +2047,30 @@ func (m *FileView) Do_a() {
   m.Do_i()
 }
 
-func (m *FileView) Do_A() {
+func (m *FileView) Do_a() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_a()
+  } else {
+    m.Do_a_i()
+  }
+}
+
+func (m *FileView) Do_A_i() {
 
   m.GoToEndOfLine()
 
   m.Do_a()
 }
 
-func (m *FileView) Do_o() {
+func (m *FileView) Do_A() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_A()
+  } else {
+    m.Do_A_i()
+  }
+}
+
+func (m *FileView) Do_o_i() {
 
   var ONL int = m.p_fb.NumLines() //< Old number of lines
   var OCL int = m.CrsLine()       //< Old cursor line
@@ -2064,7 +2089,15 @@ func (m *FileView) Do_o() {
   m.Do_i()
 }
 
-func (m *FileView) Do_O() {
+func (m *FileView) Do_o() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_o()
+  } else {
+    m.Do_o_i()
+  }
+}
+
+func (m *FileView) Do_O_i() {
   // Add the new line:
   var new_line_num int = m.CrsLine()
   m.p_fb.InsertLE( new_line_num )
@@ -2076,7 +2109,15 @@ func (m *FileView) Do_O() {
   m.Do_i()
 }
 
-func (m *FileView) Do_x() {
+func (m *FileView) Do_O() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_O()
+  } else {
+    m.Do_O_i()
+  }
+}
+
+func (m *FileView) Do_x_i() {
 
   // If there is nothing to 'x', just return:
   if( 0 < m.p_fb.NumLines() ) {
@@ -2115,7 +2156,15 @@ func (m *FileView) Do_x() {
   }
 }
 
-func (m *FileView) Do_s() {
+func (m *FileView) Do_x() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_x()
+  } else {
+    m.Do_x_i()
+  }
+}
+
+func (m *FileView) Do_s_i() {
 
   var CL  int = m.CrsLine()
   var LL  int = m.p_fb.LineLen( CL )
@@ -2128,6 +2177,14 @@ func (m *FileView) Do_s() {
   } else { // EOL <= CP
     m.Do_x()
     m.Do_a()
+  }
+}
+
+func (m *FileView) Do_s() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_s()
+  } else {
+    m.Do_s_i()
   }
 }
 
@@ -2169,7 +2226,7 @@ func (m *FileView) Do_dw_get_fn( st_line, st_char int,
 // If nothing was deleted, return 0.
 // If last char on line was deleted, return 2,
 // Else return 1.
-func (m *FileView) Do_dw() int {
+func (m *FileView) Do_dw_i() int {
 
   NUM_LINES := m.p_fb.NumLines()
 
@@ -2198,7 +2255,17 @@ func (m *FileView) Do_dw() int {
   return 0
 }
 
-func (m *FileView) Do_cw() {
+func (m *FileView) Do_dw() int {
+  rval := 0
+  if( nil != m.p_diff ) {
+    rval = m.p_diff.Do_dw()
+  } else {
+    rval = m.Do_dw_i()
+  }
+  return rval
+}
+
+func (m *FileView) Do_cw_i() {
 
   var result int = m.Do_dw()
 
@@ -2207,7 +2274,15 @@ func (m *FileView) Do_cw() {
   }
 }
 
-func (m *FileView) Do_D() {
+func (m *FileView) Do_cw() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_cw()
+  } else {
+    m.Do_cw_i()
+  }
+}
+
+func (m *FileView) Do_D_i() {
 
   var NUM_LINES int = m.p_fb.NumLines()
   var OCL int = m.CrsLine();  // Old cursor line
@@ -2231,6 +2306,14 @@ func (m *FileView) Do_D() {
     if( 0 < m.crsCol ) { m.crsCol--; }
 
     m.p_fb.Update()
+  }
+}
+
+func (m *FileView) Do_D() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_D()
+  } else {
+    m.Do_D_i()
   }
 }
 
@@ -2385,7 +2468,7 @@ func (m *FileView) Do_f( FAST_RUNE rune ) {
   }
 }
 
-func (m *FileView) Do_dd() {
+func (m *FileView) Do_dd_i() {
 
   var ONL int = m.p_fb.NumLines(); // Old number of lines
 
@@ -2396,6 +2479,14 @@ func (m *FileView) Do_dd() {
     } else {
       m.Do_dd_Normal( ONL )
     }
+  }
+}
+
+func (m *FileView) Do_dd() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_dd()
+  } else {
+    m.Do_dd_i()
   }
 }
 
@@ -2812,7 +2903,7 @@ func (m *FileView) Do_N_PrevDir_Search_for_Dir( dl *int ) bool {
   return found_dir
 }
 
-func (m *FileView) Do_v() bool {
+func (m *FileView) Do_v_i() bool {
 
   m.Set_Visual_Mode( true )
 //m.Set_VisualB_Mode( false )
@@ -2820,7 +2911,17 @@ func (m *FileView) Do_v() bool {
   return m.Do_visualMode()
 }
 
-func (m *FileView) Do_V() bool {
+func (m *FileView) Do_v() bool {
+  changed := false
+  if( nil != m.p_diff ) {
+    changed = m.p_diff.Do_v()
+  } else {
+    changed = m.Do_v_i()
+  }
+  return changed
+}
+
+func (m *FileView) Do_V_i() bool {
 
 //m.Set_Visual_Mode( false )
   m.Set_VisualB_Mode( true )
@@ -2828,7 +2929,17 @@ func (m *FileView) Do_V() bool {
   return m.Do_visualMode()
 }
 
-func (m *FileView) Do_yy() {
+func (m *FileView) Do_V() bool {
+  changed := false
+  if( nil != m.p_diff ) {
+    changed = m.p_diff.Do_V()
+  } else {
+    changed = m.Do_V_i()
+  }
+  return changed
+}
+
+func (m *FileView) Do_yy_i() {
   // If there is nothing to 'yy', just return:
   if( 0<m.p_fb.NumLines() ) {
     var lp *FLine = m.p_fb.GetLP( m.CrsLine() )
@@ -2840,7 +2951,15 @@ func (m *FileView) Do_yy() {
   }
 }
 
-func (m *FileView) Do_yw() {
+func (m *FileView) Do_yy() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_yy()
+  } else {
+    m.Do_yy_i()
+  }
+}
+
+func (m *FileView) Do_yw_i() {
   // If there is nothing to 'yw', just return:
   if( 0 < m.p_fb.NumLines() ) {
     var st_line int = m.CrsLine()
@@ -2863,13 +2982,29 @@ func (m *FileView) Do_yw() {
   }
 }
 
-func (m *FileView) Do_p() {
+func (m *FileView) Do_yw() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_yw()
+  } else {
+    m.Do_yw_i()
+  }
+}
+
+func (m *FileView) Do_p_i() {
 
   PM := m_vis.paste_mode
 
   if       ( PM_ST_FN == PM ) { m.Do_p_or_P_st_fn( PP_After )
   } else if( PM_BLOCK == PM ) { m.Do_p_block()
   } else /*( PM_LINE  == PM*/ { m.Do_p_line()
+  }
+}
+
+func (m *FileView) Do_p() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_p()
+  } else {
+    m.Do_p_i()
   }
 }
 
@@ -2967,13 +3102,21 @@ func (m *FileView) Do_p_line() {
   m.p_fb.Update()
 }
 
-func (m *FileView) Do_P() {
+func (m *FileView) Do_P_i() {
 
   var PM Paste_Mode = m_vis.paste_mode
 
   if       ( PM_ST_FN == PM ) { m.Do_p_or_P_st_fn( PP_Before )
   } else if( PM_BLOCK == PM ) { m.Do_P_block()
   } else /*( PM_LINE  == PM*/ { m.Do_P_line()
+  }
+}
+
+func (m *FileView) Do_P() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_P()
+  } else {
+    m.Do_P_i()
   }
 }
 
@@ -3018,7 +3161,7 @@ func (m *FileView) Do_P_line() {
   m.p_fb.Update()
 }
 
-func (m *FileView) Do_r() {
+func (m *FileView) Do_r_i() {
 
   OCL := m.CrsLine()           // Old cursor line
   OCP := m.CrsChar()           // Old cursor position
@@ -3049,6 +3192,14 @@ func (m *FileView) Do_r() {
   m.p_fb.Update()
 }
 
+func (m *FileView) Do_r() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_r()
+  } else {
+    m.Do_r_i()
+  }
+}
+
 func (m *FileView) Do_r_replace_white_space_with_register_line( k, OCL, ISP int ) {
   // Replace white space with register line, insert after white space used:
   var p_reg_line *RLine = m_vis.reg.GetLP(k)
@@ -3077,7 +3228,7 @@ func (m *FileView) Do_r_replace_white_space_with_register_line( k, OCL, ISP int 
   }
 }
 
-func (m *FileView) Do_R() {
+func (m *FileView) Do_R_i() {
 
   m.Set_Replace_Mode( true )
 
@@ -3102,7 +3253,15 @@ func (m *FileView) Do_R() {
   m.p_fb.Update()
 }
 
-func (m *FileView) Do_J() {
+func (m *FileView) Do_R() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_R()
+  } else {
+    m.Do_R_i()
+  }
+}
+
+func (m *FileView) Do_J_i() {
 
   NUM_LINES := m.p_fb.NumLines() // Number of lines
   CL        := m.CrsLine()       // Cursor line
@@ -3122,7 +3281,15 @@ func (m *FileView) Do_J() {
   }
 }
 
-func (m *FileView) Do_Tilda() {
+func (m *FileView) Do_J() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_J()
+  } else {
+    m.Do_J_i()
+  }
+}
+
+func (m *FileView) Do_Tilda_i() {
 
   if( 0 < m.p_fb.NumLines() ) {
     OCL := m.CrsLine() // Old cursor line
@@ -3149,6 +3316,14 @@ func (m *FileView) Do_Tilda() {
       }
       m.p_fb.Update()
     }
+  }
+}
+
+func (m *FileView) Do_Tilda() {
+  if( nil != m.p_diff ) {
+    m.p_diff.Do_Tilda()
+  } else {
+    m.Do_Tilda_i()
   }
 }
 

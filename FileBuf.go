@@ -583,6 +583,8 @@ func (m *FileBuf) InsertR( l_num, r_num int, R rune ) {
   }
 }
 
+// Add rune R to the end of line l_num
+//
 func (m *FileBuf) PushR( l_num int, R rune ) {
 
   m.lines.PushR( l_num, R )
@@ -695,7 +697,7 @@ func (m *FileBuf) GetCursorByte( CL, CC int ) int {
 func (m *FileBuf) Update() {
 
   if( !m_key.RunningDot() ) {
-    m_vis.Update_Change_Statuses()
+  //m_vis.Update_Change_Statuses()
 
     m_vis.UpdateViewsOfFile( m )
 
