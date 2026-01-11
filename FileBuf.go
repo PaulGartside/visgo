@@ -249,7 +249,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
 
 func (m *FileBuf) AddView( p_fv *FileView ) {
 
-  m.views.PushPFv( p_fv )
+  m.views.Push( p_fv )
 }
 
 func (m *FileBuf) ReadFile() {
@@ -277,7 +277,7 @@ func (m *FileBuf) ReReadFile() {
 
     // Reposition cursor in each FileView of this file if needed:
     for w:=0; w<MAX_WINS; w++ {
-      var p_V *FileView = m.views.GetPFv( w )
+      var p_V *FileView = m.views.Get( w )
 
       p_V.Check_Context()
     }
@@ -724,7 +724,7 @@ func (m *FileBuf) InsertLine_Adjust_Views_topLines( l_num int ) {
 
   for w:=0; w<m.views.Len(); w++ {
 
-    var p_fv *FileView = m.views.GetPFv( w )
+    var p_fv *FileView = m.views.Get( w )
 
     p_fv.InsertedLine_Adjust_TopLine( l_num )
   }

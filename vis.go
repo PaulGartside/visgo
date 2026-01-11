@@ -15,6 +15,9 @@ import (
 type CmdFunc func(*Vis)
 type CmdFunc2 func(*Vis,int)
 
+type FileViewList = Vector[*FileView]
+type FileBufList  = Vector[*FileBuf]
+
 type Vis struct {
   running bool
 
@@ -50,7 +53,7 @@ func (m *Vis) HaveFile( path string, p_file_index *int ) bool {
 
   for k:=0; k<m.files.Len(); k++ {
 
-    var fpath string = m.files.GetPFb(k).GetPath()
+    var fpath string = m.files.Get(k).GetPath()
     if path == fpath {
       already_have_file = true
       if( p_file_index != nil ) {
@@ -76,12 +79,12 @@ func (m *Vis) NotHaveFileAddFile( path string ) bool {
 
 func (m *Vis) Add_FileBuf_2_Lists_Create_Views( p_fb *FileBuf ) {
 
-  m.files.PushPFb( p_fb )
+  m.files.Push( p_fb )
 
   for w:=0; w<MAX_WINS; w++ {
     p_v := new( FileView )
     p_v.Init( p_fb )
-    m.views[w].PushPFv( p_v )
+    m.views[w].Push( p_v )
     p_fb.AddView( p_v )
   }
   // Push file name onto buffer editor buffer
@@ -92,7 +95,7 @@ func (m *Vis) AddToBufferEditor( fname string ) {
   p_fl := new(FLine)
   p_fl.PushSR( []rune(fname) )
 
-  var p_fb *FileBuf = m.views[0].GetPFv( m_BE_FILE ).p_fb
+  var p_fb *FileBuf = m.views[0].Get( m_BE_FILE ).p_fb
   p_fb.PushLP( p_fl )
   p_fb.BufferEditor_SortName()
   p_fb.ClearChanged()
@@ -100,7 +103,7 @@ func (m *Vis) AddToBufferEditor( fname string ) {
   // Since buffer editor file has been re-arranged, make sure none of its
   // views have the cursor position past the end of the line
   for k:=0; k<MAX_WINS; k++ {
-    var p_V *FileView = m.views[k].GetPFv( m_BE_FILE )
+    var p_V *FileView = m.views[k].Get( m_BE_FILE )
 
     var CL int = p_V.CrsLine()
     var CP int = p_V.CrsChar()
@@ -114,13 +117,13 @@ func (m *Vis) AddToBufferEditor( fname string ) {
 
 func (m *Vis) GetFileBuf( index int ) *FileBuf {
 
-  return m.files.GetPFb( index )
+  return m.files.Get( index )
 }
 
 func (m *Vis) GetFileBuf_s( fname string ) *FileBuf {
 
   for k:=0; k<m.files.Len(); k++ {
-    var pfb_k *FileBuf = m.files.GetPFb( k )
+    var pfb_k *FileBuf = m.files.Get( k )
 
     if( fname == pfb_k.path_name ) {
       return pfb_k
@@ -404,7 +407,7 @@ func (m *Vis) Set_BufferEditor_Cursor_on_CurrentFile() {
   CV_path := p_cv_fb.path_name
   CV_dir  := p_cv_fb.dir_name
 
-  p_be_v  := m.views[m.win].GetPFv( m_BE_FILE )
+  p_be_v  := m.views[m.win].Get( m_BE_FILE )
   p_be_fb := p_be_v.p_fb
 
   BE_NUM_LINES := p_be_fb.NumLines()
@@ -496,7 +499,7 @@ func (m *Vis) GetFullFileNameRelative2CurrFile( fname string ) (string, bool) {
 //        // Look for context for the new view:
 //        var found_context bool = false
 //        for w:=0; !found_context && w<m.num_wins; w++ {
-//          var p_v *FileView = m.views[w].GetPFv( buf_idx )
+//          var p_v *FileView = m.views[w].Get( buf_idx )
 //          if( p_v.Has_Context() ) {
 //            found_context = true
 //            p_nv.Set_Context( p_v )
@@ -548,7 +551,7 @@ func (m *Vis) GoToBuffer_SetContext( buf_idx int, p_nv, p_pv *FileView ) {
     // Look for context for the new view:
     found_context := false
     for w:=0; !found_context && w<MAX_WINS; w++ {
-      p_fv := m.views[ w ].GetPFv( buf_idx )
+      p_fv := m.views[ w ].Get( buf_idx )
       if( p_fv.Has_Context() ) {
         found_context = true
 
@@ -735,11 +738,11 @@ func (m *Vis) ReleaseFileName( full_fname string ) {
 
 func (m *Vis) ReleaseFileNum( file_num int ) {
 
-  m.files.RemovePFb( file_num )
+  m.files.Remove( file_num )
 
   for k:=0; k<MAX_WINS; k++  {
     // Remove m.views[file_num]
-    m.views[k].RemovePFv( file_num )
+    m.views[k].Remove( file_num )
 
     var p_file_hist_k *IntList = &m.file_hist[k]
 
@@ -768,7 +771,7 @@ func (m *Vis) FName_2_FNum( full_fname string, file_num *int ) bool {
 
   for k:=0; !found && k<m.files.Len(); k++ {
 
-    if( full_fname == m.files.GetPFb( k ).path_name ) {
+    if( full_fname == m.files.Get( k ).path_name ) {
       found = true
       *file_num = k
     }
@@ -1058,7 +1061,7 @@ func ( m *Vis ) Exe_Colon_w() {
 
   if( m_rbuf.EqualStr("w") || m_rbuf.EqualStr("wq") ) {
 
-    if( p_cv == m.views[ m.win ].GetPFv( m_SHELL_FILE ) ) {
+    if( p_cv == m.views[ m.win ].Get( m_SHELL_FILE ) ) {
       // Dont allow SHELL_BUFFER to be saved with :w.
       // Require :w filename.
       p_cv.PrintCursor()
@@ -1081,7 +1084,7 @@ func ( m *Vis ) Exe_Colon_w() {
 
     var file_index int = -1
     if( m.HaveFile( pname, &file_index ) ) {
-      m.files.GetPFb( file_index ).Write()
+      m.files.Get( file_index ).Write()
 
     } else if( DIR_DELIM != pname[ len( pname )-1 ] ) {
     //p_fb := m.CreateFile( pname, FT_UNKNOWN )
@@ -1264,8 +1267,8 @@ func (m *Vis) Diff_By_File_Indexes( vc_t *FileView, idx_n_file_t int,
     }
   //var nv_t *FileView = m.GetView_WinPrev( c_win_t, 0 )
   //var nv_o *FileView = m.GetView_WinPrev( c_win_o, 0 )
-    var nv_t *FileView = m.views[ c_win_t ].GetPFv( idx_n_file_t )
-    var nv_o *FileView = m.views[ c_win_o ].GetPFv( idx_n_file_o )
+    var nv_t *FileView = m.views[ c_win_t ].Get( idx_n_file_t )
+    var nv_o *FileView = m.views[ c_win_o ].Get( idx_n_file_o )
 
     nv_t.SetTilePos( vc_t.GetTilePos() )
     nv_o.SetTilePos( vc_o.GetTilePos() )
@@ -1407,16 +1410,16 @@ func (m *Vis) Init() {
 }
 
 func (m *Vis) CV() *FileView {
-  return m.views[m.win].GetPFv( m.file_hist[m.win].Get(0) )
+  return m.views[m.win].Get( m.file_hist[m.win].Get(0) )
 }
 
 func (m *Vis) PV() *FileView {
-  return m.views[m.win].GetPFv( m.file_hist[m.win].Get(1) )
+  return m.views[m.win].Get( m.file_hist[m.win].Get(1) )
 }
 
 func (m *Vis) GetView_Win( w int ) *FileView {
 
-  return m.views[w].GetPFv( m.file_hist[w].Get( 0 ) )
+  return m.views[w].Get( m.file_hist[w].Get( 0 ) )
 }
 
 // Get view of window w, prev'th displayed file
@@ -1424,7 +1427,7 @@ func (m *Vis) GetView_WinPrev( w, prev int ) *FileView {
   var pV *FileView
 
   if( prev < m.file_hist[w].Len() ) {
-    pV = m.views[w].GetPFv( m.file_hist[w].Get(prev) )
+    pV = m.views[w].Get( m.file_hist[w].Get(prev) )
   }
   return pV
 }
@@ -1443,7 +1446,7 @@ func (m *Vis) GetWinNum_Of_View( rV *FileView ) int {
 func (m *Vis) Buf2FileNum( p_fb *FileBuf ) int {
 
   for k:=0; k<m.views[0].Len(); k++ {
-    if( m.views[0].GetPFv( k ).p_fb == p_fb ) {
+    if( m.views[0].Get( k ).p_fb == p_fb ) {
       return k
     }
   }
@@ -1488,7 +1491,7 @@ func (m *Vis) UpdateViewsOfFile( p_fb *FileBuf ) {
 
 func (m *Vis) Is_BE_FILE( p_fb *FileBuf ) bool {
 
-  return p_fb == m.views[0].GetPFv( m_BE_FILE ).p_fb
+  return p_fb == m.views[0].Get( m_BE_FILE ).p_fb
 }
 
 func (m *Vis) Handle_f() {
