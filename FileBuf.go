@@ -262,6 +262,7 @@ func (m *FileBuf) ReadFile() {
     m.lines.LF_at_EOF = true
   }
   m.mod_time = ModificationTime( m.path_name )
+  m.changed_externally = false
 }
 
 func (m *FileBuf) ReReadFile() {

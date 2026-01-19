@@ -1641,6 +1641,7 @@ func (m *Vis) CheckFileModTime() {
       if( pfb.is_regular ) {
         // Update file modification time so that the message window
         // will not keep popping up:
+        pfb.mod_time = curr_mod_time
         pfb.changed_externally = true
 
       } else if( pfb.is_dir ) {
