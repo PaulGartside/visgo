@@ -54,8 +54,8 @@ type Diff struct {
   DI_List_L Vector[Diff_Info] // One Diff_Info per diff line
   DI_L_ins_idx int            // Diff_Info lists insert index
 
-  inVisualMode bool
-  inVisualBlock bool
+//inVisualMode bool
+//inVisualBlock bool
 
   v_st_line, v_st_char int
   v_fn_line, v_fn_char int
@@ -121,8 +121,10 @@ func (m *Diff) Clear() {
   m.DI_List_L.Clear()
   m.DI_L_ins_idx = 0
 
-  m.inVisualMode  = false
-  m.inVisualBlock = false
+  pV := m_vis.CV()
+
+  pV.inVisualMode  = false
+  pV.inVisualBlock = false
 
   m.v_st_line = 0
   m.v_st_char = 0
@@ -431,6 +433,7 @@ func (m *Diff) Update1V( pV *FileView ) {
   if       ( pV == m.pvS ) { m.UpdateS()
   } else if( pV == m.pvL ) { m.UpdateL()
   }
+  m_console.Show()
 }
 
 func (m *Diff) UpdateS() {
@@ -700,28 +703,45 @@ func (m *Diff) PrintStsLine( pV *FileView ) {
   m_console.SetBuffer( pV.Sts__Line_Row(), pV.Col_Win_2_GL( 0 ), &buf, &TS_BORDER )
 }
 
-func (m *Diff) PrintCmdLine( pV *FileView ) {
-  // Prints "--INSERT--" banner, and/or clears command line
-  i:=0
-  // Draw insert banner if needed
-  if( pV.inInsertMode ) {
-    i=10 // Strlen of "--INSERT--"
-    m_console.SetString( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( 0 ), "--INSERT--", &TS_BANNER )
-  }
-  WC := pV.WorkingCols()
+//func (m *Diff) PrintCmdLine( pV *FileView ) {
+//  // Prints "--INSERT--" banner, and/or clears command line
+//  i:=0
+//  // Draw insert banner if needed
+//  if( pV.inInsertMode ) {
+//    i=10 // Strlen of "--INSERT--"
+//    m_console.SetString( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( 0 ), "--INSERT--", &TS_BANNER )
+//  }
+//  WC := pV.WorkingCols()
+//
+//  for ; i<WC-7; i++ {
+//    m_console.SetR( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( i ), ' ', &TS_NORMAL )
+//  }
+//  m_console.SetString( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( WC-8 ), "--DIFF--", &TS_BANNER )
+//}
 
-  for ; i<WC-7; i++ {
-    m_console.SetR( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( i ), ' ', &TS_NORMAL )
-  }
-  m_console.SetString( pV.Cmd__Line_Row(), pV.Col_Win_2_GL( WC-8 ), "--DIFF--", &TS_BANNER )
+func (m *Diff) PrintCmdLine( pV *FileView ) {
+  pV.PrintCmdLine()
 }
 
-func (m *Diff) InVisualArea( pV *FileView, DL, pos int ) bool {
+//func (m *Diff) InVisualArea( in_pV *FileView, DL, pos int ) bool {
+//
+//  pV := m_vis.CV()
+//  // Only one diff view, current view, can be in visual mode.
+//  if( pV == in_pV && pV.inVisualMode ) {
+//    if( pV.inVisualBlock ) { return m.InVisualBlock( DL, pos )
+//    } else                 { return m.InVisualStFn ( DL, pos )
+//    }
+//  }
+//  return false
+//}
 
+func (m *Diff) InVisualArea( in_pV *FileView, DL, pos int ) bool {
+
+  pV := m_vis.CV()
   // Only one diff view, current view, can be in visual mode.
-  if( m_vis.CV() == pV && m.inVisualMode ) {
-    if( m.inVisualBlock ) { return m.InVisualBlock( DL, pos )
-    } else                { return m.InVisualStFn ( DL, pos )
+  if( pV == in_pV ) {
+    if       ( pV.inVisualMode )  { return m.InVisualStFn ( DL, pos )
+    } else if( pV.inVisualBlock ) { return m.InVisualBlock( DL, pos )
     }
   }
   return false
@@ -741,7 +761,9 @@ func (m *Diff) InVisualBlock( DL, pos int ) bool {
 
 func (m *Diff) InVisualStFn( DL, pos int ) bool {
 
-  if( !m.inVisualMode ) { return false }
+  pV := m_vis.CV()
+
+  if( !pV.inVisualMode ) { return false }
 
   if( m.v_st_line == DL && DL == m.v_fn_line ) {
     return (m.v_st_char <= pos && pos <= m.v_fn_char) ||
@@ -774,13 +796,13 @@ func (m *Diff) Get_Style( pV *FileView, DL, VL, pos int ) *tcell.Style {
     p_TS = &TS_NORMAL
 
     if       ( m.InVisualArea( pV, DL, pos ) ) { p_TS = &TS_RV_VISUAL
-    } else if( pV.InStar   ( VL, pos ) ) { p_TS = &TS_STAR
-    } else if( pV.InStarInF( VL, pos ) ) { p_TS = &TS_STAR_IN_F
-    } else if( pV.InDefine ( VL, pos ) ) { p_TS = &TS_DEFINE
-    } else if( pV.InComment( VL, pos ) ) { p_TS = &TS_COMMENT
-    } else if( pV.InConst  ( VL, pos ) ) { p_TS = &TS_CONST
-    } else if( pV.InControl( VL, pos ) ) { p_TS = &TS_CONTROL
-    } else if( pV.InVarType( VL, pos ) ) { p_TS = &TS_VARTYPE
+    } else if( pV.InStar         ( VL, pos ) ) { p_TS = &TS_STAR
+    } else if( pV.InStarInF      ( VL, pos ) ) { p_TS = &TS_STAR_IN_F
+    } else if( pV.InDefine       ( VL, pos ) ) { p_TS = &TS_DEFINE
+    } else if( pV.InComment      ( VL, pos ) ) { p_TS = &TS_COMMENT
+    } else if( pV.InConst        ( VL, pos ) ) { p_TS = &TS_CONST
+    } else if( pV.InControl      ( VL, pos ) ) { p_TS = &TS_CONTROL
+    } else if( pV.InVarType      ( VL, pos ) ) { p_TS = &TS_VARTYPE
     }
   }
   return p_TS
@@ -1038,13 +1060,17 @@ func (m *Diff) Do_N() {
 }
 
 func (m *Diff) Do_v() bool {
-  // FIXME
-  return false
+
+  m.Set_Visual_Mode( true )
+
+  return m.Do_visualMode()
 }
 
 func (m *Diff) Do_V() bool {
-  // FIXME
-  return false
+
+  m.Set_VisualB_Mode( true )
+
+  return m.Do_visualMode()
 }
 
 func (m *Diff) Do_a() {
@@ -1610,7 +1636,7 @@ func (m *Diff) Do_dw() int {
 }
 
 // st_line_d and fn_line_d are in terms of diff line
-func (m *Diff) Do_dw_get_fn( st_line_d, st_char int, 
+func (m *Diff) Do_dw_get_fn( st_line_d, st_char int,
                              fn_line_d, fn_char *int ) bool {
 
   pV  := m_vis.CV()
@@ -1664,7 +1690,9 @@ func (m *Diff) Do_x_range( st_line, st_char, fn_line, fn_char int ) {
 
 func (m *Diff) Do_x_range_pre( st_line, st_char, fn_line, fn_char *int ) {
 
-  if( m.inVisualBlock ) {
+  pV := m_vis.CV()
+
+  if( pV.inVisualBlock ) {
     if( *fn_line < *st_line ) { Swap( st_line, fn_line ) }
     if( *fn_char < *st_char ) { Swap( st_char, fn_char ) }
   } else {
@@ -1767,12 +1795,12 @@ func (m *Diff) Do_x_range_multiple( st_line, st_char, fn_line, fn_char int ) {
 
 func (m *Diff) Do_x_range_post( st_line, st_char int ) {
 
-  if( m.inVisualBlock ) { m_vis.paste_mode = PM_BLOCK
-  } else                { m_vis.paste_mode = PM_ST_FN
-  }
   pV  := m_vis.CV()
   pfb := pV.p_fb
 
+  if( pV.inVisualBlock ) { m_vis.paste_mode = PM_BLOCK
+  } else                 { m_vis.paste_mode = PM_ST_FN
+  }
   var cDI_List *Vector[Diff_Info] = m.View_2_DI_List_C( pV ) // Current diff info list
 
   // Make sure the cursor is in bounds after the deletion:
@@ -1787,7 +1815,7 @@ func (m *Diff) Do_x_range_post( st_line, st_char int ) {
 
   m.GoToCrsPos_NoWrite( ncld, ncc )
 
-  m.inVisualMode = false
+  pV.inVisualMode = false
 
 //if( m.Partial_ReDiff() ) { m.UpdateBV() }
   m.UpdateBV() //<- No need to Undo_v() or Remove_Banner() because of this
@@ -2185,7 +2213,7 @@ func (m *Diff) Do_Tilda() {
     VL := m.ViewLine( pV, DL ) // View line
     CP := m.CrsChar()          // Cursor position
     LL := pfb.LineLen( VL )
-  
+
     if( 0<LL && CP<LL ) {
       R := pfb.GetR( VL, CP )
       changed := false
@@ -2916,7 +2944,7 @@ func (m *Diff) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
     // Not moving to new cursor line so just put cursor back where is was
     m.PrintCursor( pV )
   } else {
-    if( m.inVisualMode ) {
+    if( pV.inVisualMode || pV.inVisualBlock ) {
       m.v_fn_line = NCL
       m.v_fn_char = NCP
     }
@@ -2941,18 +2969,18 @@ func (m *Diff) GoToCrsPos_Write( ncp_crsLine, ncp_crsChar int ) {
 
       m.UpdateBV()
 
-    } else if( m.inVisualMode ) {
-      if( m.inVisualBlock ) { m.GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP )
-      } else                { m.GoToCrsPos_Write_Visual     ( OCL, OCP, NCL, NCP )
-      }
     } else {
-      // crsRow and crsCol must be set to new values before calling CalcNewCrsByte and PrintCursor
-      m.crsRow = NCL - m.topLine
-      m.crsCol = NCP - m.leftChar
+      if       ( pV.inVisualMode  ) { m.GoToCrsPos_Write_Visual     ( OCL, OCP, NCL, NCP )
+      } else if( pV.inVisualBlock ) { m.GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP )
+      } else {
+        // crsRow and crsCol must be set to new values before calling CalcNewCrsByte and PrintCursor
+        m.crsRow = NCL - m.topLine
+        m.crsCol = NCP - m.leftChar
 
-      m.PrintStsLine( m.pvS )
-      m.PrintStsLine( m.pvL )
-      m.PrintCursor( pV )  // Put cursor into position.
+        m.PrintStsLine( m.pvS )
+        m.PrintStsLine( m.pvL )
+        m.PrintCursor( pV )  // Put cursor into position.
+      }
     }
   }
 }
@@ -2976,14 +3004,6 @@ func (m *Diff) GoToCrsPos_NoWrite( ncp_crsLine, ncp_crsChar int ) {
   } else if( MOVE_LEFT  ) { m.leftChar = ncp_crsChar
   }
   m.crsCol = ncp_crsChar - m.leftChar
-}
-
-func (m *Diff) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
-  // FIXME:
-}
-
-func (m *Diff) GoToCrsPos_Write_Visual( OCL, OCP, NCL, NCP int ) {
-  // FIXME:
 }
 
 func (m *Diff) Do_n_Diff( write bool ) {
@@ -4113,5 +4133,23 @@ func (m *Diff) On_Deleted_View_Line_Zero( DL int ) bool {
     }
   }
   return ODVL0
+}
+
+func (m *Diff) Swap_Visual_St_Fn_If_Needed() {
+
+  pV := m_vis.CV()
+
+  if( pV.inVisualBlock ) {
+    if( m.v_fn_line < m.v_st_line ) { Swap( &m.v_st_line, &m.v_fn_line ) }
+    if( m.v_fn_char < m.v_st_char ) { Swap( &m.v_st_char, &m.v_fn_char ) }
+  } else {
+    if( m.v_fn_line < m.v_st_line ||
+        (m.v_fn_line == m.v_st_line && m.v_fn_char < m.v_st_char) ) {
+      // Visual mode went backwards over multiple lines, or
+      // Visual mode went backwards over one line
+      Swap( &m.v_st_line, &m.v_fn_line )
+      Swap( &m.v_st_char, &m.v_fn_char )
+    }
+  }
 }
 

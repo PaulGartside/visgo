@@ -51,6 +51,51 @@ var TS_DIFF_CONTROL   tcell.Style
 var TS_DIFF_VARTYPE   tcell.Style
 var TS_DIFF_VISUAL    tcell.Style
 
+func tcell_Style_to_str( p_TS *tcell.Style ) string {
+
+  var S string = "Unknown"
+
+  if       ( p_TS == &TS_NORMAL   ) { S = "NORMAL"
+  } else if( p_TS == &TS_BORDER   ) { S = "BORDER"
+  } else if( p_TS == &TS_BORDER_HI) { S = "BORDER_HI"
+  } else if( p_TS == &TS_EOF      ) { S = "EOF"
+  } else if( p_TS == &TS_BANNER   ) { S = "BANNER"
+  } else if( p_TS == &TS_CONST    ) { S = "CONST"
+  } else if( p_TS == &TS_DEFINE   ) { S = "DEFINE"
+  } else if( p_TS == &TS_CONTROL  ) { S = "CONTROL"
+  } else if( p_TS == &TS_EMPTY    ) { S = "EMPTY"
+  } else if( p_TS == &TS_VISUAL   ) { S = "VISUAL"
+  } else if( p_TS == &TS_STAR     ) { S = "STAR"
+  } else if( p_TS == &TS_STAR_IN_F) { S = "STAR_IN_F"
+  } else if( p_TS == &TS_COMMENT  ) { S = "COMMENT"
+  } else if( p_TS == &TS_VARTYPE  ) { S = "VARTYPE"
+  } else if( p_TS == &TS_NONASCII ) { S = "NONASCII"
+
+  } else if( p_TS == &TS_RV_NORMAL   ) { S = "RV_NORMAL"
+  } else if( p_TS == &TS_RV_STAR     ) { S = "RV_STAR"
+  } else if( p_TS == &TS_RV_STAR_IN_F) { S = "RV_STAR_IN_F"
+  } else if( p_TS == &TS_RV_DEFINE   ) { S = "RV_DEFINE"
+  } else if( p_TS == &TS_RV_COMMENT  ) { S = "RV_COMMENT"
+  } else if( p_TS == &TS_RV_CONST    ) { S = "RV_CONST"
+  } else if( p_TS == &TS_RV_CONTROL  ) { S = "RV_CONTROL"
+  } else if( p_TS == &TS_RV_VARTYPE  ) { S = "RV_VARTYPE"
+  } else if( p_TS == &TS_RV_NONASCII ) { S = "RV_NONASCII"
+  } else if( p_TS == &TS_RV_VISUAL   ) { S = "RV_VISUAL"
+
+  } else if( p_TS == &TS_DIFF_NORMAL   ) { S = "DIFF_NORMAL"
+  } else if( p_TS == &TS_DIFF_DEL      ) { S = "DIFF_DEL"
+  } else if( p_TS == &TS_DIFF_STAR     ) { S = "DIFF_STAR"
+  } else if( p_TS == &TS_DIFF_STAR_IN_F) { S = "DIFF_STAR_IN_F"
+  } else if( p_TS == &TS_DIFF_COMMENT  ) { S = "DIFF_COMMENT"
+  } else if( p_TS == &TS_DIFF_DEFINE   ) { S = "DIFF_DEFINE"
+  } else if( p_TS == &TS_DIFF_CONST    ) { S = "DIFF_CONST"
+  } else if( p_TS == &TS_DIFF_CONTROL  ) { S = "DIFF_CONTROL"
+  } else if( p_TS == &TS_DIFF_VARTYPE  ) { S = "DIFF_VARTYPE"
+  } else if( p_TS == &TS_DIFF_VISUAL   ) { S = "DIFF_VISUAL"
+  }
+  return S
+}
+
 // Windows is limited to the following colors:
 //
 // ColorBlack,
