@@ -3387,8 +3387,6 @@ func (m *FileView) Do_visualMode() bool {
   return changed
 }
 
-// Returns true if still in visual mode, else false
-//
 func (m *FileView) Do_v_Handle_g() {
 
   kr := m_key.In()

@@ -1038,13 +1038,17 @@ func (m *Diff) Do_N() {
 }
 
 func (m *Diff) Do_v() bool {
-  // FIXME
-  return false
+
+  m.Set_Visual_Mode( true )
+
+  return m.Do_visualMode()
 }
 
 func (m *Diff) Do_V() bool {
-  // FIXME
-  return false
+
+  m.Set_VisualB_Mode( true )
+
+  return m.Do_visualMode()
 }
 
 func (m *Diff) Do_a() {
@@ -4113,5 +4117,21 @@ func (m *Diff) On_Deleted_View_Line_Zero( DL int ) bool {
     }
   }
   return ODVL0
+}
+
+func (m *Diff) Swap_Visual_St_Fn_If_Needed() {
+
+  if( m.inVisualBlock ) {
+    if( m.v_fn_line < m.v_st_line ) { Swap( &m.v_st_line, &m.v_fn_line ) }
+    if( m.v_fn_char < m.v_st_char ) { Swap( &m.v_st_char, &m.v_fn_char ) }
+  } else {
+    if( m.v_fn_line < m.v_st_line ||
+        (m.v_fn_line == m.v_st_line && m.v_fn_char < m.v_st_char) ) {
+      // Visual mode went backwards over multiple lines, or
+      // Visual mode went backwards over one line
+      Swap( &m.v_st_line, &m.v_fn_line )
+      Swap( &m.v_st_char, &m.v_fn_char )
+    }
+  }
 }
 
