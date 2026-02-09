@@ -828,7 +828,7 @@ func (m *Diff) Do_i() {
   }
   var count int
   for kr := m_key.In(); ! kr.IsESC(); kr = m_key.In() {
-    if kr.IsEndOfLineDelim() {
+    if( kr.IsEndOfLineDelim() ) {
       m.InsertAddReturn()
 
     } else if( kr.IsBS() || kr.IsDEL() ) {
@@ -2170,7 +2170,124 @@ func (m *Diff) Do_r() {
 }
 
 func (m *Diff) Do_R() {
-  // FIXME
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+
+  pV.Set_Replace_Mode( true )
+
+  if( 0 == pfb.NumLines() ) { pfb.PushLE() }
+
+  count := 0
+  for kr := m_key.In(); ! kr.IsESC(); kr = m_key.In() {
+    if( kr.IsBS() || kr.IsDEL() ) {
+      if( 0<count ) {
+        m.InsertBackspace()
+        count--
+      }
+    } else if( kr.IsEndOfLineDelim() ) {
+      m.ReplaceAddReturn()
+      count++
+    } else {
+      m.ReplaceAddChar( kr.R )
+      count++
+    }
+  }
+  pV.Set_Replace_Mode( false )
+
+  // Move cursor back one space:
+  if( 0<m.crsCol ) { m.crsCol-- }  // Move cursor back one space.
+
+  m.UpdateBV()
+}
+
+func (m *Diff) ReplaceAddReturn() {
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+
+  // The lines in fb do not end with '\n's.
+  // When the file is written, '\n's are added to the ends of the lines.
+//var new_line RLine
+  p_rline := new(RLine)
+  ODL := m.CrsLine()           // Old Diff line number
+  OVL := m.ViewLine( pV, ODL ) // Old View line number
+  OLL := pfb.LineLen( OVL )
+  OCP := m.CrsChar()
+
+  for k:=OCP; k<OLL; k++ {
+    R := pfb.RemoveR( OVL, OCP )
+    p_rline.PushR( R )
+  }
+  // Truncate the rest of the old line:
+  // Add the new line:
+  new_line_num := OVL+1;
+  pfb.InsertRLP( new_line_num, p_rline )
+
+  m.GoToCrsPos_NoWrite( ODL+1, 0 )
+
+  m.Patch_Diff_Info_Changed( pV, ODL )
+  m.Patch_Diff_Info_Inserted( pV, ODL+1, false )
+  m.UpdateBV()
+}
+
+func (m *Diff) ReplaceAddChar( R rune ) {
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+
+  if( pfb.NumLines()==0 ) { pfb.PushLE() }
+
+  DL := m.CrsLine()
+  VL := m.ViewLine( pV, DL ) // View line number
+
+  var cDI Diff_Info = m.DiffInfo( pV, DL )
+
+  ON_DELETED := DT_DELETED == cDI.diff_type
+  if( ON_DELETED ) {
+    m.ReplaceAddChar_ON_DELETED( R, DL, VL )
+  } else {
+    CP := m.CrsChar()
+    LL := pfb.LineLen( VL )
+    EOL := LLM1( LL )
+
+    if( EOL < CP ) {
+      // Extend line out to where cursor is:
+      for k:=LL; k<CP; k++ { pfb.PushR( VL, ' ' ) }
+    }
+    // Put char back in file buffer
+    continue_last_update := false
+    if( CP < LL ) { pfb.SetR( VL, CP, R, continue_last_update )
+    } else {
+      pfb.PushR( VL, R )
+    }
+    m.Patch_Diff_Info_Changed( pV, DL )
+  }
+  if( m.crsCol < m.WorkingCols( pV )-1 ) {
+    m.crsCol++
+  } else {
+    m.leftChar++
+  }
+  m.UpdateBV()
+}
+
+func (m *Diff) ReplaceAddChar_ON_DELETED( R rune, DL, VL int ) {
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+
+//var cDI_List *Vector[Diff_Info] = m.View_2_DI_List_C( pV )
+
+  var ODVL0 bool = m.On_Deleted_View_Line_Zero( DL )
+
+  nlp := new(RLine)
+  nlp.PushR( R )
+  if( ODVL0 ) {
+    pfb.InsertRLP( VL, nlp )
+  } else {
+    pfb.InsertRLP( VL+1, nlp )
+  }
+  m.Patch_Diff_Info_Inserted( pV, DL, ODVL0 )
 }
 
 func (m *Diff) Do_J() {
