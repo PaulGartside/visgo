@@ -641,3 +641,47 @@ func Files_Are_Same_o( pfb_1, pfb_2 *FileBuf ) bool {
   return files_are_same
 }
 
+// dir1 is direct parent of dir2
+// Example:
+// dir1 = /a/b/c/
+// dir2 = /a/b/c/d/
+//
+func dir1_is_parent_dir_of_dir2( dir1, dir2 string ) bool {
+  if( len(dir1)+1 < len(dir2) ) {
+    if( strings.HasPrefix( dir2, dir1) ) {
+      start_idx  := len(dir1)
+      finish_idx := len(dir2)
+
+      for dir2[start_idx]   ==DIR_DELIM { start_idx++ }
+      for dir2[finish_idx-1]==DIR_DELIM { finish_idx-- }
+
+      for k:=start_idx; k<finish_idx; k++ {
+        if( dir2[k] == DIR_DELIM ) { return false }
+      }
+      return true
+    }
+  }
+  return false
+}
+
+// Example: If dir_name = /a/b/c/d/
+// returns: d
+//
+func get_last_dir_of( dir_name string ) string {
+  var last_dir strings.Builder
+
+  if( 1 < len(dir_name) ) {
+    finish_idx := len(dir_name) - 1
+
+    // Backup finish_idx to before one or more DIR_DELIM's at end of dir_name:
+    for 0<finish_idx && dir_name[finish_idx]==DIR_DELIM { finish_idx-- }
+
+    start_idx := finish_idx;
+    for( 0<=start_idx && dir_name[start_idx]!=DIR_DELIM ) { start_idx-- }
+    start_idx++
+
+    for k:=start_idx; k<=finish_idx; k++ { last_dir.WriteByte( dir_name[k] ) }
+  }
+  return last_dir.String()
+}
+

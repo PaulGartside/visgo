@@ -133,44 +133,6 @@ func (m *Vis) GetFileBuf_s( fname string ) *FileBuf {
 }
 
 // Return true if went to buffer indicated by fname, else false
-//func (m *Vis) GoToBuffer_Fname( fname string ) bool {
-//
-//  var went_to_buffer bool = false
-//
-//  // 1. Search for fname in buffer list, and if found, go to that buffer:
-//  var file_index int = 0
-//  if( m.HaveFile( fname, &file_index ) ) {
-//    m.GoToBuffer( file_index )
-//
-//    went_to_buffer = true
-//
-//  // 2. Get full file name of fname relative to dir of current file
-//  } else if( m.GetFullFileNameRelative2CurrFile( fname ) ) {
-//    // 3. Search for fname in buffer list, and if found, go to that buffer:
-//    if( m.HaveFile( fname, &file_index ) ) {
-//      m.GoToBuffer( file_index )
-//
-//      went_to_buffer = true
-//    // 4. See if file exists, and if so, add a file buffer, and go to that buffer
-//    } else if( FileExists( fname ) ) {
-//      p_fb := new( FileBuf )
-//      p_fb.Init( fname )
-//
-//      if( m.HaveFile( fname, &file_index ) ) {
-//        m.GoToBuffer( file_index
-//
-//        went_to_buffer = true
-//      }
-//    }
-//  }
-//
-//  if( ! went_to_buffer ) {
-//    m.CmdLineMessage( fmt.Sprintf("Could not find file: %s", fname) )
-//  }
-//  return went_to_buffer
-//}
-
-// Return true if went to buffer indicated by fname, else false
 func (m *Vis) GoToBuffer_Fname( fname string ) bool {
 
   var went_to_buffer bool = false
@@ -471,80 +433,89 @@ func (m *Vis) GetFullFileNameRelative2CurrFile( fname string ) (string, bool) {
   return pname, got_full_file_name
 }
 
-//func (m *Vis) GoToBuffer( buf_idx int ) {
+//func (m *Vis) GoToBuffer_SetContext( buf_idx int, p_nv, p_pv *FileView ) {
 //
-//  if( m.views[m.win].Len() <= buf_idx ) {
-//    m.CmdLineMessage( fmt.Sprintf("Buffer %lu does not exist", buf_idx) )
+//  new_file_is_directory_of_prev_file :=
+//      ( p_nv.p_fb.is_dir) && // New  file is a directory
+//      (!p_pv.p_fb.is_dir) && // Prev file is NOT a directory
+//      (p_nv.p_fb.dir_name == p_pv.p_fb.dir_name) // New and prev files have same directory
 //
-//  } else {
-//    m.NoDiff_CV()
+//  if( new_file_is_directory_of_prev_file ) {
 //
-//    if( buf_idx == m.file_hist[m.win].Get(0) ) {
-//      // User asked for view that is currently displayed.
-//      // Dont do anything, just put cursor back in place.
-//      m.CV().PrintCursor()
+//    prev_fname_lnum_in_new_file := -1
+//    prev_fname := p_pv.p_fb.file_name
 //
-//    } else {
-//      m.file_hist[m.win].Insert( 0, buf_idx )
-//
-//      // Remove subsequent buf_idx's from m.file_hist[m.win]:
-//      for k:=1; k<m.file_hist[m.win].Len(); k++  {
-//        if( buf_idx == m.file_hist[m.win].Get(k) ) {
-//          m.file_hist[m.win].Remove( k )
-//        }
+//    for k:=0; k<p_nv.p_fb.NumLines(); k++ {
+//      if( prev_fname == p_nv.p_fb.lines.GetLP(k).to_str() ) {
+//        prev_fname_lnum_in_new_file = k
+//        break
 //      }
-//      // FIXME:
-//      var p_nv *FileView = m.CV(); // New FileView to display
-//      if( ! p_nv.Has_Context() ) {
-//        // Look for context for the new view:
-//        var found_context bool = false
-//        for w:=0; !found_context && w<m.num_wins; w++ {
-//          var p_v *FileView = m.views[w].Get( buf_idx )
-//          if( p_v.Has_Context() ) {
-//            found_context = true
-//            p_nv.Set_Context( p_v )
-//          }
-//        }
-//      }
-//      // For DIR and BUFFER_EDITOR, invalidate regex's so that files that
-//      // no longer contain the current regex are no longer highlighted
-//      if( p_nv.p_fb.file_type == FT_DIR ||
-//          p_nv.p_fb.file_type == FT_BUFFER_EDITOR ) {
+//    }
+//    if( 0 <= prev_fname_lnum_in_new_file ) {
+//      shift_down := Min_i( prev_fname_lnum_in_new_file, p_nv.WorkingRows()/2 )
 //
-//        p_nv.p_fb.Invalidate_Regexs()
+//      topLine  := prev_fname_lnum_in_new_file - shift_down
+//      leftChar := 0
+//      crsRow   := 0 + shift_down
+//      crsCol   := 0
+//      p_nv.Set_Context_4Is( topLine, leftChar, crsRow, crsCol )
+//    }
+//  }
+//  if( ! p_nv.Has_Context() ) {
+//    // Look for context for the new view:
+//    found_context := false
+//    for w:=0; !found_context && w<MAX_WINS; w++ {
+//      p_fv := m.views[ w ].Get( buf_idx )
+//      if( p_fv.Has_Context() ) {
+//        found_context = true
+//
+//        p_nv.Set_Context_pFV( p_fv )
 //      }
-//      p_nv.SetTilePos( m.PV().GetTilePos() )
-//      p_nv.Update_and_PrintCursor()
 //    }
 //  }
 //}
 
+func GoToBuffer_SetContext_NewView( prev_fname string, p_nv *FileView ) {
+
+  prev_fname_lnum_in_new_file := -1
+
+  NUM_LINES_IN_NV := p_nv.p_fb.NumLines()
+  for k:=0; k<NUM_LINES_IN_NV; k++ {
+    if( prev_fname == p_nv.p_fb.lines.GetLP(k).to_str() ) {
+      prev_fname_lnum_in_new_file = k
+      break
+    }
+  }
+  if( 0 <= prev_fname_lnum_in_new_file ) {
+    shift_down := Min_i( prev_fname_lnum_in_new_file, p_nv.WorkingRows()/2 )
+
+    topLine  := prev_fname_lnum_in_new_file - shift_down
+    leftChar := 0
+    crsRow   := 0 + shift_down
+    crsCol   := 0
+    p_nv.Set_Context_4Is( topLine, leftChar, crsRow, crsCol )
+  }
+}
+
 func (m *Vis) GoToBuffer_SetContext( buf_idx int, p_nv, p_pv *FileView ) {
 
-  new_file_is_directory_of_prev_file :=
-      ( p_nv.p_fb.is_dir) && // New  file is a directory
-      (!p_pv.p_fb.is_dir) && // Prev file is NOT a directory
-      (p_nv.p_fb.dir_name == p_pv.p_fb.dir_name) // New and prev files have same directory
+  if( p_nv.p_fb.is_dir ) { // New  file is a directory
+    new_file_is_directory_of_prev_file :=
+        (!p_pv.p_fb.is_dir) && // Prev file is NOT a directory
+        (p_nv.p_fb.dir_name == p_pv.p_fb.dir_name) // New and prev files have same directory
 
-  if( new_file_is_directory_of_prev_file ) {
+    if( new_file_is_directory_of_prev_file ) {
+      prev_fname := p_pv.p_fb.file_name
+      GoToBuffer_SetContext_NewView( prev_fname, p_nv )
 
-    prev_fname_lnum_in_new_file := -1
-    prev_fname := p_pv.p_fb.file_name
+    } else if( dir1_is_parent_dir_of_dir2( p_nv.p_fb.dir_name,
+                                           p_pv.p_fb.dir_name ) ) {
+      // New file is direct parent directory of directory of previous file, or
+      // new file is direct parent directory of previous file which was a directory.
+      last_dir := get_last_dir_of( p_pv.p_fb.dir_name )
+      last_dir = AppendDirDelim( last_dir )
 
-    for k:=0; k<p_nv.p_fb.NumLines(); k++ {
-      if( prev_fname == p_nv.p_fb.lines.GetLP(k).to_str() ) {
-        prev_fname_lnum_in_new_file = k
-        break
-      }
-    }
-    if( 0 <= prev_fname_lnum_in_new_file ) {
-      shift_down := Min_i( prev_fname_lnum_in_new_file, p_nv.WorkingRows()/2 )
-
-      topLine  := prev_fname_lnum_in_new_file - shift_down
-      leftChar := 0
-      crsRow   := 0 + shift_down
-      crsCol   := 0
-      p_nv.Set_Context_4Is( topLine, leftChar, crsRow, crsCol )
+      GoToBuffer_SetContext_NewView( last_dir, p_nv )
     }
   }
   if( ! p_nv.Has_Context() ) {
