@@ -165,6 +165,18 @@ func (m *Diff) CrsChar() int {
 //  return pV.X() + 1 + win_col
 //}
 
+// Translates zero based file line number to zero based global row
+func (m *Diff) Line_2_GL( pV *FileView, file_line int ) int {
+
+  return pV.y + 1 + file_line - m.topLine
+}
+
+// Translates zero based file line char position to zero based global column
+func (m *Diff) Char_2_GL( pV *FileView, line_char int ) int {
+
+  return pV.x + 1 + line_char - m.leftChar
+}
+
 func (m *Diff) LineLen() int {
 
   pV := m_vis.CV()
@@ -2430,15 +2442,37 @@ func (m *Diff) RunDiff( DA DiffArea ) {
 
   m.Popu_SameList( DA )
   m.Sort_SameList()
-//PrintSameList()
+//m.PrintSameList()
   m.Popu_DiffList( DA )
-//PrintDiffList()
+//m.PrintDiffList()
   m.Popu_DI_List( DA )
 //m.PrintDI_List( DA )
 
   var t2 time.Time = time.Now()
   m.diff_dur = t2.Sub( t1 )
   m.printed_diff_ms = false
+}
+
+func (m *Diff) PrintSameList() {
+
+  for k:=0; k<m.sameList.Len(); k++ {
+    var same SameArea = m.sameList.Get(k)
+    Log( fmt.Sprintf("Same: (%s):(%v-%v), (%s):(%v-%v), nlines=%v, nbytes=%v",
+                      m.pfS.path_name, same.ln_s+1, same.ln_s+same.nlines,
+                      m.pfL.path_name, same.ln_l+1, same.ln_l+same.nlines,
+                      same.nlines,
+                      same.nbytes) )
+  }
+}
+
+func (m *Diff) PrintDiffList() {
+
+  for k:=0; k<m.diffList.Len(); k++ {
+    var da DiffArea = m.diffList.Get(k)
+    Log( fmt.Sprintf("Diff: (%s):(%v-%v), (%s):(%v-%v)",
+                    m.pfS.path_name, da.ln_s+1, da.ln_s+da.nlines_s,
+                    m.pfL.path_name, da.ln_l+1, da.ln_l+da.nlines_l) )
+  }
 }
 
 func Diff_Type_2_Str( dt Diff_Type ) string {
@@ -2483,11 +2517,13 @@ func (m *Diff) Find_Max_Same( da DiffArea ) SameArea {
       var ls *FLine = m.pfS.GetLP( ln_s )
       var ll *FLine = m.pfL.GetLP( ln_l )
 
-      if( ls.Chksum() != ll.Chksum() ) { cur_same.Clear(); ln_s = _ln_s
+      if( ls.Chksum_diff() != ll.Chksum_diff() ) { cur_same.Clear(); ln_s = _ln_s
       } else {
-        if( 0 == max_same.nlines || // First line match
-            0 == cur_same.nlines ) {// First line match this outer loop
-          cur_same.Init( ln_s, ln_l, ls.Len()+1 ); // Add one to account for line delimiter
+        if( 0 == max_same.nlines ||  // First line match
+            0 == cur_same.nlines ) { // First line match this outer loop
+          // Add one to account for line delimiter.
+          // Take Min of ls.Len() and ll.Len() in case the line is just white space.
+          cur_same.Init( ln_s, ln_l, Min_i(ls.Len(), ll.Len())+1 );
 
         } else { // Continuation of cur_same
           cur_same.Inc( Min_i( ls.Len()+1, ll.Len()+1 ) ); // Add one to account for line delimiter
@@ -4086,7 +4122,7 @@ func (m *Diff) Patch_Diff_Info_Changed( pV *FileView, DPL int ) {
     oDI.diff_type = DT_CHANGED
 
   } else if( DT_CHANGED == cDI.diff_type ) {
-    if( ls.Chksum() == ll.Chksum() ) { // Lines are now equal
+    if( ls.Chksum_diff() == ll.Chksum_diff() ) { // Lines are now equal
       cDI.diff_type = DT_SAME
       oDI.diff_type = DT_SAME
 
@@ -4136,7 +4172,7 @@ func (m *Diff) Patch_Diff_Info_Inserted( pV *FileView,
       var ls *FLine = m.pfS.GetLP( sDI.line_num ) // Line from short view
       var ll *FLine = m.pfL.GetLP( lDI.line_num ) // Line from long  view
 
-      if( ls.Chksum() == ll.Chksum() ) { // Lines are now equal
+      if( ls.Chksum_diff() == ll.Chksum_diff() ) { // Lines are now equal
         cDI.diff_type = DT_SAME
         oDI.diff_type = DT_SAME
 

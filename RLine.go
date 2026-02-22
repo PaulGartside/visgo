@@ -4,6 +4,7 @@ package main
 import (
 //"bytes"
 //"fmt"
+  "hash/crc32"
   "slices"
 //"strings"
   "unicode/utf8"
@@ -12,6 +13,12 @@ import (
 type RLine struct {
   data []byte
   enc_utf8 bool //< If this is false then data is byte encoded
+
+//chksum uint32
+//chksum_valid bool
+
+  chksum_diff uint32
+  chksum_diff_valid bool
 }
 
 // Create slice of length filled with zeros
@@ -30,6 +37,9 @@ func (m *RLine) Cap() int {
 // Set length to zero
 func (m *RLine) Clear() {
   m.data = m.data[:0]
+
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 // Set all elements to zero
@@ -92,6 +102,9 @@ func (m *RLine) Copy( src_ln RLine ) {
 
   m.SetLen( src_ln.Len() )
   copy( m.data[:], src_ln.data[:] )
+
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) GetB( B_num int ) byte {
@@ -125,7 +138,10 @@ func (m *RLine) to_SB( st int ) []byte {
 }
 
 func (m *RLine) SetB( b_num int, B byte ) {
-    m.data[ b_num ] = B
+  m.data[ b_num ] = B
+
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) SetR( R_num int, R rune ) {
@@ -162,6 +178,8 @@ func (m *RLine) SetR( R_num int, R rune ) {
       }
     }
   }
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) RemoveR( R_num int ) rune {
@@ -184,11 +202,17 @@ func (m *RLine) RemoveR( R_num int ) rune {
       B_offset_data += R_size_data
     }
   }
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
+
   return R
 }
 
 func (m *RLine) PushB( B byte ) {
   m.data = append( m.data, B )
+
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) PushR( R rune ) {
@@ -207,12 +231,17 @@ func (m *RLine) PushR( R rune ) {
       utf8.EncodeRune( m.data[OLD_LEN:], R )
     }
   }
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) PushSR( s_r []rune ) {
   S := string( s_r )
   s_b := []byte( S )
   m.data = append( m.data, s_b... )
+
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 //func (m *RLine) PushStr( S string ) {
@@ -221,6 +250,9 @@ func (m *RLine) PushSR( s_r []rune ) {
 
 func (m *RLine) PushL( ln RLine ) {
   m.data = append( m.data, ln.data... )
+
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) InsertR( R_num int, R rune ) {
@@ -247,10 +279,23 @@ func (m *RLine) InsertR( R_num int, R rune ) {
       }
     }
   }
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
 }
 
 func (m *RLine) EqualL( ln RLine ) bool {
 
+//if( m.chksum_valid && ln.chksum_valid ) {
+//  return m.chksum == ln.chksum
+//}
+  return slices.Equal( m.data, ln.data )
+}
+
+func (m *RLine) EqualDiffL( ln RLine ) bool {
+
+  if( m.chksum_diff_valid && ln.chksum_diff_valid ) {
+    return m.chksum_diff == ln.chksum_diff
+  }
   return slices.Equal( m.data, ln.data )
 }
 
@@ -419,5 +464,33 @@ func (m *RLine) RemoveSpaces() {
       k--
     }
   }
+//m.chksum_valid = false
+  m.chksum_diff_valid = false
+}
+
+//func (m *RLine) Chksum() uint32 {
+//
+//  if( !m.chksum_valid ) {
+//    m.chksum = crc32.ChecksumIEEE( m.data )
+//    m.chksum_valid = true
+//  }
+//  return m.chksum
+//}
+
+// Chksum_diff ignores white space at beginning and end of line:
+//
+func (m *RLine) Chksum_diff() uint32 {
+
+  if( !m.chksum_diff_valid ) {
+    st := 0
+    fn := m.Len()
+
+    for( (0 < fn) && IsSpace( rune(m.data[fn-1]) ) ) { fn-- }
+    for( (st < fn) && IsSpace( rune(m.data[st]) ) ) { st++ }
+
+    m.chksum_diff = crc32.ChecksumIEEE( m.data[st:fn] )
+    m.chksum_diff_valid = true
+  }
+  return m.chksum_diff
 }
 

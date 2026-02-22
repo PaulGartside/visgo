@@ -661,7 +661,7 @@ func (m *Diff) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
       R := pfb.GetR( VL, k )
       var p_TS *tcell.Style = m.Get_Style( pV, DL, VL, k )
 
-      m_console.SetR( pV.Line_2_GL( DL ), pV.Char_2_GL( k ), R, p_TS )
+      m_console.SetR( m.Line_2_GL( pV, DL ), m.Char_2_GL( pV, k ), R, p_TS )
     }
   }
   m.crsRow = NCL - m.topLine
@@ -703,7 +703,7 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
     for k:=OCP; k<NCP; k++ {
       R := pfb.GetR( OCLv, k )
       var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
-      m_console.SetR( pV.Line_2_GL( OCL ), pV.Char_2_GL( k ), R, p_TS )
+      m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
     }
   } else { // Multiple lines
     // Write out first line:
@@ -714,7 +714,7 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
       for k:=OCP; k<END_FIRST_LINE; k++ {
         R := pfb.GetR( OCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
-        m_console.SetR( pV.Line_2_GL( OCL ), pV.Char_2_GL( k ), R, p_TS )
+        m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
     }
     // Write out intermediate lines:
@@ -728,7 +728,7 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
         for k:=m.leftChar; k<END_OF_LINE; k++ {
           R := pfb.GetR( Vl, k )
           var p_TS *tcell.Style = m.Get_Style( pV, l, Vl, k )
-          m_console.SetR( pV.Line_2_GL( l ), pV.Char_2_GL( k ), R, p_TS )
+          m_console.SetR( m.Line_2_GL( pV, l ), m.Char_2_GL( pV, k ), R, p_TS )
         }
       }
     }
@@ -741,7 +741,7 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
       for k:=m.leftChar; k<END_LAST_LINE; k++ {
         R := pfb.GetR( NCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, NCL, NCLv, k )
-        m_console.SetR( pV.Line_2_GL( NCL ), pV.Char_2_GL( k ), R, p_TS )
+        m_console.SetR( m.Line_2_GL( pV, NCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
     }
   }
@@ -761,7 +761,7 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
     for k:=OCP; NCP<k; k-- {
       R := pfb.GetR( OCLv, k )
       var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
-      m_console.SetR( pV.Line_2_GL( OCL ), pV.Char_2_GL( k ), R, p_TS )
+      m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
     }
   } else { // Multiple lines
     // Write out first line:
@@ -772,12 +772,12 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
       for k:=RIGHT_MOST_POS; m.leftChar<k; k-- {
         R := pfb.GetR( OCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
-        m_console.SetR( pV.Line_2_GL( OCL ), pV.Char_2_GL( k ), R, p_TS )
+        m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
       if( m.leftChar < OCLL ) {
         R := pfb.GetR( OCLv, m.leftChar )
         var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, m.leftChar )
-        m_console.SetR( pV.Line_2_GL( OCL ), pV.Char_2_GL( m.leftChar ), R, p_TS )
+        m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, m.leftChar ), R, p_TS )
       }
     }
     // Write out intermediate lines:
@@ -791,7 +791,7 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
         for k:=END_OF_LINE; m.leftChar<k; k-- {
           R := pfb.GetR( Vl, k )
           var p_TS *tcell.Style = m.Get_Style( pV, l, Vl, k )
-          m_console.SetR( pV.Line_2_GL( l ), pV.Char_2_GL( k ), R, p_TS )
+          m_console.SetR( m.Line_2_GL( pV, l ), m.Char_2_GL( pV, k ), R, p_TS )
         }
       }
     }
@@ -804,12 +804,12 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
       for k:=END_LAST_LINE; NCP<k; k-- {
         R := pfb.GetR( NCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, NCL, NCLv, k )
-        m_console.SetR( pV.Line_2_GL( NCL ), pV.Char_2_GL( k ), R, p_TS )
+        m_console.SetR( m.Line_2_GL( pV, NCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
       if( NCP < NCLL ) {
         R := pfb.GetR( NCLv, NCP )
         var p_TS *tcell.Style = m.Get_Style( pV, NCL, NCLv, NCP )
-        m_console.SetR( pV.Line_2_GL( NCL ), pV.Char_2_GL( NCP ), R, p_TS )
+        m_console.SetR( m.Line_2_GL( pV, NCL ), m.Char_2_GL( pV, NCP ), R, p_TS )
       }
     }
   }
