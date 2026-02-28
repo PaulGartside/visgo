@@ -246,20 +246,11 @@ func (m *Diff) View_2_DI_List_O( pV *FileView ) *Vector[Diff_Info] {
   return p_DI_List
 }
 
-//func (m *Diff) Add_to_DI_Lists( dis, dil Diff_Info ) {
-//
-//  m.DI_List_S.Insert2( m.DI_L_ins_idx, dis )
-//  m.DI_List_L.Insert2( m.DI_L_ins_idx, dil )
-//
-////m.DI_L_ins_idx++
-//  m.DI_L_ins_idx += 1
-//}
-
 func (m *Diff) Add_to_DI_Lists( p_DI_List_S *Vector[Diff_Info], dis Diff_Info,
                                 p_DI_List_L *Vector[Diff_Info], dil Diff_Info ) {
 
-  p_DI_List_S.Insert2( m.DI_L_ins_idx, dis )
-  p_DI_List_L.Insert2( m.DI_L_ins_idx, dil )
+  p_DI_List_S.Insert( m.DI_L_ins_idx, dis )
+  p_DI_List_L.Insert( m.DI_L_ins_idx, dil )
 
 //m.DI_L_ins_idx++
   m.DI_L_ins_idx += 1
@@ -2503,6 +2494,18 @@ func (m *Diff) PrintDI_List( CA DiffArea ) {
   }
 }
 
+func (m *Diff) PrintSimiList( p_simiList *Vector[SimLines] ) {
+
+  SLL := p_simiList.Len()
+
+  for k:=0; k<SLL; k++  {
+    var sl SimLines = p_simiList.Get(k)
+
+    Log( fmt.Sprintf("SimLines: ln_s=%v, ln_l=%v, nbytes=%v",
+                     sl.ln_s+1, sl.ln_l+1, sl.nbytes) )
+  }
+}
+
 // Find the largest SameArea in the DiffArea, da.
 // Largest SameArea is determined by the most matching bytes.
 //
@@ -2774,7 +2777,7 @@ func (m *Diff) Popu_DI_List_AddDiff_Common( da DiffArea,
   m.Popu_SimiList( da, pfs, pfl, &simiList )
 
   m.Sort_SimiList( &simiList )
-//PrintSimiList()
+//m.PrintSimiList( &simiList )
 
   m.SimiList_2_DI_Lists( da, p_DI_List_s, p_DI_List_l, &simiList )
 }
@@ -2903,19 +2906,18 @@ func (m *Diff) Popu_DI_List_AddSame( sa SameArea ) {
 func (m *Diff) Popu_SimiList( da DiffArea,
                               pfs, pfl *FileBuf,
                               p_simiList *Vector[SimLines] ) {
-//m.simiList.Clear()
 
   if( 0<da.nlines_s && 0<da.nlines_l ) {
-    ca := da
 
     var compList Vector[DiffArea]
-    compList.Push( ca )
+    compList.Push( da )
 
+    var ca DiffArea
     for (p_simiList.Len() < da.nlines_s) && compList.Pop( &ca ) {
 
       var siml SimLines = m.Find_Lines_Most_Same( ca, pfs, pfl )
-      p_simiList.Push( siml )
 
+      p_simiList.Push( siml )
       if( ( siml.ln_s == ca.ln_s || siml.ln_l == ca.ln_l ) &&
           siml.ln_s+1 < ca.fnl_s() &&
           siml.ln_l+1 < ca.fnl_l() ) {
@@ -3014,17 +3016,14 @@ func (m *Diff) SimiList_2_DI_Lists( da DiffArea,
 //  for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
 //    var ST_L int = ca.ln_l+(ln_s-ca.ln_s)
 //
-////  for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1 && ln_l<pfl.NumLines(); ln_l++ {}
 //    for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1; ln_l++ {
 //
-//      var ls *FLine = pfs.GetLP( ln_s ) // Line from short area
-////Log( fmt.Sprintf("Find_Lines_Most_Same: ln_l=%v, pfl.NumLines()=%v, ca.fnl_l()=%v, ST_L+LD+1=%v",
-////                                        ln_l,    pfl.NumLines(),    ca.fnl_l(),    ST_L+LD+1) )
-//      var ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
+//      var p_ls *FLine = pfs.GetLP( ln_s ) // Line from short area
+//      var p_ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
 //
 //      var li_s LineInfo
 //      var li_l LineInfo
-//      var bytes_same int = m.Compare_Lines( ls, &li_s, ll, &li_l )
+//      var bytes_same int = m.Compare_Lines( p_ls, &li_s, p_ll, &li_l )
 //
 //      if( most_same.nbytes < bytes_same ) {
 //        most_same.ln_s   = ln_s
@@ -3049,28 +3048,18 @@ func (m *Diff) SimiList_2_DI_Lists( da DiffArea,
 
 func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
 
+  // LD = Length Difference between long area and short area
+  var LD int = ca.nlines_l - ca.nlines_s
+
   most_same := SimLines{ 0, 0, 0, nil, nil }
-  for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
 
-    for ln_l := ca.ln_l; ln_l<ca.fnl_l(); ln_l++ {
+  if( 0 <= LD ) {
+    most_same = m.Find_Lines_Most_Same_2( LD, ca, pfs, pfl )
+  } else {
+    LD = -LD
+    ca_r := DiffArea{ ca.ln_l, ca.nlines_l, ca.ln_s, ca.nlines_s }
 
-      var ls *FLine = pfs.GetLP( ln_s ) // Line from short area
-//Log( fmt.Sprintf("Find_Lines_Most_Same: ln_l=%v, pfl.NumLines()=%v, ca.fnl_l()=%v, ST_L+LD+1=%v",
-//                                        ln_l,    pfl.NumLines(),    ca.fnl_l(),    ST_L+LD+1) )
-      var ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
-
-      var li_s LineInfo
-      var li_l LineInfo
-      var bytes_same int = m.Compare_Lines( ls, &li_s, ll, &li_l )
-
-      if( most_same.nbytes < bytes_same ) {
-        most_same.ln_s   = ln_s
-        most_same.ln_l   = ln_l
-        most_same.nbytes = bytes_same
-        most_same.li_s   = &li_s; // Hand off li_s
-        most_same.li_l   = &li_l; // and      li_l
-      }
-    }
+    most_same = m.Find_Lines_Most_Same_2( LD, ca_r, pfl, pfs )
   }
   if( 0==most_same.nbytes ) {
     // This if() block ensures that each line in the short DiffArea is
@@ -3080,6 +3069,35 @@ func (m *Diff) Find_Lines_Most_Same( ca DiffArea, pfs, pfl *FileBuf ) SimLines {
     most_same.ln_s   = ca.ln_s
     most_same.ln_l   = ca.ln_l
     most_same.nbytes = 1
+  }
+  return most_same
+}
+
+func (m *Diff) Find_Lines_Most_Same_2( LD int, ca DiffArea, pfs, pfl *FileBuf ) SimLines {
+
+  most_same := SimLines{ 0, 0, 0, nil, nil }
+
+  // More ca.nlines_l that ca.nline_s:
+  for ln_s := ca.ln_s; ln_s<ca.fnl_s(); ln_s++ {
+    var ST_L int = ca.ln_l+(ln_s-ca.ln_s)
+
+    for ln_l := ST_L; ln_l<ca.fnl_l() && ln_l<ST_L+LD+1; ln_l++ {
+
+      var p_ls *FLine = pfs.GetLP( ln_s ) // Line from short area
+      var p_ll *FLine = pfl.GetLP( ln_l ) // Line from long  area
+
+      var li_s LineInfo
+      var li_l LineInfo
+      var bytes_same int = m.Compare_Lines( p_ls, &li_s, p_ll, &li_l )
+
+      if( most_same.nbytes < bytes_same ) {
+        most_same.ln_s   = ln_s
+        most_same.ln_l   = ln_l
+        most_same.nbytes = bytes_same
+        most_same.li_s   = &li_s; // Hand off li_s
+        most_same.li_l   = &li_l; // and      li_l
+      }
+    }
   }
   return most_same
 }

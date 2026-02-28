@@ -138,16 +138,16 @@ func (m *Vector[T]) Insert( idx int, val T ) {
   }
 }
 
-func (m *Vector[T]) Insert2( idx int, val T ) {
-  old_len := len(m.data)
-  // First append val to make sure data is large enough:
-  m.Push( val ) 
-
-  if( idx < old_len ) {
-    copy( m.data[idx+1:], m.data[idx:] )
-    m.data[ idx ] = val
-  }
-}
+//func (m *Vector[T]) Insert2( idx int, val T ) {
+//  old_len := len(m.data)
+//  // First append val to make sure data is large enough:
+//  m.Push( val ) 
+//
+//  if( idx < old_len ) {
+//    copy( m.data[idx+1:], m.data[idx:] )
+//    m.data[ idx ] = val
+//  }
+//}
 
 func (m *Vector[T]) Remove( idx int ) T {
 
