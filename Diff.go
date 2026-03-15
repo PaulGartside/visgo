@@ -45,9 +45,9 @@ type Diff struct {
   pfS *FileBuf
   pfL *FileBuf
 
-  topLine  int  // top  of buffer view line number.
+  topLine  int  // top  of buffer view line number. Diff line.
   leftChar int  // left of buffer view character number.
-  crsRow   int  // cursor row    in buffer view. 0 <= crsRow < WorkingRows().
+  crsRow   int  // cursor row    in buffer view. 0 <= crsRow < WorkingRows(). Diff line.
   crsCol   int  // cursor column in buffer view. 0 <= crsCol < WorkingCols().
 
   DI_List_S Vector[Diff_Info] // One Diff_Info per diff line
@@ -145,6 +145,8 @@ func (m *Diff) NumLines() int {
   return m.DI_List_L.Len()
 }
 
+// Returns Diff line:
+//
 func (m *Diff) CrsLine() int {
 
   return m.topLine  + m.crsRow
@@ -1851,7 +1853,35 @@ func (m *Diff) Do_yy() {
 }
 
 func (m *Diff) Do_yw() {
-  // FIXME
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+
+  // If there is nothing to 'yw', just return:
+  if( 0 < pfb.NumLines() ) {
+    DL := m.CrsLine() // Diff line
+    var DT Diff_Type = m.DiffType( pV, DL )
+
+    if( DT == DT_SAME || DT == DT_CHANGED || DT == DT_INSERTED ) {
+      st_line_v := m.ViewLine( pV, DL ) // View line
+      st_char   := m.CrsChar()
+
+      // Determine fn_line_d, fn_char:
+      fn_line_d := 0
+      fn_char   := 0
+
+      if( m.Do_dw_get_fn( DL, st_char, &fn_line_d, &fn_char ) ) {
+        m_vis.reg.Clear();
+        m_vis.reg.PushLP( new(RLine) );
+
+        // DL and fn_line_d should be the same
+        for k:=st_char; k<=fn_char; k++ {
+          m_vis.reg.GetLP(0).PushR( pfb.GetR( st_line_v, k ) );
+        }
+        m_vis.paste_mode = PM_ST_FN
+      }
+    }
+  }
 }
 
 func (m *Diff) Do_p() {

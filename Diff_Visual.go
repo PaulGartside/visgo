@@ -414,13 +414,15 @@ func (m *Diff) Do_x_range_block( st_line, st_char, fn_line, fn_char int ) {
 
   m.Do_x_range_pre( &st_line, &st_char, &fn_line, &fn_char )
 
-  for L := st_line; L<=fn_line; L++ {
+  for DL := st_line; DL<=fn_line; DL++ {
+    VL := m.ViewLine( pV, DL ) // View line
+
     p_rl := new(RLine)
 
-    LL := pfb.LineLen( L )
+    LL := pfb.LineLen( VL )
 
     for P := st_char; P<LL && P <= fn_char; P++ {
-      p_rl.PushR( pfb.RemoveR( L, st_char ) )
+      p_rl.PushR( pfb.RemoveR( VL, st_char ) )
     }
     m_vis.reg.PushLP( p_rl )
   }
