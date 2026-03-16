@@ -2533,7 +2533,7 @@ func (m *FileView) Do_dd_Normal( ONL int ) {
   m.p_fb.Update()
 }
 
-func (m *FileView) Do_Star_GetNewPattern() string {
+func (m *FileView) Do_Star_GetNewPattern_i() string {
 
   var pattern string
 
@@ -2571,6 +2571,18 @@ func (m *FileView) Do_Star_GetNewPattern() string {
     if( 0 < len(pattern) ) {
       pattern = string("\\b") + pattern + string("\\b")
     }
+  }
+  return pattern
+}
+
+func (m *FileView) Do_Star_GetNewPattern() string {
+
+  var pattern string
+
+  if( nil != m.p_diff ) {
+    pattern = m.p_diff.Do_Star_GetNewPattern()
+  } else {
+    pattern = m.Do_Star_GetNewPattern_i()
   }
   return pattern
 }

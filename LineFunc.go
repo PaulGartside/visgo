@@ -58,7 +58,6 @@ func L_Handle_Escape( m *Vis ) {
 }
 
 func L_Handle_Return( m *Vis ) {
-//Log("Top: L_Handle_Return()")
 
   if( m.colon_mode ) {
     m.colon_mode = false
@@ -70,7 +69,6 @@ func L_Handle_Return( m *Vis ) {
     m.slash_view.HandleReturn()
     m.Handle_Slash_GotPattern( m_rbuf.to_str(), true )
   }
-//Log("Bot: L_Handle_Return()")
 }
 
 func L_Handle_a( m *Vis ) {

@@ -1433,13 +1433,13 @@ func (m *Vis) UpdateViews( show_search bool ) {
 
   for w:=0; w<m.num_wins; w++ {
 
-    var pv *FileView = m.GetView_Win( w )
+    var pV *FileView = m.GetView_Win( w )
 
     if( show_search ) {
       var msg string = "/" + m.regex_str
-      pv.Set_Cmd_Line_Msg( msg )
+      pV.Set_Cmd_Line_Msg( msg )
     }
-    pv.Update_not_PrintCursor()
+    pV.Update_not_PrintCursor()
   }
   var p_cv *FileView = m.CV()
 

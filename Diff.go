@@ -1518,7 +1518,49 @@ func (m *Diff) PageUp() {
 }
 
 func (m *Diff) Do_Star_GetNewPattern() string {
-  return ""
+
+  var pattern string
+
+  pV  := m_vis.CV()
+  pfb := pV.p_fb
+
+  if( pfb.NumLines() == 0 ) { return pattern }
+
+  var DL int = m.CrsLine()
+  var CLv int = m.ViewLine( pV, DL )
+  var LL int = pfb.LineLen( CLv )
+
+  if( 0<LL ) {
+    m.MoveInBounds_Line()
+    var CC int = m.CrsChar()
+
+    var R rune = pfb.GetR( CLv,  CC )
+
+    if( IsAlnum( R ) || R=='_' ) {
+      pattern += string( R )
+
+      // Search forward:
+      for k:=CC+1; k<LL; k++ {
+        R = pfb.GetR( CLv, k )
+        if( IsAlnum( R ) || R=='_' ) { pattern += string( R )
+        } else                       { break
+        }
+      }
+      // Search backward:
+      for k:=CC-1; 0<=k; k-- {
+        R = pfb.GetR( CLv, k )
+        if( IsAlnum( R ) || R=='_' ) { pattern = string(R) + pattern
+        } else                       {  break
+        }
+      }
+    } else {
+      if( (R != ' ') && unicode.IsGraphic( R ) ) { pattern += string( R ) }
+    }
+    if( 0 < len(pattern) ) {
+      pattern = string("\\b") + pattern + string("\\b")
+    }
+  }
+  return pattern
 }
 
 func (m *Diff) GoToTopOfFile() {
