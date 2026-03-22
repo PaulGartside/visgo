@@ -1502,3 +1502,46 @@ func (m *FileBuf) Set_File_Type( syn string ) {
   }
 }
 
+func (m* FileBuf) Strip_escape_seqs() {
+
+  esc_seqs_removed := 0
+  bytes_removed := 0
+
+  NUM_LINES := m.NumLines()
+
+  for k:=0; k<NUM_LINES; k++ {
+
+    var p_l_k *FLine = m.lines.GetLP( k )
+    LL := p_l_k.Len()
+
+    for p:=0; 2<LL && p<LL-2; p++ {
+
+      if( 27 == p_l_k.GetR(p) &&
+         '[' == p_l_k.GetR(p+1) ) {
+        st := p
+
+        for fn:=p+2; (fn-st<10) && fn<LL; fn++ {
+          R_fn := p_l_k.GetR(fn)
+
+          if( 'm' == R_fn ||
+              'K' == R_fn ) {
+            // Remove from st to fn
+            for i:=st; i<=fn; i++ {
+              m.RemoveR( k, st )
+              bytes_removed++;
+            }
+            LL = p_l_k.Len()
+            p--;
+            esc_seqs_removed++;
+            break;
+          }
+        }
+      }
+    }
+  }
+  if( 0<bytes_removed ) { m.Update() }
+
+  m_vis.CmdLineMessage( fmt.Sprintf("Removed %v escape sequences, %v bytes",
+                                    esc_seqs_removed, bytes_removed ) )
+}
+

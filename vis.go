@@ -764,6 +764,11 @@ func (m *Vis) Exe_Colon_detab() {
   }
 }
 
+func (m *Vis) Exe_Colon_strip_escape_seqs() {
+
+  m.CV().p_fb.Strip_escape_seqs()
+}
+
 func (m *Vis) MapStart() {
 
   m_key.map_buf.Clear()
@@ -1287,6 +1292,7 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("cs4") )      { m.Set_Color_Scheme_4()
     } else if( m_rbuf.StartsWith("syn=") )   { m.Set_Syntax()
     } else if( m_rbuf.StartsWith("detab=") ) { m.Exe_Colon_detab()
+    } else if( m_rbuf.EqualStr("strip") )    { m.Exe_Colon_strip_escape_seqs()
     } else {
       m.CV().PrintCursor()
     }

@@ -10,7 +10,7 @@ type Highlight_IDL struct {
 }
 
 func (m *Highlight_IDL) Init( p_fb *FileBuf ) {
-  m.hi_code.p_fb = p_fb
+  m.hi_code.Init( p_fb )
 }
 
 func (m *Highlight_IDL) Run_Range( st CrsPos, fn int ) {
@@ -96,6 +96,5 @@ var HiPairs_IDL = [...]HiKeyVal {
   { "void"       , HI_VARTYPE },
   { "wchar"      , HI_VARTYPE },
   { "wstring"    , HI_VARTYPE },
-  { ""           , 0 },
 }
 
