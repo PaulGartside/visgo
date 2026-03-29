@@ -986,7 +986,6 @@ func (m *FileView) GoRight_i( num int ) {
     var OCP int = m.CrsChar() // Old cursor position
 
     if( 0<LL && OCP < LL-1 ) {
-      var num int = 1
       var NCP int = OCP+num // New cursor position
 
       if( LL-1 < NCP ) { NCP = LL-1 }
@@ -1011,7 +1010,6 @@ func (m *FileView) GoLeft_i( num int ) {
   var OCP int = m.CrsChar(); // Old cursor position
 
   if( 0<NUM_LINES && 0 < OCP ) {
-    var num int = 1
     var NCP int = OCP-num; // New cursor position
 
     if( NCP < 0 ) { NCP = 0; }

@@ -10,6 +10,7 @@ import (
   "strconv"
 //"strings"
   "time"
+  "github.com/gdamore/tcell/v2"
 )
 
 type CmdFunc func(*Vis)
@@ -24,8 +25,9 @@ type Vis struct {
   files   FileBufList
   views   [MAX_WINS]FileViewList
 
-  view_funcs [128]CmdFunc
-  line_funcs [128]CmdFunc
+  // Dont handle any key higher than tcell.KeyF12:
+  view_funcs [tcell.KeyF13]CmdFunc
+  line_funcs [tcell.KeyF13]CmdFunc
 
   colon_file FileBuf
   slash_file FileBuf
@@ -1551,34 +1553,7 @@ func (m *Vis) Window_Message( msg string ) {
   // FIXME:
 }
 
-//func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune) {
-//  var l_have_saved_key_ru bool = false
-//  var l_saved_kr Key_rune
-//
-//  var num int = 1
-//  var done bool = false
-//  for !done {
-//    if( !m_console.HasPendingEvent() ) {
-//      done = true
-//    } else {
-//      l_kr := m_key.In()
-//      if( l_kr.IsKeyRune() && l_kr.R == _ru ) {
-//        num++
-//      } else {
-//        done = true
-//        l_have_saved_key_ru = true
-//        l_saved_kr = l_kr
-//      }
-//    }
-//  }
-//  // Fast scrolling:
-//  if( 1<num ) { _handler( m, num*2 )
-//  } else      { _handler( m, num )
-//  }
-//  return l_have_saved_key_ru, l_saved_kr
-//}
-
-func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune) {
+func (m *Vis) Speed_up_scrolling( _kr Key_rune, _handler CmdFunc2 ) (bool, Key_rune) {
   var l_have_saved_key_ru bool = false
   var l_saved_kr Key_rune
 
@@ -1589,7 +1564,7 @@ func (m *Vis) Speed_up_scrolling( _ru rune, _handler CmdFunc2 ) (bool, Key_rune)
       done = true
     } else {
       l_kr := m_key.In()
-      if( l_kr.IsKeyRune() && l_kr.R == _ru ) {
+      if( (l_kr.IsKeyRune() && l_kr.R == _kr.R) || (l_kr.K == _kr.K) ) {
         num++
       } else {
         done = true
@@ -1671,67 +1646,145 @@ func (m *Vis) Update_Change_Statuses() bool {
   return updated_change_sts
 }
 
-func (m *Vis) GetCmdFunc( kr Key_rune ) CmdFunc {
-  var cf CmdFunc
-  if( kr.IsKeyRune() ) { cf = m.view_funcs[ kr.R ]
-  } else               { cf = m.view_funcs[ kr.K ]
-  }
-  return cf
-}
-
 func (m *Vis) GetLineFunc( kr Key_rune ) CmdFunc {
   var cf CmdFunc
-  if( kr.IsKeyRune() ) { cf = m.line_funcs[ kr.R ]
-  } else               { cf = m.line_funcs[ kr.K ]
+  if( kr.IsKeyRune() ) {
+    if( kr.R < 0 || rune(tcell.KeyF13) <= kr.R ) {
+      Log( fmt.Sprintf("Un-handled out-of-range Rune: %v", kr.R ) )
+    } else {
+      cf = m.line_funcs[ kr.R ]
+    }
+  } else {
+    if( kr.K < 0 || tcell.KeyF13 <= kr.K ) {
+      Log( fmt.Sprintf("Un-handled out-of-range tcell.Key: %v", kr.K ) )
+    } else {
+      cf = m.line_funcs[ kr.K ]
+    }
   }
   return cf
 }
 
+func (m *Vis) GetViewFunc( kr Key_rune ) CmdFunc {
+  var cf CmdFunc
+  if( kr.IsKeyRune() ) {
+    if( kr.R < 0 || rune(tcell.KeyF13) <= kr.R ) {
+      Log( fmt.Sprintf("Un-handled out-of-range Rune: %v", kr.R ) )
+    } else {
+      cf = m.view_funcs[ kr.R ]
+    }
+  } else {
+    if( kr.K < 0 || tcell.KeyF13 <= kr.K ) {
+      Log( fmt.Sprintf("Un-handled out-of-range tcell.Key: %v", kr.K ) )
+    } else {
+      cf = m.view_funcs[ kr.K ]
+    }
+  }
+  return cf
+}
+
+// Works:
+//func (m *Vis) Run() {
+//  var have_saved_key_ru bool = false
+//  var saved_kr Key_rune
+//
+//  var kr Key_rune
+//
+//  m.running = true
+//  for m.running {
+//    if( have_saved_key_ru ) {
+//      kr = saved_kr
+//      have_saved_key_ru = false
+//    } else {
+//      kr = m_key.In()
+//    }
+//    var view_mode bool = !m.colon_mode && !m.slash_mode;
+//
+//    if( view_mode && ((kr.IsKeyRune() && kr.R == 'j') || (kr.K == tcell.KeyDown)) ) {
+//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_j )
+//
+//    } else if( view_mode && ((kr.IsKeyRune() && kr.R == 'k') || (kr.K == tcell.KeyUp)) ) {
+//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_k )
+//
+//    } else if( view_mode && ((kr.IsKeyRune() && kr.R == 'l') || (kr.K == tcell.KeyRight)) ) {
+//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_l )
+//
+//    } else if( view_mode && ((kr.IsKeyRune() && kr.R == 'h') || (kr.K == tcell.KeyLeft)) ) {
+//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_h )
+//
+//    } else {
+//      var cf CmdFunc
+//      if( m.colon_mode || m.slash_mode ) {
+//        cf = m.GetLineFunc( kr )
+//      } else {
+//        cf = m.GetViewFunc( kr )
+//      }
+//      if nil != cf {
+//        cf(m)
+//      }
+//    }
+//  }
+//}
+
+// Works:
 func (m *Vis) Run() {
   var have_saved_key_ru bool = false
   var saved_kr Key_rune
-
   var kr Key_rune
 
   m.running = true
   for m.running {
-    if( have_saved_key_ru ) {
-      kr = saved_kr
-      have_saved_key_ru = false
-    } else {
+    var cf CmdFunc
+    if( m.colon_mode || m.slash_mode ) {
       kr = m_key.In()
-    }
+      cf = m.GetLineFunc( kr )
 
-    if( kr.IsKeyRune() ) {
-      // kr.R is valid
-      var cf CmdFunc
-      if( m.colon_mode || m.slash_mode ) {
-        cf = m.line_funcs[ kr.R ]
-      } else {
-        if( kr.R == 'j' ) {
-          have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr.R, Handle_j )
-        } else if( kr.R == 'k' ) {
-          have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr.R, Handle_k )
-        } else {
-          cf = m.view_funcs[ kr.R ]
-        }
-      }
-      if nil != cf {
-        cf(m)
-      }
     } else {
-      // kr.R is NOT valid. kr.K is tcell.KeyESC, tcell.KeyLF or tcell.KeyCR
-      var cf CmdFunc
-      if( m.colon_mode || m.slash_mode ) { cf = m.line_funcs[ kr.K ]
-      } else                             { cf = m.view_funcs[ kr.K ]
+      if( have_saved_key_ru ) {
+        kr = saved_kr
+        have_saved_key_ru = false
+      } else {
+        kr = m_key.In()
       }
-      if nil != cf {
-        cf(m)
+      if( (kr.IsKeyRune() && kr.R == 'j') || (kr.K == tcell.KeyDown) ) {
+        have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_j )
+
+      } else if( (kr.IsKeyRune() && kr.R == 'k') || (kr.K == tcell.KeyUp) ) {
+        have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_k )
+
+      } else if( (kr.IsKeyRune() && kr.R == 'l') || (kr.K == tcell.KeyRight) ) {
+        have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_l )
+
+      } else if( (kr.IsKeyRune() && kr.R == 'h') || (kr.K == tcell.KeyLeft) ) {
+        have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_h )
+
+      } else {
+        cf = m.GetViewFunc( kr )
       }
     }
-  //m.CheckFileModTime()
-  //m.Update_Change_Statuses()
-  //updated_chg_sts := m.Update_Change_Statuses()
+    if nil != cf {
+      cf(m)
+    }
   }
 }
+
+// Works:
+//func (m *Vis) Run() {
+//
+//  var kr Key_rune
+//
+//  m.running = true
+//  for m.running {
+//    kr = m_key.In()
+//
+//    var cf CmdFunc
+//    if( m.colon_mode || m.slash_mode ) {
+//      cf = m.GetLineFunc( kr )
+//    } else {
+//      cf = m.GetViewFunc( kr )
+//    }
+//    if nil != cf {
+//      cf(m)
+//    }
+//  }
+//}
 

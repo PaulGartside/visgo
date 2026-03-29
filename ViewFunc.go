@@ -13,8 +13,8 @@ func (m *Vis) InitViewFuncs() {
   m.view_funcs[ 'i' ] = Handle_i
   m.view_funcs[ 'j' ] = Handle_j_1
   m.view_funcs[ 'k' ] = Handle_k_1
-  m.view_funcs[ 'l' ] = Handle_l
-  m.view_funcs[ 'h' ] = Handle_h
+  m.view_funcs[ 'l' ] = Handle_l_1
+  m.view_funcs[ 'h' ] = Handle_h_1
 
   m.view_funcs[ 'v' ] = Handle_v
   m.view_funcs[ 'V' ] = Handle_V
@@ -131,18 +131,26 @@ func Handle_k( m *Vis, num int ) {
   p_cv.GoUp( num )
 }
 
-func Handle_l( m *Vis ) {
-
-  var p_cv *FileView = m.CV()
-
-  p_cv.GoRight(1)
+func Handle_l_1( m *Vis ) {
+  Handle_l( m, 1 )
 }
 
-func Handle_h( m *Vis ) {
+func Handle_l( m *Vis, num int ) {
 
   var p_cv *FileView = m.CV()
 
-  p_cv.GoLeft(1)
+  p_cv.GoRight( num )
+}
+
+func Handle_h_1( m *Vis ) {
+  Handle_h( m, 1 )
+}
+
+func Handle_h( m *Vis, num int ) {
+
+  var p_cv *FileView = m.CV()
+
+  p_cv.GoLeft( num )
 }
 
 func Handle_v( m *Vis ) {
@@ -529,7 +537,7 @@ func Handle_Dot( m *Vis ) {
     for m_key.get_from_dot_buf_n {
       kr := m_key.In()
 
-      var cf CmdFunc = m.GetCmdFunc( kr )
+      var cf CmdFunc = m.GetViewFunc( kr )
       if( nil != cf ) { cf(m) }
     }
     var p_cv *FileView = m.CV()
