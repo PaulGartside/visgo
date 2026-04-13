@@ -216,7 +216,16 @@ func (m *FileBuf) Find_File_Type_XML() bool {
 
   if( strings.HasSuffix(m.path_name, ".xml") ||
       strings.HasSuffix(m.path_name, ".xml.new") ||
-      strings.HasSuffix(m.path_name, ".xml.old") ) {
+      strings.HasSuffix(m.path_name, ".xml.old") ||
+      strings.HasSuffix(m.path_name, ".xml.in") ||
+      strings.HasSuffix(m.path_name, ".xml.in.new") ||
+      strings.HasSuffix(m.path_name, ".xml.in.old") ||
+      strings.HasSuffix(m.path_name, ".xs") ||
+      strings.HasSuffix(m.path_name, ".xs.new") ||
+      strings.HasSuffix(m.path_name, ".xs.old") ||
+      strings.HasSuffix(m.path_name, ".xsd") ||
+      strings.HasSuffix(m.path_name, ".xsd.new") ||
+      strings.HasSuffix(m.path_name, ".xsd.old") ) {
 
     m.file_type = FT_XML
     m.Hi = new( Highlight_XML )

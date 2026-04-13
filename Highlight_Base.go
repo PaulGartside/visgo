@@ -133,12 +133,12 @@ func Hi_NumberBeg_Base(
      l, p int, p_fb *FileBuf, Hi_NumberIn HiStateFunc, Hi_NumberHex HiStateFunc) (
      int,int,HiStateFunc) {
 
-  var state HiStateFunc = nil
+  var state HiStateFunc = Hi_NumberIn
+
   p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
   var c1 rune = p_fb.GetR( l, p )
   p++
-  state = Hi_NumberIn
 
   LL := p_fb.LineLen( l )
   if( '0' == c1 && (p+1)<LL ) {
@@ -154,32 +154,33 @@ func Hi_NumberBeg_Base(
 
 func Hi_NumberIn_Base(
       l, p int, p_fb *FileBuf,
-      Hi_In_None,Hi_NumberFraction,Hi_NumberExponent HiStateFunc) (
+      Hi_NumberIn,Hi_NumberFraction,Hi_NumberExponent,Hi_In_None HiStateFunc) (
       int,int,HiStateFunc) {
 
-  var state HiStateFunc = nil
+  var state HiStateFunc = Hi_NumberIn
   LL := p_fb.LineLen( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
-    var c1 rune = p_fb.GetR( l, p )
+    var R1 rune = p_fb.GetR( l, p )
 
-    if( '.'==c1 ) {
+    if( '.'==R1 ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       state = Hi_NumberFraction
       p++
-    } else if( 'e'==c1 || 'E'==c1 ) {
+    } else if( 'e'==R1 || 'E'==R1 ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       state = Hi_NumberExponent
       p++
       if( p<LL ) {
-        var c0 rune = p_fb.GetR( l, p )
-        if( '+' == c0 || '-' == c0 ) {
+        var R0 rune = p_fb.GetR( l, p )
+        if( '+' == R0 || '-' == R0 ) {
           p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
         }
       }
-    } else if( IsDigit(c1) ) {
+    } else if( IsDigit(R1) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      // Stay in Hi_NumberIn
       p++
     } else {
       state = Hi_In_None
@@ -189,16 +190,18 @@ func Hi_NumberIn_Base(
 }
 
 func Hi_NumberHex_Base(
-     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc) (
+     l, p int, p_fb *FileBuf,
+     Hi_NumberHex,Hi_In_None  HiStateFunc) (
      int,int,HiStateFunc) {
 
-  var state HiStateFunc = nil
+  var state HiStateFunc = Hi_NumberHex
   LL := p_fb.LineLen( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
     var c1 rune = p_fb.GetR( l, p )
     if( IsXDigit(c1) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      // Stay in Hi_NumberHex
       p++
     } else {
       state = Hi_In_None
@@ -208,16 +211,18 @@ func Hi_NumberHex_Base(
 }
 
 func Hi_NumberFraction_Base(
-     l, p int, p_fb *FileBuf, Hi_In_None,Hi_NumberExponent HiStateFunc ) (
+     l, p int, p_fb *FileBuf,
+     Hi_NumberFraction,Hi_NumberExponent,Hi_In_None HiStateFunc ) (
      int,int,HiStateFunc) {
 
-  var state HiStateFunc = nil
+  var state HiStateFunc = Hi_NumberFraction
   LL := p_fb.LineLen( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
     var c1 rune = p_fb.GetR( l, p )
     if( IsDigit(c1) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      // stay in Hi_NumberFraction
       p++
     } else if( 'e'==c1 || 'E'==c1 ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
@@ -238,16 +243,18 @@ func Hi_NumberFraction_Base(
 }
 
 func Hi_NumberExponent_Base(
-      l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
+      l, p int, p_fb *FileBuf,
+      Hi_NumberExponent, Hi_In_None HiStateFunc ) (
       int,int,HiStateFunc) {
 
-  var state HiStateFunc = nil
+  var state HiStateFunc = Hi_NumberExponent
   LL := p_fb.LineLen( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
     var c1 rune = p_fb.GetR( l, p )
     if( IsDigit(c1) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
+      // stay in Hi_NumberExponent
       p++
     } else {
       state = Hi_In_None

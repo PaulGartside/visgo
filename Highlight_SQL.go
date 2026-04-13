@@ -182,28 +182,35 @@ func (m *Highlight_SQL) Hi_NumberBeg( l, p int ) (int,int) {
 
 func (m *Highlight_SQL) Hi_NumberIn( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberIn_Base( l,p, m.p_fb, m.Hi_In_None, m.Hi_NumberFraction, m.Hi_NumberExponent )
+  l,p, m.state = Hi_NumberIn_Base( l,p, m.p_fb, m.Hi_NumberIn,
+                                                m.Hi_NumberFraction,
+                                                m.Hi_NumberExponent,
+                                                m.Hi_In_None )
 
   return l,p
 }
 
 func (m *Highlight_SQL) Hi_NumberHex( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberHex_Base( l,p, m.p_fb, m.Hi_In_None )
+  l,p, m.state = Hi_NumberHex_Base( l,p, m.p_fb, m.Hi_NumberHex,
+                                                 m.Hi_In_None )
 
   return l,p
 }
 
 func (m *Highlight_SQL) Hi_NumberFraction( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberFraction_Base( l,p, m.p_fb, m.Hi_In_None, m.Hi_NumberExponent )
+  l,p, m.state = Hi_NumberFraction_Base( l,p, m.p_fb, m.Hi_NumberFraction,
+                                                      m.Hi_NumberExponent,
+                                                      m.Hi_In_None )
 
   return l,p
 }
 
 func (m *Highlight_SQL) Hi_NumberExponent( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberExponent_Base( l,p, m.p_fb, m.Hi_In_None )
+  l,p, m.state = Hi_NumberExponent_Base( l,p, m.p_fb, m.Hi_NumberExponent,
+                                                      m.Hi_In_None )
 
   return l,p
 }

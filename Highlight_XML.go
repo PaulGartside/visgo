@@ -87,6 +87,53 @@ func (m *Highlight_XML) Hi_In_None( l, p int ) (int,int) {
   return l,p
 }
 
+//func (m *Highlight_XML) Hi_OpenTag_ElemName( l, p int ) (int,int) {
+//  m.state = nil
+//  found_elem_name := false
+//
+//  for ; l<m.p_fb.NumLines(); l++ {
+//    LL := m.p_fb.LineLen( l )
+//
+//    for ; p<LL; p++ {
+//      var c0 rune = m.p_fb.GetR( l, p )
+//
+//      if( c0=='>' ) {
+//        m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
+//        p++; // Move past '>'
+//        m.state = m.Hi_In_None
+//
+//      } else if( c0=='/' || c0=='?' ) {
+//        m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
+//
+//      } else if( !found_elem_name ) {
+//        if( IsXML_Ident( c0 ) ) {
+//          found_elem_name = true
+//          m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
+//        } else if( c0==' ' || c0=='\t' ) {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
+//        } else {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII )
+//        }
+//      } else if( found_elem_name ) {
+//        if( IsXML_Ident( c0 ) ) {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
+//        } else if( c0==' ' || c0=='\t' ) {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
+//          p++; //< Move past white space
+//          m.state = m.Hi_OpenTag_AttrName
+//        } else {
+//          m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII )
+//        }
+//      } else {
+//        m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
+//      }
+//      if( nil != m.state ) { return l,p }
+//    }
+//    p = 0
+//  }
+//  return l,p
+//}
+
 func (m *Highlight_XML) Hi_OpenTag_ElemName( l, p int ) (int,int) {
   m.state = nil
   found_elem_name := false
@@ -114,7 +161,7 @@ func (m *Highlight_XML) Hi_OpenTag_ElemName( l, p int ) (int,int) {
         } else {
           m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII )
         }
-      } else if( found_elem_name ) {
+      } else /*( found_elem_name )*/ {
         if( IsXML_Ident( c0 ) ) {
           m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
         } else if( c0==' ' || c0=='\t' ) {
@@ -124,8 +171,6 @@ func (m *Highlight_XML) Hi_OpenTag_ElemName( l, p int ) (int,int) {
         } else {
           m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII )
         }
-      } else {
-        m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
       }
       if( nil != m.state ) { return l,p }
     }
@@ -374,8 +419,8 @@ func (m *Highlight_XML) Hi_In_DoubleQuote( l, p int ) (int,int) {
 
 func (m *Highlight_XML) Hi_NumberBeg( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberBeg_Base( l,p, m.p_fb, m.Hi_NumberIn, m.Hi_NumberHex )
-
+  l,p, m.state = Hi_NumberBeg_Base( l,p, m.p_fb, m.Hi_NumberIn,
+                                                 m.Hi_NumberHex )
   return l,p
 }
 
@@ -412,8 +457,10 @@ func (m *Highlight_XML) Hi_NumberBeg( l, p int ) (int,int) {
 
 func (m *Highlight_XML) Hi_NumberIn( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberIn_Base( l,p, m.p_fb, m.Hi_In_None, m.Hi_NumberFraction, m.Hi_NumberExponent )
-
+  l,p, m.state = Hi_NumberIn_Base( l,p, m.p_fb, m.Hi_NumberIn,
+                                                m.Hi_NumberFraction,
+                                                m.Hi_NumberExponent,
+                                                m.Hi_In_None )
   return l,p
 }
 
@@ -434,8 +481,8 @@ func (m *Highlight_XML) Hi_NumberIn( l, p int ) (int,int) {
 
 func (m *Highlight_XML) Hi_NumberHex( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberHex_Base( l,p, m.p_fb, m.Hi_In_None )
-
+  l,p, m.state = Hi_NumberHex_Base( l,p, m.p_fb, m.Hi_NumberHex,
+                                                 m.Hi_In_None )
   return l,p
 }
 
@@ -467,8 +514,9 @@ func (m *Highlight_XML) Hi_NumberHex( l, p int ) (int,int) {
 
 func (m *Highlight_XML) Hi_NumberFraction( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberFraction_Base( l,p, m.p_fb, m.Hi_In_None, m.Hi_NumberExponent )
-
+  l,p, m.state = Hi_NumberFraction_Base( l,p, m.p_fb, m.Hi_NumberFraction,
+                                                      m.Hi_NumberExponent,
+                                                      m.Hi_In_None )
   return l,p
 }
 
@@ -489,8 +537,8 @@ func (m *Highlight_XML) Hi_NumberFraction( l, p int ) (int,int) {
 
 func (m *Highlight_XML) Hi_NumberExponent( l, p int ) (int,int) {
 
-  l,p, m.state = Hi_NumberExponent_Base( l,p, m.p_fb, m.Hi_In_None )
-
+  l,p, m.state = Hi_NumberExponent_Base( l,p, m.p_fb, m.Hi_NumberExponent,
+                                                      m.Hi_In_None )
   return l,p
 }
 
