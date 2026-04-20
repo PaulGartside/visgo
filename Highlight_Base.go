@@ -57,11 +57,11 @@ func Hi_FindKey_In_Range( p_fb *FileBuf, HiPairs []HiKeyVal, st CrsPos, fn int )
 // This shows one way to re-use class methods in Go:
 //
 func Hi_In_SingleQuote_Base(
-     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
-     int,int,HiStateFunc) {
+     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc, hi_style byte ) (
+     int,int,HiStateFunc ) {
 
   var state HiStateFunc = nil
-  p_fb.SetSyntaxStyle( l, p, HI_CONST )
+  p_fb.SetSyntaxStyle( l, p, hi_style )
   p++
   for ; l<p_fb.NumLines(); l++ {
     LL := p_fb.LineLen( l )
@@ -76,14 +76,14 @@ func Hi_In_SingleQuote_Base(
           (c1!='\\' && c0=='\'') ||
           (c1=='\\' && c0=='\'' && slash_escaped) ) {
         // End of single quote:
-        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p_fb.SetSyntaxStyle( l, p, hi_style )
         p++
         state = Hi_In_None
       } else {
         if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
         } else                     { slash_escaped = false
         }
-        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p_fb.SetSyntaxStyle( l, p, hi_style )
       }
       if( nil != state ) { return l,p, state }
     }
@@ -95,11 +95,11 @@ func Hi_In_SingleQuote_Base(
 // This shows one way to re-use class methods in Go:
 //
 func Hi_In_DoubleQuote_Base(
-     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc ) (
+     l, p int, p_fb *FileBuf, Hi_In_None HiStateFunc, hi_style byte ) (
      int,int,HiStateFunc) {
 
   var state HiStateFunc = nil
-  p_fb.SetSyntaxStyle( l, p, HI_CONST )
+  p_fb.SetSyntaxStyle( l, p, hi_style )
   p++
   for ; l<p_fb.NumLines(); l++ {
     LL := p_fb.LineLen( l )
@@ -113,14 +113,14 @@ func Hi_In_DoubleQuote_Base(
       if( (c1==0    && c0=='"') ||
           (c1!='\\' && c0=='"') ||
           (c1=='\\' && c0=='"' && slash_escaped) ) {
-        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p_fb.SetSyntaxStyle( l, p, hi_style )
         p++
         state = Hi_In_None
       } else {
         if( c1=='\\' && c0=='\\' ) { slash_escaped = !slash_escaped
         } else {                     slash_escaped = false
         }
-        p_fb.SetSyntaxStyle( l, p, HI_CONST )
+        p_fb.SetSyntaxStyle( l, p, hi_style )
       }
       if( nil != state ) { return l,p, state }
     }
