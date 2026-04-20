@@ -6,8 +6,6 @@ type CrsPos struct {
   crsChar int
 }
 
-//type HighlightType byte
-
 // HI for Highlight
 const (
   HI_STAR      byte = 0x01 // Search pattern

@@ -71,6 +71,7 @@ const (
   FT_GO
   FT_IDL
   FT_JAVA
+  FT_JSON
   FT_SQL
   FT_TEXT
   FT_XML
