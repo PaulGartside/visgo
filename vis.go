@@ -1295,6 +1295,9 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.StartsWith("syn=") )   { m.Set_Syntax()
     } else if( m_rbuf.StartsWith("detab=") ) { m.Exe_Colon_detab()
     } else if( m_rbuf.EqualStr("strip") )    { m.Exe_Colon_strip_escape_seqs()
+    } else if( m_rbuf.EqualStr("cover") )    { m.colon_view.Cover()
+    } else if( m_rbuf.EqualStr("coverkey") ) { m.colon_view.CoverKey()
+    } else if( m_rbuf.EqualStr("showcover") ){ m.colon_view.ShowCoverKey()
     } else {
       m.CV().PrintCursor()
     }

@@ -159,6 +159,7 @@ func (m *Console) Num_Rows() int {
 
 func (m *Console) ShowCursor( row, col int ) {
   m.screen.ShowCursor( col, row )
+  m.screen.Show()
 }
 
 func (m *Console) Show() {

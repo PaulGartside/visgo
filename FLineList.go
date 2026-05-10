@@ -131,6 +131,11 @@ func (m *FLineList) SetOffsetsLen( length int ) {
   }
 }
 
+func (m *FLineList) LineSize( l_num int ) int {
+
+  return m.lines[ l_num ].Size()
+}
+
 func (m *FLineList) LineLen( l_num int ) int {
 
   return m.lines[ l_num ].Len()
@@ -139,6 +144,11 @@ func (m *FLineList) LineLen( l_num int ) int {
 func (m *FLineList) GetLP( l_num int ) *FLine {
 
   return m.lines[ l_num ]
+}
+
+func (m *FLineList) GetB( l_num, b_num int ) byte {
+
+  return m.lines[ l_num ].GetB( b_num )
 }
 
 func (m *FLineList) GetR( l_num, r_num int ) rune {

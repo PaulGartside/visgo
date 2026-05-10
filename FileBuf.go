@@ -99,6 +99,10 @@ func (m *FileBuf) Init_FB_2( path_name string, FT File_Type, p_other *FileBuf ) 
   m.lines.CopyP( &p_other.lines )
 }
 
+func (m *FileBuf) Has_LF_at_EOF() bool {
+  return m.lines.LF_at_EOF
+}
+
 func (m *FileBuf) Find_File_Type_Bash() bool {
 
   if( strings.HasSuffix(m.path_name, ".sh") ||
@@ -452,6 +456,27 @@ func (m *FileBuf) ReadString( S string) {
   }
 }
 
+func (m *FileBuf) ReadArray( p_ary *Vector[byte] ) {
+  p_fl := new(FLine)
+  AL := p_ary.Len()
+
+  for k:=0; k<AL; k++ {
+    if( nil==p_fl ) { p_fl = new(FLine) }
+
+    B := p_ary.Get( k )
+
+    if( '\n' == B ) {
+      m.PushLP( p_fl ) //< FileBuf::lines takes ownership of p_fl
+      p_fl = nil
+      m.lines.LF_at_EOF = true
+    } else {
+      p_fl.PushB( B )
+      m.lines.LF_at_EOF = false
+    }
+  }
+  if( nil != p_fl ) { m.PushLP( p_fl ) } //< FileBuf::lines takes ownership of lp
+}
+
 func (m *FileBuf) ClearLines() {
   m.lines.Clear()
 
@@ -532,11 +557,27 @@ func (m *FileBuf) NumLines() int {
   return m.lines.Len()
 }
 
+// Return number of runes in line:
+//
 func (m *FileBuf) LineLen( k int ) int {
   if 0 <= k && k < m.lines.Len() {
     return m.lines.LineLen( k )
   }
   return 0
+}
+
+// Return number of bytes in line:
+//
+func (m *FileBuf) LineSize( k int ) int {
+  if 0 <= k && k < m.lines.Len() {
+    return m.lines.LineSize( k )
+  }
+  return 0
+}
+
+func (m *FileBuf) GetB( l_num, r_num int ) byte {
+
+  return m.lines.GetB( l_num, r_num )
 }
 
 func (m *FileBuf) GetR( l_num, r_num int ) rune {

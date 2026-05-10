@@ -44,8 +44,17 @@ func (m *FLine) CopyPRL( p_src_ln *RLine ) {
   m.star_styles_valid = false
 }
 
+func (m *FLine) Size() int {
+  return m.runes.Size()
+}
+
 func (m *FLine) Len() int {
   return m.runes.Len()
+}
+
+// Get byte
+func (m *FLine) GetB( idx int ) byte {
+  return m.runes.GetB( idx )
 }
 
 // Get rune

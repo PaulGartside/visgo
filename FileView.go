@@ -137,19 +137,12 @@ func (m *FileView) SetTilePos( tp Tile_Pos ) {
   m.SetViewPos()
 }
 
-//func (m *FileView) PrintCursor() {
-//
-//  m_console.ShowCursor( m.Row_Win_2_GL( m.crsRow ), m.Col_Win_2_GL( m.crsCol ) )
-//  m_console.Show()
-//}
-
 func (m *FileView) PrintCursor() {
 
   if( nil != m.p_diff ) {
     m.p_diff.PrintCursor( m )
   } else {
     m_console.ShowCursor( m.Row_Win_2_GL( m.crsRow ), m.Col_Win_2_GL( m.crsCol ) )
-    m_console.Show()
   }
 }
 

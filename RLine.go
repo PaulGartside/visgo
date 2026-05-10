@@ -26,6 +26,10 @@ func (m *RLine) Init( length int ) {
   m.data = make( []byte, length )
 }
 
+func (m *RLine) Size() int {
+  return len( m.data )
+}
+
 func (m *RLine) Len() int {
   return len( m.data )
 }

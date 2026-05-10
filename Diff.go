@@ -668,7 +668,6 @@ func (m *Diff) PrintWorkingView_EOF( pV *FileView, WR, WC, row int ) {
 func (m *Diff) PrintCursor( pV *FileView ) {
 
   m_console.ShowCursor( pV.Row_Win_2_GL( m.crsRow ), pV.Col_Win_2_GL( m.crsCol ) )
-  m_console.Show()
 }
 
 func (m *Diff) PrintStsLine( pV *FileView ) {

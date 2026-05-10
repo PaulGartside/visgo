@@ -7,6 +7,7 @@ import (
   "github.com/gdamore/tcell/v2"
   "regexp"
   "unicode"
+  "unicode/utf8"
 )
 
 type LineView struct {
@@ -26,6 +27,9 @@ type LineView struct {
   banner_delim rune
 
   saved_line FLine
+
+  cover_key string
+  cover_buf Vector[byte]
 }
 
 func (m *LineView) Init( p_file_buf *FileBuf, banner_delim rune ) {
@@ -71,7 +75,6 @@ func (m *LineView) RightChar() int {
 func (m *LineView) PrintCursor() {
 
   m_console.ShowCursor( m.y, m.Col_Win_2_GL( m.crsCol ) )
-  m_console.Show()
 }
 
 func (m *LineView) RepositionView() {
@@ -1967,5 +1970,98 @@ func (m *LineView) Swap_Visual_St_Fn_If_Needed() {
     Swap( &m.v_st_line, &m.v_fn_line )
     Swap( &m.v_st_char, &m.v_fn_char )
   }
+}
+
+func (m *LineView) Cover() {
+
+  m_vis.NoDiff()
+
+  cv := m_vis.CV()
+  pfb := cv.p_fb
+
+  if( pfb.is_dir ) {
+    cv.PrintCursor()
+
+  } else {
+    var seed byte = byte(pfb.GetSize() % 256)
+
+    // Contents of pfb are covered and put into m.cover_buf:
+    Cover_Array( pfb, &m.cover_buf, seed, m.cover_key )
+
+    // Fill in m.cover_buf from old file data:
+    // Clear old file:
+    pfb.ClearChanged()
+    pfb.ClearLines()
+    // pfb Reads in covered file:
+    pfb.ReadArray( &m.cover_buf )
+
+    // Make sure all windows have proper change status in borders
+    m_vis.Update_Change_Statuses()
+
+    // Reset view position:
+    cv.Clear_Context()
+
+    cv.Update_and_PrintCursor()
+  }
+}
+
+func (m *LineView) CoverKey() {
+
+  msg := "Enter cover key:"
+  msg_len := len( msg )
+
+  G_COL := m.x + 1
+  m_console.SetString( m.y, G_COL, msg, &TS_NORMAL )
+  m_console.ShowCursor( m.y, G_COL + msg_len )
+
+  WC := m.nCols - 2
+  var rbuf Vector[rune]
+
+  for kr := m_key.In(); ! kr.IsEndOfLineDelim(); kr = m_key.In() {
+
+    if( !kr.IsBS() && !kr.IsDEL() ) {
+      // Normal
+      rbuf.Push( kr.R )
+
+      local_COL := Min_i( msg_len+rbuf.Len(), WC-1 )
+
+      m_console.SetR( m.y, m.x + local_COL, '*', &TS_NORMAL )
+      // Move forward one space:
+      m_console.ShowCursor( m.y, m.x + local_COL+1 )
+
+    } else { // Backspace or Delete key
+      if( 0 < rbuf.Len() ) {
+        local_COL := Min_i( msg_len+rbuf.Len(), WC-1 )
+
+        m_console.SetR( m.y, m.x + local_COL, ' ', &TS_NORMAL )
+        // Move back onto new space:
+        m_console.ShowCursor( m.y, m.x + local_COL )
+        rbuf.Pop(nil)
+      }
+    }
+  }
+  m.cover_key = string( rbuf.data )
+
+  m_vis.CV().PrintCursor()
+}
+
+func (m *LineView) ShowCoverKey() {
+
+  ST        := m.Col_Win_2_GL( 0 )
+  WC        := m.WorkingCols()
+  COVER_LEN := utf8.RuneCountInString( m.cover_key )
+
+  // Print map
+  for k, R := range m.cover_key {
+    m_console.SetR( m.y, ST+k, R, &TS_NORMAL )
+  }
+
+  // Print empty space after map
+  for k:=COVER_LEN; k<WC; k++  {
+    m_console.SetR( m.y, ST+k, ' ', &TS_NORMAL )
+  }
+//m_console.Update()
+
+  m_vis.CV().PrintCursor() //< Does Console::Flush():
 }
 
