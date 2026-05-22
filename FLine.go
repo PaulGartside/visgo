@@ -152,6 +152,12 @@ func (m *FLine) EqualStr( S string ) bool {
   return m.runes.EqualStr( S )
 }
 
+func (m *FLine) from_str( S string ) {
+  m.runes.from_str( S )
+  m.styles.Clear()
+  m.styles.SetLen( m.runes.Len() )
+}
+
 // Convert to string
 func (m *FLine) to_str() string {
 

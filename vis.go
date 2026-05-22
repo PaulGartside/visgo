@@ -47,6 +47,8 @@ type Vis struct {
   file_hist [MAX_WINS]IntList
 
   regex_str string
+
+  shell Shell
 }
 
 func (m *Vis) HaveFile( path string, p_file_index *int ) bool {
@@ -594,8 +596,6 @@ func (m *Vis) CreateFile( pname string, file_type File_Type ) *FileBuf {
   p_fb := new( FileBuf )
   p_fb.Init_FB( pname, file_type )
 
-//m.Add_FileBuf_2_Lists_Create_Views( p_fb )
-
   return p_fb
 }
 
@@ -618,7 +618,9 @@ func (m *Vis) InitMsgBuffer() {
 
 func (m *Vis) InitShellBuffer() {
 
-  m.CreateFile( m_SHELL_BUF_NAME, FT_TEXT )
+  var p_fb *FileBuf = m.CreateFile( m_SHELL_BUF_NAME, FT_TEXT )
+
+  m.shell.Init( p_fb )
 }
 
 func (m *Vis) InitColonBuffer() {
@@ -627,8 +629,6 @@ func (m *Vis) InitColonBuffer() {
   m.colon_file.p_lv = &m.colon_view
 
   m.colon_view.Init( &m.colon_file, ':' )
-
-//m.Add_FileBuf_2_Lists_Create_Views( &m.colon_file )
 }
 
 func (m *Vis) InitSlashBuffer() {
@@ -637,8 +637,6 @@ func (m *Vis) InitSlashBuffer() {
   m.slash_file.p_lv = &m.slash_view
 
   m.slash_view.Init( &m.slash_file, '/' )
-
-//m.Add_FileBuf_2_Lists_Create_Views( &m.slash_file )
 }
 
 func (m *Vis) InitUserFiles_AddFile( relative_name string ) {
@@ -1003,6 +1001,29 @@ func ( m *Vis ) GoToSearchBuffer() {
   m.GoToBuffer( m_SLASH_FILE )
 }
 
+func ( m *Vis ) GoToShellBuffer() {
+
+  m.GoToBuffer( m_SHELL_FILE )
+}
+
+func ( m *Vis) RunCommand() {
+
+  if( !m.shell.running ) {
+    if( m_SHELL_FILE == m.file_hist[ m.win ].Get( 0 ) ) {
+      m.shell.Run()
+    }
+  }
+}
+
+func ( m *Vis) StartCommand() {
+
+  if( !m.shell.running ) {
+    if( m_SHELL_FILE == m.file_hist[ m.win ].Get( 0 ) ) {
+      m.shell.Start()
+    }
+  }
+}
+
 func ( m *Vis ) Exe_Colon_e() {
 
   var p_cv *FileView = m.CV()
@@ -1280,6 +1301,10 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("vsp") )      { m.VSplitWindow()
     } else if( m_rbuf.EqualStr("sp") )       { m.HSplitWindow()
     } else if( m_rbuf.EqualStr("se") )       { m.GoToSearchBuffer()
+    } else if( m_rbuf.EqualStr("sh") ||
+               m_rbuf.EqualStr("shell") )    { m.GoToShellBuffer()
+    } else if( m_rbuf.EqualStr("run") )      { m.RunCommand()
+    } else if( m_rbuf.EqualStr("start") )    { m.StartCommand()
     } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
     } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
     } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
@@ -1616,6 +1641,12 @@ func (m *Vis) CheckFileModTime() {
       // Make updates appear on screen:
       m_console.Show()
     }
+  }
+}
+
+func (m *Vis) Check_Run_Shell() {
+
+  if( m.shell.running ) { m.shell.Update()
   }
 }
 

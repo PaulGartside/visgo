@@ -266,6 +266,7 @@ func (m *Console) Key_In() Key_rune {
       time.Sleep( 100*time.Millisecond )
       m_vis.CheckFileModTime()
       m_vis.Update_Change_Statuses()
+      m_vis.Check_Run_Shell()
     } else {
       switch ev := m.screen.PollEvent().(type) {
       case nil:
