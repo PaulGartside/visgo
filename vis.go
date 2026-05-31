@@ -1024,6 +1024,37 @@ func ( m *Vis) StartCommand() {
   }
 }
 
+func ( m *Vis) GetCWD() {
+  cwd, err := os.Getwd()
+  if( err != nil ) {
+    m.CmdLineMessage( fmt.Sprintf("%v", err) )
+  } else {
+    m_wd = cwd //< Set global working directory
+    m.CmdLineMessage( cwd )
+  }
+}
+
+func ( m *Vis) Ch_Dir() {
+  var path string
+
+  if( 2 < m_rbuf.Len() ) {
+    // 1. First get path to chdir to:
+    S := m_rbuf.to_str()
+    path = S[2:] // :cd relative_path
+  } else {
+    // :cd - chdir to location of current file
+    path = m.CV().p_fb.dir_name
+  }
+
+  // 2. chdir
+  err := os.Chdir( path )
+  if( err != nil ) {
+    m.CmdLineMessage( fmt.Sprintf("%v", err) );
+  } else {
+    m.GetCWD()
+  }
+}
+
 func ( m *Vis ) Exe_Colon_e() {
 
   var p_cv *FileView = m.CV()
@@ -1305,6 +1336,8 @@ func ( m *Vis ) Handle_Colon_Cmd() {
                m_rbuf.EqualStr("shell") )    { m.GoToShellBuffer()
     } else if( m_rbuf.EqualStr("run") )      { m.RunCommand()
     } else if( m_rbuf.EqualStr("start") )    { m.StartCommand()
+    } else if( m_rbuf.EqualStr("pwd") )      { m.GetCWD()
+    } else if( m_rbuf.StartsWith("cd") )     { m.Ch_Dir()
     } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
     } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
     } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
@@ -1715,49 +1748,6 @@ func (m *Vis) GetViewFunc( kr Key_rune ) CmdFunc {
   }
   return cf
 }
-
-// Works:
-//func (m *Vis) Run() {
-//  var have_saved_key_ru bool = false
-//  var saved_kr Key_rune
-//
-//  var kr Key_rune
-//
-//  m.running = true
-//  for m.running {
-//    if( have_saved_key_ru ) {
-//      kr = saved_kr
-//      have_saved_key_ru = false
-//    } else {
-//      kr = m_key.In()
-//    }
-//    var view_mode bool = !m.colon_mode && !m.slash_mode;
-//
-//    if( view_mode && ((kr.IsKeyRune() && kr.R == 'j') || (kr.K == tcell.KeyDown)) ) {
-//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_j )
-//
-//    } else if( view_mode && ((kr.IsKeyRune() && kr.R == 'k') || (kr.K == tcell.KeyUp)) ) {
-//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_k )
-//
-//    } else if( view_mode && ((kr.IsKeyRune() && kr.R == 'l') || (kr.K == tcell.KeyRight)) ) {
-//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_l )
-//
-//    } else if( view_mode && ((kr.IsKeyRune() && kr.R == 'h') || (kr.K == tcell.KeyLeft)) ) {
-//      have_saved_key_ru, saved_kr = m.Speed_up_scrolling( kr, Handle_h )
-//
-//    } else {
-//      var cf CmdFunc
-//      if( m.colon_mode || m.slash_mode ) {
-//        cf = m.GetLineFunc( kr )
-//      } else {
-//        cf = m.GetViewFunc( kr )
-//      }
-//      if nil != cf {
-//        cf(m)
-//      }
-//    }
-//  }
-//}
 
 // Works:
 func (m *Vis) Run() {

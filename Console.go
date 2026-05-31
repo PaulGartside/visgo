@@ -294,7 +294,8 @@ func (m *Console) HasPendingEvent() bool {
 
 func (m *Console) Set_Color_Scheme_1() {
 
-  TS_NORMAL    = tcell.StyleDefault
+//TS_NORMAL    = tcell.StyleDefault
+  TS_NORMAL    = TS_NORMAL   .Background( tcell.ColorBlack ).Foreground( tcell.ColorWhite );
   TS_BORDER    = TS_BORDER   .Background( tcell.ColorBlue  ).Foreground( tcell.ColorWhite ).Bold(true)
   TS_BORDER_HI = TS_BORDER_HI.Background( tcell.ColorAqua  ).Foreground( tcell.ColorBlue ).Bold(true)
   TS_EOF       = TS_EOF      .Background( tcell.ColorGray  ).Foreground( tcell.ColorRed ).Bold(true)
@@ -336,7 +337,8 @@ func (m *Console) Set_Color_Scheme_1() {
 
 func (m *Console) Set_Color_Scheme_2() {
 
-  TS_NORMAL    = tcell.StyleDefault
+//TS_NORMAL    = tcell.StyleDefault
+  TS_NORMAL    = TS_NORMAL   .Background( tcell.ColorBlack ).Foreground( tcell.ColorWhite );
   TS_BORDER    = TS_BORDER   .Background( tcell.ColorBlue  ).Foreground( tcell.ColorWhite ).Bold(true)
   TS_BORDER_HI = TS_BORDER_HI.Background( tcell.ColorAqua  ).Foreground( tcell.ColorBlue ).Bold(true)
   TS_EOF       = TS_EOF      .Background( tcell.ColorGray  ).Foreground( tcell.ColorRed ).Bold(true)

@@ -165,11 +165,11 @@ func get_win_drive() {
     die( fmt.Sprintf("os.Getwd() : %v", err) )
   }
   m_wd = wd
-  for _,r := range m_wd {
-    if( r == os.PathSeparator ) {
+  for _,R := range m_wd {
+    if( R == os.PathSeparator ) {
       break
     } else {
-      m_WIN_D += string(r)
+      m_WIN_D += string(R)
     }
   }
   m_WIN_D_PS = m_WIN_D + string(os.PathSeparator)
