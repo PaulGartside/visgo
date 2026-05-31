@@ -216,6 +216,20 @@ func (m *FileBuf) Find_File_Type_JSON() bool {
   return false
 }
 
+func (m *FileBuf) Find_File_Type_Python() bool {
+
+  if( strings.HasSuffix(m.path_name, ".py") ||
+      strings.HasSuffix(m.path_name, ".py.new") ||
+      strings.HasSuffix(m.path_name, ".py.old") ) {
+
+    m.file_type = FT_PY
+    m.Hi = new( Highlight_Python )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
 func (m *FileBuf) Find_File_Type_SQL() bool {
 
   if( strings.HasSuffix(m.path_name, ".sql") ||
@@ -266,6 +280,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
              m.Find_File_Type_IDL() ||
              m.Find_File_Type_Java() ||
              m.Find_File_Type_JSON() ||
+             m.Find_File_Type_Python() ||
              m.Find_File_Type_SQL() ||
              m.Find_File_Type_XML() ) {
     // File type found
@@ -1547,6 +1562,11 @@ func (m *FileBuf) Set_File_Type( syn string ) {
     } else if( syn == "json" ) {
       m.file_type = FT_JSON
       m.Hi = new( Highlight_JSON )
+
+    } else if( (syn == "py") ||
+               (syn == "python") ) {
+      m.file_type = FT_PY
+      m.Hi = new( Highlight_Python )
 
     } else if( syn == "sql" ) {
       m.file_type = FT_SQL
