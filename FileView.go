@@ -2368,23 +2368,24 @@ func (m *FileView) Do_x_range_multiple( st_line, st_char, fn_line, fn_char int )
   for L := st_line; L<=n_fn_line; {
     var nlp *RLine = new( RLine )
 
-    var OLL int = m.p_fb.LineLen( L ); // Original line length
+    var OLL int = m.p_fb.LineLen( L ) // Original line length
 
-    var P_st int = True_1_else_2( (L==  st_line), Min_i(st_char, OLL-1), 0 )
-    var P_fn int = True_1_else_2( (L==n_fn_line), Min_i(fn_char, OLL-1), OLL-1 )
-
-    if(   st_line == L && 0    < P_st  ) { started_in_middle = true; }
-    if( n_fn_line == L && P_fn < OLL-1 ) { ended___in_middle = true; }
+    var P_st int = 0
+    if( L==st_line && 0<OLL ) { P_st = Min_i(st_char, OLL-1) }
+    var P_fn int = 0
+    if( 0<OLL ) {
+      P_fn = OLL-1
+      if( L==n_fn_line ) { P_fn = Min_i(fn_char, OLL-1) }
+    }
+    if(   st_line == L && 0    < P_st  ) { started_in_middle = true }
+    if( n_fn_line == L && P_fn < OLL-1 ) { ended___in_middle = true }
 
     var LL int = OLL
-
     for P := P_st; P_st < LL && P <= P_fn; P++ {
-
       nlp.PushR( m.p_fb.RemoveR( L, P_st ) )
-
       LL = m.p_fb.LineLen( L ); // Removed a char, so re-calculate LL
     }
-    if( 0 == P_st && OLL-1 == P_fn ) { // Removed entire line
+    if( LL==0 ) { // Removed entire line
       m.p_fb.RemoveLP( L )
       n_fn_line--
     } else {
@@ -3743,10 +3744,10 @@ func (m *FileView) Do_D_v_line() {
   // 2. Dont remove all lines in file to avoid crashing
   fn_line := m.v_fn_line
   for L := m.v_st_line; 1 < m.p_fb.NumLines() && L<=fn_line; fn_line-- {
-    flp := m.p_fb.RemoveLP( L )
-    m_vis.reg.PushLP( &flp.runes )
+    pfl := m.p_fb.RemoveLP( L )
+    m_vis.reg.PushLP( &pfl.runes )
 
-    // m.reg will delete nlp
+    // m_vis.reg will delete pfl
     removed_line = true
   }
   m_vis.paste_mode = PM_LINE
@@ -3756,15 +3757,14 @@ func (m *FileView) Do_D_v_line() {
 
   if( removed_line ) {
     // Figure out and move to new cursor position:
-    NUM_LINES := m.p_fb.NumLines()
-
     ncl := m.v_st_line
+    NUM_LINES := m.p_fb.NumLines()
     if( NUM_LINES-1 < ncl ) {
       ncl = 0
       if( 0 < m.v_st_line ) { ncl = m.v_st_line-1 }
     }
-    NCLL := m.p_fb.LineLen( ncl )
     ncc := 0
+    NCLL := m.p_fb.LineLen( ncl )
     if( 0 < NCLL ) {
       ncc = NCLL-1
       if( m.v_st_char < NCLL ) { ncc =  m.v_st_char }
