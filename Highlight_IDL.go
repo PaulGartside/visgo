@@ -96,5 +96,6 @@ var HiPairs_IDL = [...]HiKeyVal {
   { "void"       , HI_VARTYPE },
   { "wchar"      , HI_VARTYPE },
   { "wstring"    , HI_VARTYPE },
+  { ""           , 0 },
 }
 

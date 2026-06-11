@@ -174,6 +174,13 @@ func (m *FLine) to_SB( st int ) []byte {
   return m.runes.to_SB( st )
 }
 
+// Returns true if m.runes has tag at byte_pos
+//
+func (m *FLine) has_at( tag string, byte_pos int ) bool {
+
+  return m.runes.has_at( tag, byte_pos )
+}
+
 //func (m *FLine) RemoveSpaces() {
 //
 //  for k:=0; k<len(m.data); k++ {

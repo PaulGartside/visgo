@@ -397,6 +397,13 @@ func (m *RLine) to_str() string {
   return string(m.data)
 }
 
+//func (m *RLine) to_str( pos int ) string {
+//  if( pos < len(m.data) ) {
+//    return string(m.data[pos:])
+//  }
+//  return ""
+//}
+
 func (m *RLine) from_str( S string ) {
   m.data = []byte(S)
 }
@@ -433,6 +440,20 @@ func (m *RLine) Compare( ln RLine ) int {
     }
   }
   return rval
+}
+
+func (m *RLine) has_at( tag string, byte_pos int ) bool {
+  has := false
+  tag_len := len(tag)
+  if( byte_pos+tag_len < len(m.data) ) {
+    has = true
+    for k:=0; has && k<tag_len; k++ {
+      if( tag[k] != m.data[byte_pos+k] ) {
+        has = false
+      }
+    }
+  }
+  return has
 }
 
 // Not sure if this method is need.  Just use to_str().
