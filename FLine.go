@@ -181,6 +181,13 @@ func (m *FLine) has_at( tag string, byte_pos int ) bool {
   return m.runes.has_at( tag, byte_pos )
 }
 
+// Returns true if m.runes has tag at byte_pos case insensitively
+//
+func (m *FLine) has_at_ci( tag string, byte_pos int ) bool {
+
+  return m.runes.has_at_ci( tag, byte_pos )
+}
+
 //func (m *FLine) RemoveSpaces() {
 //
 //  for k:=0; k<len(m.data); k++ {

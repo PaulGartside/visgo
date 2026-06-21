@@ -70,6 +70,7 @@ const (
   FT_CPP
   FT_GO
   FT_IDL
+  FT_HTML
   FT_JAVA
   FT_JSON
   FT_PY

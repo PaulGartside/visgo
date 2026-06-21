@@ -188,6 +188,23 @@ func (m *FileBuf) Find_File_Type_IDL() bool {
   return false
 }
 
+func (m *FileBuf) Find_File_Type_HTML() bool {
+
+  if( strings.HasSuffix(m.path_name, ".html") ||
+      strings.HasSuffix(m.path_name, ".html.new") ||
+      strings.HasSuffix(m.path_name, ".html.old") ||
+      strings.HasSuffix(m.path_name, ".htm") ||
+      strings.HasSuffix(m.path_name, ".htm.new") ||
+      strings.HasSuffix(m.path_name, ".htm.old") ) {
+
+    m.file_type = FT_HTML
+    m.Hi = new( Highlight_HTML )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
 func (m *FileBuf) Find_File_Type_Java() bool {
 
   if( strings.HasSuffix(m.path_name, ".java") ||
@@ -278,6 +295,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
              m.Find_File_Type_CPP() ||
              m.Find_File_Type_Go() ||
              m.Find_File_Type_IDL() ||
+             m.Find_File_Type_HTML() ||
              m.Find_File_Type_Java() ||
              m.Find_File_Type_JSON() ||
              m.Find_File_Type_Python() ||

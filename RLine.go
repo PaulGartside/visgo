@@ -7,6 +7,7 @@ import (
   "hash/crc32"
   "slices"
 //"strings"
+  "unicode"
   "unicode/utf8"
 )
 
@@ -442,6 +443,8 @@ func (m *RLine) Compare( ln RLine ) int {
   return rval
 }
 
+// Returns true if m.data has tag at byte_pos
+//
 func (m *RLine) has_at( tag string, byte_pos int ) bool {
   has := false
   tag_len := len(tag)
@@ -449,6 +452,22 @@ func (m *RLine) has_at( tag string, byte_pos int ) bool {
     has = true
     for k:=0; has && k<tag_len; k++ {
       if( tag[k] != m.data[byte_pos+k] ) {
+        has = false
+      }
+    }
+  }
+  return has
+}
+
+// Returns true if m.data has tag at byte_pos case insensitively
+//
+func (m *RLine) has_at_ci( tag string, byte_pos int ) bool {
+  has := false
+  tag_len := len(tag)
+  if( byte_pos+tag_len < len(m.data) ) {
+    has = true
+    for k:=0; has && k<tag_len; k++ {
+      if( unicode.ToLower(rune(tag[k])) != unicode.ToLower(rune(m.data[byte_pos+k])) ) {
         has = false
       }
     }
