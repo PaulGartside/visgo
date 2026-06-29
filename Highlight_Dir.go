@@ -61,6 +61,7 @@ func (m *Highlight_Dir) Hi_In_None_Dir( l, LL int ) {
       m.p_fb.SetSyntaxStyle( l, k, HI_CONTROL )
     }
   }
+  // Highlight the DIR_DELIM:
   m.p_fb.SetSyntaxStyle( l, LL-1, HI_CONST )
 }
 

@@ -359,13 +359,15 @@ func (m *FileBuf) ReadExistingDir( dir_path string ) {
   if err != nil {
     log.Fatal( err )
   } else {
-    m.PushLSR( []rune("..") )
+  //m.PushLSR( []rune("..") )
+    m.PushStr( ".." )
     for _, de := range de_s {
       var de_name string = de.Name()
       if de.IsDir() {
         de_name = AppendDirDelim( de_name )
       }
-      m.PushLSR( []rune(de_name) )
+    //m.PushLSR( []rune(de_name) )
+      m.PushStr( de_name )
     }
   }
   m.ReadExistingDir_Sort()
@@ -478,7 +480,7 @@ func (m *FileBuf) add_infile_bytes( p_fl *FLine, infile_bytes []byte ) *FLine {
   return p_fl
 }
 
-func (m *FileBuf) ReadString( S string) {
+func (m *FileBuf) ReadString( S string ) {
 
   infile_bytes := []byte( S )
 
@@ -652,9 +654,15 @@ func (m *FileBuf) PushLE() {
 }
 
 // Append Line made from a Slice of runes
-func (m *FileBuf) PushLSR( s_r []rune ) {
+//func (m *FileBuf) PushLSR( s_r []rune ) {
+//  p_fl := new(FLine)
+//  p_fl.PushSR( s_r )
+//  m.PushLP( p_fl )
+//}
+
+func (m *FileBuf) PushStr( S string ) {
   p_fl := new(FLine)
-  p_fl.PushSR( s_r )
+  p_fl.PushStr( S )
   m.PushLP( p_fl )
 }
 

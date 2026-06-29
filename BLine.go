@@ -64,12 +64,25 @@ func (m *BLine) SetLen( length int ) {
   }
 }
 
+//func (m *BLine) GetB( b_num int ) byte {
+//  return m.data[ b_num ]
+//}
+
 func (m *BLine) GetB( b_num int ) byte {
-  return m.data[ b_num ]
+  if( b_num < m.Len() ) {
+    return m.data[ b_num ]
+  }
+  return 0
 }
 
+//func (m *BLine) SetB( b_num int, B byte ) {
+//  m.data[ b_num ] = B
+//}
+
 func (m *BLine) SetB( b_num int, B byte ) {
-  m.data[ b_num ] = B
+  if( b_num < m.Len() ) {
+    m.data[ b_num ] = B
+  }
 }
 
 func (m *BLine) RemoveB( b_num int ) byte {
@@ -84,9 +97,15 @@ func (m *BLine) PushB( B byte ) {
   m.data = append( m.data, B )
 } 
 
-func (m *BLine) PushSB( s_b []byte ) {
+//func (m *BLine) PushSB( s_b []byte ) {
+//  m.data = append( m.data, s_b... )
+//} 
+
+func (m *BLine) PushStr( S string ) {
+
+  s_b := []byte( S )
   m.data = append( m.data, s_b... )
-} 
+}
 
 func (m *BLine) PushL( ln BLine ) {
   m.data = append( m.data, ln.data... )

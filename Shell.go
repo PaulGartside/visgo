@@ -16,8 +16,10 @@ type Shell struct {
   cmd_name string
   cmd_args []string
 
-  hash_divider [40]rune
-  line_divider [40]rune
+//hash_divider [40]rune
+//line_divider [40]rune
+  hash_divider string
+  line_divider string
 
   // Variables used when starting a command in the background:
   running bool
@@ -34,11 +36,15 @@ func (m *Shell) Init( p_fb *FileBuf ) {
   m.pfb = p_fb
 
   // Fill in divideer
-  for k:=0; k<40; k++ {
-    m.hash_divider[k] = '#'
-    m.line_divider[k] = '-'
-    m.pfb.PushR( 0, '#' )
-  }
+//for k:=0; k<40; k++ {
+//  m.hash_divider[k] = '#'
+//  m.line_divider[k] = '-'
+//  m.pfb.PushR( 0, '#' )
+//}
+  m.hash_divider = "########################################"
+  m.line_divider = "----------------------------------------" 
+  m.pfb.RemoveLP( 0 ) //< Remove first line which is empty
+  m.pfb.PushStr( m.hash_divider ) //< Add first line which is hash divider
   m.pfb.PushLE()
 
   NUM_LINES := m.pfb.NumLines()
@@ -214,7 +220,8 @@ func (m *Shell) Get_cmd_name_args( concatinated_str string ) bool {
 
 func (m *Shell) Run_Cmd() {
   // Add ######################################
-  m.pfb.PushLSR( m.hash_divider[:] )
+//m.pfb.PushLSR( m.hash_divider[:] )
+  m.pfb.PushStr( m.hash_divider )
 
   var p_cmd *exec.Cmd = exec.Command( m.cmd_name, m.cmd_args... )
   var sb_stdout strings.Builder
@@ -230,12 +237,14 @@ func (m *Shell) Run_Cmd() {
   m.Print_output_str( stdout_str )
 
   if( 0<len(stdout_str) && 0<len(stderr_str) ) {
-    m.pfb.PushLSR( m.line_divider[:] )
+  //m.pfb.PushLSR( m.line_divider[:] )
+    m.pfb.PushStr( m.line_divider )
   }
   m.Print_output_str( stderr_str )
 
   if( err != nil ) {
-    m.pfb.PushLSR( m.line_divider[:] )
+  //m.pfb.PushLSR( m.line_divider[:] )
+    m.pfb.PushStr( m.line_divider )
     err_msg := fmt.Sprintf("%v: %s", err, m.concatinated_cmd)
     p_fl := new( FLine )
     p_fl.from_str( err_msg )
@@ -245,7 +254,8 @@ func (m *Shell) Run_Cmd() {
 }
 
 func (m *Shell) Handle_Err( err error ) {
-  m.pfb.PushLSR( m.line_divider[:] )
+//m.pfb.PushLSR( m.line_divider[:] )
+  m.pfb.PushStr( m.line_divider )
   err_msg := fmt.Sprintf("%v: %s", err, m.concatinated_cmd)
   p_fl := new( FLine )
   p_fl.from_str( err_msg )
@@ -258,7 +268,8 @@ func (m *Shell) Handle_Err( err error ) {
 
 func (m *Shell) Start_Cmd() {
   // Add ######################################
-  m.pfb.PushLSR( m.hash_divider[:] )
+//m.pfb.PushLSR( m.hash_divider[:] )
+  m.pfb.PushStr( m.hash_divider )
 
   m.p_cmd = exec.Command( m.cmd_name, m.cmd_args... )
 
@@ -305,7 +316,8 @@ func (m *Shell) Print_output_str( out_str string ) {
 
 func (m *Shell) Add_Divider() {
   // Add ###################################### followed by empty line
-  m.pfb.PushLSR( m.hash_divider[:] )
+//m.pfb.PushLSR( m.hash_divider[:] )
+  m.pfb.PushStr( m.hash_divider )
   m.pfb.PushLE()
 }
 
@@ -343,12 +355,14 @@ func (m *Shell) Handle_Cmd_Done( err error ) {
   m.sb_stderr.Reset()
 
   if( 0<len(stdout_str) && 0<len(stderr_str) ) {
-    m.pfb.PushLSR( m.line_divider[:] )
+  //m.pfb.PushLSR( m.line_divider[:] )
+    m.pfb.PushStr( m.line_divider )
   }
   m.Print_output_str( stderr_str )
 
   if( err != nil ) {
-    m.pfb.PushLSR( m.line_divider[:] )
+  //m.pfb.PushLSR( m.line_divider[:] )
+    m.pfb.PushStr( m.line_divider )
     err_msg := fmt.Sprintf("%v: %s", err, m.concatinated_cmd)
     p_fl := new( FLine )
     p_fl.from_str( err_msg )

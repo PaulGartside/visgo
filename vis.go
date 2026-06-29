@@ -97,7 +97,8 @@ func (m *Vis) Add_FileBuf_2_Lists_Create_Views( p_fb *FileBuf ) {
 
 func (m *Vis) AddToBufferEditor( fname string ) {
   p_fl := new(FLine)
-  p_fl.PushSR( []rune(fname) )
+//p_fl.PushSR( []rune(fname) )
+  p_fl.PushStr( fname )
 
   var p_fb *FileBuf = m.views[0].Get( m_BE_FILE ).p_fb
   p_fb.PushLP( p_fl )

@@ -104,14 +104,25 @@ func (m *FLine) PushR( R rune ) {
 } 
 
 // Push a slice of runes(s_r)
-func (m *FLine) PushSR( s_r []rune ) {
+//func (m *FLine) PushSR( s_r []rune ) {
+//
+//  s_b := make( []byte, len(s_r) )
+//
+//  m.runes.PushSR( s_r )
+//  m.styles.PushSB( s_b )
+//  m.star_styles_valid = false
+//} 
 
-  s_b := make( []byte, len(s_r) )
+func (m *FLine) PushStr( S string ) {
 
-  m.runes.PushSR( s_r )
-  m.styles.PushSB( s_b )
+  m.runes.PushStr( S )
+
+  len_S := len(S)
+  for k:=0; k<len_S; k++ {
+    m.styles.PushB( 0 )
+  }
   m.star_styles_valid = false
-} 
+}
 
 // Push line
 func (m *FLine) PushL( ln FLine ) {

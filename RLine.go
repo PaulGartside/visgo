@@ -240,12 +240,20 @@ func (m *RLine) PushR( R rune ) {
   m.chksum_diff_valid = false
 }
 
-func (m *RLine) PushSR( s_r []rune ) {
-  S := string( s_r )
+//func (m *RLine) PushSR( s_r []rune ) {
+//  S := string( s_r )
+//  s_b := []byte( S )
+//  m.data = append( m.data, s_b... )
+//
+////m.chksum_valid = false
+//  m.chksum_diff_valid = false
+//}
+
+func (m *RLine) PushStr( S string ) {
+
   s_b := []byte( S )
   m.data = append( m.data, s_b... )
 
-//m.chksum_valid = false
   m.chksum_diff_valid = false
 }
 
