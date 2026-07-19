@@ -3513,7 +3513,7 @@ func (m *Diff) Do_n_FindNextPattern( p_ncp *CrsPos ) bool {
   LL := pfb.LineLen( OCLv )
 
   pfb.Check_4_New_Regex()
-  pfb.Find_Regexs_4_Line( OCL )
+  pfb.Find_Regexs_4_Line( OCLv )
 
   // Move past current pattern:
   for ; st_c<LL && pV.InStarOrStarInF(OCLv,st_c); st_c++ {
