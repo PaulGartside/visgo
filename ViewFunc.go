@@ -82,7 +82,7 @@ func Handle_Colon( m *Vis ) {
   m.colon_mode = true
 
   var CL int = m.colon_view.CrsLine()
-  var LL int = m.colon_file.LineLen( CL )
+  var LL int = m.colon_file.LineLenB( CL )
 
   if( 0<LL ) {
     // Something on current line, so goto command line in escape mode
@@ -491,7 +491,7 @@ func Handle_Slash( m *Vis ) {
   m.slash_mode = true
 
   var CL int = m.slash_view.CrsLine()
-  var LL int = m.slash_file.LineLen( CL )
+  var LL int = m.slash_file.LineLenB( CL )
 
   if( 0<LL ) {
     // Something on current line, so goto command line in escape mode
@@ -768,6 +768,7 @@ func Handle_z( m *Vis ) {
                (is_rune && kr.R == 't') ) { p_cv.MoveCurrLineToTop()
     } else if( (is_rune && kr.R == 'z') ) { p_cv.MoveCurrLineCenter()
     } else if( (is_rune && kr.R == 'b') ) { p_cv.MoveCurrLineToBottom()
+    } else if( (is_rune && kr.R == 'q') ) { m.QuitAll()
     }
   }
 }

@@ -42,20 +42,20 @@ func (m *RLineList) SetLen( length int ) {
   }
 }
 
-func (m *RLineList) LineLen( l_num int ) int {
-
-  return m.lines[ l_num ].Len()
-}
+//func (m *RLineList) LineLen( l_num int ) int {
+//
+//  return m.lines[ l_num ].Len()
+//}
 
 func (m *RLineList) GetLP( l_num int ) *RLine {
 
   return m.lines[ l_num ]
 }
 
-func (m *RLineList) GetR( l_num, r_num int ) rune {
-
-  return m.lines[ l_num ].GetR( r_num )
-}
+//func (m *RLineList) GetR( l_num, r_num int ) rune {
+//
+//  return m.lines[ l_num ].GetR( r_num )
+//}
 
 func (m *RLineList) RemoveR( l_num, r_num int ) rune {
 
@@ -110,8 +110,8 @@ func (m *RLineList) AppendLineToLine( l_num int, p_ln *RLine ) {
 //m.lines[ l_num ].PushLP( p_ln )
   m_p_ln := m.lines[ l_num ]
 
-  for k:=0; k<p_ln.Len(); k++ {
-    m_p_ln.PushR( p_ln.GetR( k ) )
+  for k:=0; k<p_ln.LenB(); k++ {
+    m_p_ln.PushB( p_ln.GetB( k ) )
   }
 }
 

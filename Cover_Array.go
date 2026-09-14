@@ -20,7 +20,7 @@ func Cover_Array( p_in *FileBuf, p_out *Vector[byte], seed byte, key string ) {
   NUM_LINES := p_in.NumLines()
 
   for l:=0; l<NUM_LINES; l++ {
-    LS := p_in.LineSize( l )
+    LS := p_in.LineLenB( l )
 
     for p:=0; p<LS; p++ {
       var B byte = p_in.GetB( l, p )

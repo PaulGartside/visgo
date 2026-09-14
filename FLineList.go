@@ -46,14 +46,16 @@ func (m *FLineList) GetSize() int {
     m.SetOffsetsLen( NUM_LINES )
 
     for k:=OLOL; k<NUM_LINES; k++ {
-      m.offsets[ k ] = m.offsets[ k-1 ] + m.lines[ k-1 ].Len() + 1 //< Add 1 for '\n'
+      m.offsets[ k ] = m.offsets[ k-1 ] + m.lines[ k-1 ].LenB() + 1 //< Add 1 for '\n'
     }
-    size = m.offsets[ NUM_LINES-1 ] + m.lines[ NUM_LINES-1 ].Len()
+    size = m.offsets[ NUM_LINES-1 ] + m.lines[ NUM_LINES-1 ].LenB()
     if( m.LF_at_EOF ) { size++ }
   }
   return size
 }
 
+// Get byte offset in file of (CL, CC)
+//
 func (m *FLineList) GetCursorByte( CL, CC int ) int {
   crs_byte := 0
   NUM_LINES := m.Len()
@@ -61,7 +63,7 @@ func (m *FLineList) GetCursorByte( CL, CC int ) int {
     // Make sure CL are is range:
     CL = Min_i( CL, NUM_LINES-1 )
     // Make sure CC is in range:
-    CLL := m.GetLP(CL).Len()
+    CLL := m.GetLP(CL).LenB()
     if( CLL <= CC ) {
       CC = 0
       if( 0 < CLL ) { CC = CLL-1 }
@@ -72,7 +74,7 @@ func (m *FLineList) GetCursorByte( CL, CC int ) int {
     if( OLOL != NUM_LINES ) {
       m.SetOffsetsLen( NUM_LINES )
       for k:=OLOL; k<NUM_LINES; k++ {
-        m.offsets[ k ] = m.offsets[ k-1 ] + m.LineLen( k-1 ) + 1 //< Add 1 for '\n'
+        m.offsets[ k ] = m.offsets[ k-1 ] + m.LineLenB( k-1 ) + 1 //< Add 1 for '\n'
       }
     }
     crs_byte = m.offsets[ CL ] + CC
@@ -131,14 +133,19 @@ func (m *FLineList) SetOffsetsLen( length int ) {
   }
 }
 
-func (m *FLineList) LineSize( l_num int ) int {
+//func (m *FLineList) LineSize( l_num int ) int {
+//
+//  return m.lines[ l_num ].Size()
+//}
 
-  return m.lines[ l_num ].Size()
+func (m *FLineList) LineLenB( l_num int ) int {
+
+  return m.lines[ l_num ].LenB()
 }
 
-func (m *FLineList) LineLen( l_num int ) int {
+func (m *FLineList) LineLenR( l_num int ) int {
 
-  return m.lines[ l_num ].Len()
+  return m.lines[ l_num ].LenR()
 }
 
 func (m *FLineList) GetLP( l_num int ) *FLine {
@@ -151,16 +158,38 @@ func (m *FLineList) GetB( l_num, b_num int ) byte {
   return m.lines[ l_num ].GetB( b_num )
 }
 
-func (m *FLineList) GetR( l_num, r_num int ) rune {
+func (m *FLineList) GetR( l_num, r_num int ) (rune, int, int) {
 
   return m.lines[ l_num ].GetR( r_num )
 }
 
-func (m *FLineList) SetR( l_num, r_num int, R rune ) {
+func (m *FLineList) GetRatB( l_num, b_num int ) (rune, int) {
 
-  m.lines[ l_num ].SetR( r_num, R )
+  return m.lines[ l_num ].GetRatB( b_num )
+}
+
+func (m *FLineList) SetB( l_num, b_num int, B byte ) {
+
+  m.lines[ l_num ].SetB( b_num, B )
 
   m.ChangedLine( l_num )
+}
+
+func (m *FLineList) SetR( l_num, r_num int, R rune ) int {
+
+  B_pos := m.lines[ l_num ].SetR( r_num, R )
+
+  m.ChangedLine( l_num )
+
+  return B_pos
+}
+
+func (m *FLineList) RemoveB( l_num, r_num int ) byte {
+
+  m.ChangedLine( l_num )
+
+  B := m.lines[ l_num ].RemoveB( r_num )
+  return B
 }
 
 func (m *FLineList) RemoveR( l_num, r_num int ) rune {
@@ -171,9 +200,23 @@ func (m *FLineList) RemoveR( l_num, r_num int ) rune {
   return R
 }
 
+func (m *FLineList) InsertB( l_num, b_num int, B byte ) {
+
+  m.lines[ l_num ].InsertB( b_num, B )
+
+  m.ChangedLine( l_num )
+}
+
 func (m *FLineList) InsertR( l_num, r_num int, R rune ) {
 
   m.lines[ l_num ].InsertR( r_num, R )
+
+  m.ChangedLine( l_num )
+}
+
+func (m *FLineList) PushB( l_num int, B byte ) {
+
+  m.lines[ l_num ].PushB( B )
 
   m.ChangedLine( l_num )
 }

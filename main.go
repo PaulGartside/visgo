@@ -128,12 +128,20 @@ const (
   TP_RITE_TWO_THIRDS
 )
 
+type Decoding int
+
+const (
+  DEC_BYTE Decoding = iota
+  DEC_UTF8
+)
+
 var m_vis     Vis
 var m_console Console
 var m_key     Key
 
 var m_rbuf RLine
 var m_log []string
+var _4_bytes [4]byte
 
 // Return filename from path.
 // Ex: a/b/fname.txt -> fname.txt

@@ -131,12 +131,12 @@ func (m *Shell) Get_first_line() int {
   found_first_line := false
   LAST_LINE := m.pfb.NumLines()-1
   for l:=LAST_LINE; !found_first_line && 0<=l; l-- {
-    LL := m.pfb.LineLen( l )
+    LL := m.pfb.LineLenB( l )
     first_non_white := 0
-    for first_non_white<LL && IsSpace( m.pfb.GetR( l, first_non_white ) ) {
+    for first_non_white<LL && IsSpace( rune(m.pfb.GetB( l, first_non_white )) ) {
       first_non_white++;
     }
-    if( first_non_white<LL && '#' == m.pfb.GetR( l, first_non_white ) ) {
+    if( first_non_white<LL && '#' == m.pfb.GetB( l, first_non_white ) ) {
       found_first_line = true;
       first_line = l+1;
     }
@@ -151,15 +151,15 @@ func (m *Shell) Concatenate_cmd_lines( first_line int ) string {
   LAST_LINE := m.pfb.NumLines()-1
 
   for k:=first_line; k<=LAST_LINE; k++ {
-    LL := m.pfb.LineLen( k )
+    LL := m.pfb.LineLenB( k )
     for p:=0; p<LL; p++ {
-      R := m.pfb.GetR( k, p )
-      if( R == '#' ) { break } //< Ignore # to end of line
-      sb.WriteRune( R )
+      B := m.pfb.GetB( k, p )
+      if( B == '#' ) { break } //< Ignore # to end of line
+      sb.WriteByte( B )
     }
     // In the SHELL buffer, commands broken up onto multiple lines are
     // concatinated together with a space separating the lines:
-    if( 0<LL && k<LAST_LINE ) { sb.WriteRune(' ') }
+    if( 0<LL && k<LAST_LINE ) { sb.WriteByte(' ') }
   }
   // Remove leading and ending white space
   concatinated_str := strings.TrimSpace( sb.String() )
@@ -300,18 +300,34 @@ func (m *Shell) Wait_Done() {
   m.p_wait_done_chan <- m.p_cmd.Wait()
 }
 
+//func (m *Shell) Print_output_str( out_str string ) {
+//
+//  p_fl := new( FLine )
+//  for _,R := range out_str {
+//    if( R == '\n' ) {
+//      m.pfb.PushLP( p_fl )
+//      p_fl = new( FLine )
+//    } else {
+//      p_fl.PushR( R )
+//    }
+//  }
+//  if( 0 < p_fl.LenB() ) { m.pfb.PushLP( p_fl ) }
+//}
+
 func (m *Shell) Print_output_str( out_str string ) {
 
   p_fl := new( FLine )
-  for _,R := range out_str {
-    if( R == '\n' ) {
+  out_str_len := len(out_str)
+  for k:=0; k<out_str_len; k++ {
+    B := out_str[k]
+    if( B == '\n' ) {
       m.pfb.PushLP( p_fl )
       p_fl = new( FLine )
     } else {
-      p_fl.PushR( R )
+      p_fl.PushB( B )
     }
   }
-  if( 0 < p_fl.Len() ) { m.pfb.PushLP( p_fl ) }
+  if( 0 < p_fl.LenB() ) { m.pfb.PushLP( p_fl ) }
 }
 
 func (m *Shell) Add_Divider() {

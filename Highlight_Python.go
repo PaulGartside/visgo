@@ -35,15 +35,15 @@ func (m *Highlight_Python) Find_Styles_Keys_In_Range( st CrsPos, fn int ) {
 func (m *Highlight_Python) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
-      var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c2 rune = 0; if( 1<p ) { c2 = rune(m.p_fb.GetB( l, p-2 )) }
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       comment := c0=='#' && (0==p || c1!='$')
 
@@ -75,7 +75,7 @@ func (m *Highlight_Python) Hi_In_None( l, p int ) (int,int) {
 
 func (m *Highlight_Python) Hi_In_Comment( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
 
   for ; p<LL; p++ {
     m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
@@ -91,13 +91,13 @@ func (m *Highlight_Python) Hi_SingleQuote( l, p int ) (int,int) {
   m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
   p++
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     slash_escaped := false
     for ; p<LL; p++ {
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( (c1==0    && c0=='\'') ||
           (c1!='\\' && c0=='\'') ||
@@ -129,13 +129,13 @@ func (m *Highlight_Python) Hi_DoubleQuote( l, p int ) (int,int) {
   m.p_fb.SetSyntaxStyle( l, p, HI_CONST ); p++
 
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     slash_escaped := false
     for ; p<LL; p++ {
       // c0 is ahead of c1: c1,c0
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( (c1==0    && c0=='"') ||
           (c1!='\\' && c0=='"') ||
@@ -164,13 +164,13 @@ func (m *Highlight_Python) Hi_DoubleQuote( l, p int ) (int,int) {
 func (m *Highlight_Python) Hi_NumberBeg( l, p int ) (int,int) {
   m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
-  var c1 rune = m.p_fb.GetR( l, p )
+  var c1 rune = rune(m.p_fb.GetB( l, p ))
   p++
   m.state = m.Hi_NumberIn
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( '0' == c1 && (p+1)<LL ) {
-    var c0 rune = m.p_fb.GetR( l, p )
+    var c0 rune = rune(m.p_fb.GetB( l, p ))
     if( 'x' == c0 ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       m.state = m.Hi_NumberHex
@@ -181,10 +181,10 @@ func (m *Highlight_Python) Hi_NumberBeg( l, p int ) (int,int) {
 }
 
 func (m *Highlight_Python) Hi_NumberIn( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.Hi_In_None
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
 
     if( '.'==c1 ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
@@ -195,7 +195,7 @@ func (m *Highlight_Python) Hi_NumberIn( l, p int ) (int,int) {
       m.state = m.Hi_NumberExponent
       p++
       if( p<LL ) {
-        var c0 rune = m.p_fb.GetR( l, p )
+        var c0 rune = rune(m.p_fb.GetB( l, p ))
         if( '+' == c0 || '-' == c0 ) {
           m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
@@ -212,10 +212,10 @@ func (m *Highlight_Python) Hi_NumberIn( l, p int ) (int,int) {
 }
 
 func (m *Highlight_Python) Hi_NumberHex( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.Hi_In_None
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
     if( IsXDigit(c1) ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       p++
@@ -227,10 +227,10 @@ func (m *Highlight_Python) Hi_NumberHex( l, p int ) (int,int) {
 }
 
 func (m *Highlight_Python) Hi_NumberFraction( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.Hi_In_None
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
     if( IsDigit(c1) ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       p++
@@ -239,7 +239,7 @@ func (m *Highlight_Python) Hi_NumberFraction( l, p int ) (int,int) {
       m.state = m.Hi_NumberExponent
       p++
       if( p<LL ) {
-        var c0 rune = m.p_fb.GetR( l, p )
+        var c0 rune = rune(m.p_fb.GetB( l, p ))
         if( '+' == c0 || '-' == c0 ) {
           m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
@@ -253,10 +253,10 @@ func (m *Highlight_Python) Hi_NumberFraction( l, p int ) (int,int) {
 }
 
 func (m *Highlight_Python) Hi_NumberExponent( l, p int ) (int,int) {
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.Hi_In_None
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
     if( IsDigit(c1) ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       p++

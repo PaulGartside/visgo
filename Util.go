@@ -344,10 +344,10 @@ func Trim( ln RLine ) {
 func Trim_Beg( ln RLine ) {
 
   var done bool = false
-  for k:=0; !done && k<ln.Len(); k++ {
+  for k:=0; !done && k<ln.LenB(); k++ {
 
-    if( IsSpace( ln.GetR( k ) ) ) {
-      ln.RemoveR( k )
+    if( IsSpace( rune(ln.GetB( k )) ) ) {
+      ln.RemoveB( k )
       // Since we just shifted down over current char, re-check current char
       k--
     } else {
@@ -359,13 +359,13 @@ func Trim_Beg( ln RLine ) {
 // Remove trailing white space
 func Trim_End( ln RLine ) {
 
-  var LEN int = ln.Len()
+  var LEN int = ln.LenB()
   if( 0 < LEN ) {
     var done bool = false
     for k:=LEN-1; !done && -1<k; k-- {
 
-      if( IsSpace( ln.GetR( k ) ) ) {
-        ln.RemoveR( k )
+      if( IsSpace( rune(ln.GetB( k )) ) ) {
+        ln.RemoveB( k )
       } else {
         done = true
       }
@@ -385,37 +385,37 @@ func IsIdent( R rune ) bool {
   return IsAlnum( R ) || R == '_'
 }
 
-func line_start_or_prev_C_non_ident( line RLine, p int ) bool {
+func line_start_or_prev_C_non_ident( line RLine, pos_B int ) bool {
 
-  if( 0==p ) {
-    return true // p is on line start
+  if( 0==pos_B ) {
+    return true // pos_B is on line start
   }
-  // At this point 0 < p
-  var C rune = line.GetR( p-1 )
-  if( !IsAlnum( C ) && C!='_' ) {
-    // C is not an identifier
+  // At this point 0 < pos_B
+  var B byte = line.GetB( pos_B-1 )
+  if( !IsAlnum( rune(B) ) && B!='_' ) {
+    // B is not an identifier
     return true
   }
   // On identifier
   return false
 }
 
-func line_end_or_non_ident( line RLine, LL, p int ) bool {
+func line_end_or_non_ident( line RLine, LL_B, pos_B int ) bool {
 
-  if( p == LL-1 ) {
-    return true // p is on line end
+  if( pos_B == LL_B-1 ) {
+    return true // pos_B is on line end
   }
-  if( p < LL-1 ) {
-    // At this point p should always be less than LL-1,
+  if( pos_B < LL_B-1 ) {
+    // At this point pos_B should always be less than LL_B-1,
     // but put the check in above just to be safe.
     // The check above could also be implemented as an ASSERT.
-    var C rune = line.GetR(p+1)
-    if( !IsAlnum( C ) && C!='_' ) {
-      // C is not an identifier
+    var B byte = line.GetB(pos_B+1)
+    if( !IsAlnum( rune(B) ) && B!='_' ) {
+      // B is not an identifier
       return true
     }
   }
-  // C is an identifier
+  // B is an identifier
   return false
 }
 

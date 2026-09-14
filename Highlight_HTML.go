@@ -339,16 +339,16 @@ func (m *Highlight_HTML) Run_State( l, p int ) (int,int) {
 func (m *Highlight_HTML) Hi_In_None( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1 is ahead of c2: (c3,c2,c1,c0)
-      var c3 rune = 0; if( 2<p ) { c3 = m.p_fb.GetR( l, p-3 ) }
-      var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c3 rune = 0; if( 2<p ) { c3 = rune(m.p_fb.GetB( l, p-3 )) }
+      var c2 rune = 0; if( 1<p ) { c2 = rune(m.p_fb.GetB( l, p-2 )) }
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( c1=='<' && c0!='!' && c0!='/') {
         m.p_fb.SetSyntaxStyle( l, p-1, HI_DEFINE )
@@ -393,15 +393,15 @@ func (m *Highlight_HTML) Hi_In_None( l, p int ) (int,int) {
 func (m *Highlight_HTML) Hi_XML_Comment( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
 
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
-      var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c2 rune = 0; if( 1<p ) { c2 = rune(m.p_fb.GetB( l, p-2 )) }
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( c2=='-' && c1=='-' && c0=='>' ) {
         p++ // Move past '>'
@@ -420,10 +420,10 @@ func (m *Highlight_HTML) Hi_CloseTag( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
     var p_fl *FLine = m.p_fb.GetLP( l )
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
-      var c0 rune = m.p_fb.GetR( l, p )
+      var c0 rune = rune(m.p_fb.GetB( l, p ))
 
       if( c0=='>' ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
@@ -467,16 +467,16 @@ func (m *Highlight_HTML) Hi_NumberBeg( l, p int ) (int,int) {
 
   m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
-  var c1 rune = m.p_fb.GetR( l, p )
+  var c1 rune = rune(m.p_fb.GetB( l, p ))
   p++ //< Move past first digit
 
   old_state := m.state
   if( St_JS_NumberBeg == old_state ) { m.state = St_JS_NumberDec
   } else                             { m.state = St_NumberDec
   }
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( '0' == c1 && (p+1)<LL ) {
-    var c0 rune = m.p_fb.GetR( l, p )
+    var c0 rune = rune(m.p_fb.GetB( l, p ))
     if( 'x' == c0 ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
@@ -491,10 +491,10 @@ func (m *Highlight_HTML) Hi_NumberBeg( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_NumberHex( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.numXSt
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
     if( IsXDigit(c1) ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       p++
@@ -507,10 +507,10 @@ func (m *Highlight_HTML) Hi_NumberHex( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_NumberDec( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.numXSt
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
 
     if( '.'==c1 ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
@@ -526,7 +526,7 @@ func (m *Highlight_HTML) Hi_NumberDec( l, p int ) (int,int) {
       }
       p++
       if( p<LL ) {
-        var c0 rune = m.p_fb.GetR( l, p )
+        var c0 rune = rune(m.p_fb.GetB( l, p ))
         if( '+' == c0 || '-' == c0 ) {
           m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
@@ -548,10 +548,10 @@ func (m *Highlight_HTML) Hi_NumberDec( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_NumberExponent( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.numXSt
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
     if( IsDigit(c1) ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       p++
@@ -564,10 +564,10 @@ func (m *Highlight_HTML) Hi_NumberExponent( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_NumberFraction( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.numXSt
   } else {
-    var c1 rune = m.p_fb.GetR( l, p )
+    var c1 rune = rune(m.p_fb.GetB( l, p ))
     if( IsDigit(c1) ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
       p++
@@ -578,7 +578,7 @@ func (m *Highlight_HTML) Hi_NumberFraction( l, p int ) (int,int) {
       }
       p++
       if( p<LL ) {
-        var c0 rune = m.p_fb.GetR( l, p )
+        var c0 rune = rune(m.p_fb.GetB( l, p ))
         if( '+' == c0 || '-' == c0 ) {
           m.p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
@@ -593,9 +593,9 @@ func (m *Highlight_HTML) Hi_NumberFraction( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_NumberTypeSpec( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
   if( p < LL ) {
-    var c0 rune = m.p_fb.GetR( l, p )
+    var c0 rune = rune(m.p_fb.GetB( l, p ))
 
     if( c0=='L' ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
@@ -610,11 +610,11 @@ func (m *Highlight_HTML) Hi_NumberTypeSpec( l, p int ) (int,int) {
     } else if( c0=='U' ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
       if( p<LL ) {
-        var c1 rune = m.p_fb.GetR( l, p )
+        var c1 rune = rune(m.p_fb.GetB( l, p ))
         if( c1=='L' ) { // UL
           m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE ); p++
           if( p<LL ) {
-            var c2 rune = m.p_fb.GetR( l, p )
+            var c2 rune = rune(m.p_fb.GetB( l, p ))
             if( c2=='L' ) { // ULL
               m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE ); p++
             }
@@ -635,9 +635,9 @@ func (m *Highlight_HTML) Hi_OpenTag_ElemName( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
     var p_fl *FLine = m.p_fb.GetLP( l )
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
     for ; p<LL; p++ {
-      var c0 rune = m.p_fb.GetR( l, p )
+      var c0 rune = rune(m.p_fb.GetB( l, p ))
 
       if( c0=='>' ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
@@ -696,9 +696,9 @@ func (m *Highlight_HTML) Hi_OpenTag_AttrName( l, p int ) (int,int) {
   past__attr_name := false
 
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
     for ; p<LL; p++ {
-      var c0 rune = m.p_fb.GetR( l, p )
+      var c0 rune = rune(m.p_fb.GetB( l, p ))
 
       if( c0=='>' ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
@@ -755,9 +755,9 @@ func (m *Highlight_HTML) Hi_OpenTag_AttrName( l, p int ) (int,int) {
 func (m *Highlight_HTML) Hi_OpenTag_AttrVal( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
     for ; p<LL; p++ {
-      var c0 rune = m.p_fb.GetR( l, p )
+      var c0 rune = rune(m.p_fb.GetB( l, p ))
 
       if( c0=='>' ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )
@@ -802,13 +802,13 @@ func (m *Highlight_HTML) Hi_SingleQuote( l, p int ) (int,int) {
 
   exit := false
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     slash_escaped := false
     for ; p<LL; p++ {
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( (c1==0    && c0=='\'') ||
           (c1!='\\' && c0=='\'') ||
@@ -835,12 +835,12 @@ func (m *Highlight_HTML) Hi_DoubleQuote( l, p int ) (int,int) {
 
   exit := false
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
     slash_escaped := false
     for ; p<LL; p++ {
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( (c1==0    && c0=='"') ||
           (c1!='\\' && c0=='"') ||
@@ -896,14 +896,14 @@ func (m *Highlight_HTML) Hi_JS_None( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
     var p_fl *FLine = m.p_fb.GetLP( l )
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if       ( c1=='/' && c0 == '/' ) { p--; m.state = St_JS_CPP_Comment
       } else if( c1=='/' && c0 == '*' ) {
@@ -969,12 +969,12 @@ func (m *Highlight_HTML) Hi_JS_None( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_JS_Define( l, p int ) (int,int) {
 
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
   for ; p<LL; p++ {
     // c0 is ahead of c1: (c1,c0)
-    var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-    var c0 rune =                     m.p_fb.GetR( l, p )
+    var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+    var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
     if( c1=='/' && c0=='/' ) {
       m.p_fb.SetSyntaxStyle( l, p-1, HI_COMMENT )
@@ -1002,12 +1002,12 @@ func (m *Highlight_HTML) Hi_C_Comment( l, p int ) (int,int) {
 
   exit := false
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
 
@@ -1026,7 +1026,7 @@ func (m *Highlight_HTML) Hi_C_Comment( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Hi_JS_CPP_Comment( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
 
   for ; p<LL; p++ {
     m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
@@ -1050,14 +1050,14 @@ func (m *Highlight_HTML) Hi_CS_None( l, p int ) (int,int) {
 
   for ; l<m.p_fb.NumLines(); l++ {
     var p_fl *FLine = m.p_fb.GetLP( l )
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( c1=='/' && c0 == '*' ) {
         p--
@@ -1114,7 +1114,7 @@ func (m *Highlight_HTML) Hi_CS_None( l, p int ) (int,int) {
 
 func (m *Highlight_HTML) Has_HTTP_Tag_At( lp *FLine, pos int ) int {
 
-  if( IsXML_Ident( lp.GetR( pos ) ) ) {
+  if( IsXML_Ident( rune(lp.GetB( pos )) ) ) {
     num_HTML_Tags := len(HTML_Tags)
 
     for k:=0; k<num_HTML_Tags; k++ {

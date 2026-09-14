@@ -90,9 +90,9 @@ func (m *Diff) Replace_Crs_Char( p_S *tcell.Style ) {
   // Convert CL, which is diff line, to view line:
   CLv := m.ViewLine( pV, m.CrsLine() )
 
-  LL := pfb.LineLen( CLv ) // Line length
+  LL := pfb.LineLenR( CLv ) // Line length
   if( 0 < LL ) {
-    R := pfb.GetR( CLv, m.CrsChar() )
+    R := pfb.GetR1( CLv, m.CrsChar() )
 
     GL_ROW := pV.Row_Win_2_GL( m.crsRow )
     GL_COL := pV.Col_Win_2_GL( m.crsCol )
@@ -233,7 +233,7 @@ func (m *Diff) Do_s_v_cursor_at_end_of_line() bool {
 
   DL := m.CrsLine()  // Diff line
   VL := m.ViewLine( pV, DL )
-  LL := pfb.LineLen( VL )
+  LL := pfb.LineLenR( VL )
 
   if( pV.inVisualBlock ) {
     if( 0 < LL ) { cursor_at_end_of_line = LL-1 <= m.CrsChar()
@@ -273,7 +273,7 @@ func (m *Diff) Do_v_Handle_gf() {
     fname := make( []rune, m.v_fn_char - m.v_st_char + 1 )
 
     for P := m.v_st_char; P<=m.v_fn_char; P++ {
-      fname[P-m.v_st_char] = pfb.GetR( VL, P )
+      fname[P-m.v_st_char] = pfb.GetR1( VL, P )
     }
     went_to_file := m_vis.GoToBuffer_Fname( string(fname) )
 
@@ -298,7 +298,7 @@ func (m *Diff) Do_v_Handle_gp() {
     r_pattern := make( []rune, m.v_fn_char - m.v_st_char + 1 )
 
     for P := m.v_st_char; P<=m.v_fn_char; P++ {
-      r_pattern[P-m.v_st_char] = pfb.GetR( VL, P  )
+      r_pattern[P-m.v_st_char] = pfb.GetR1( VL, P  )
     }
     s_pattern := string(r_pattern)
     s_pattern_literal := regexp.QuoteMeta( s_pattern )
@@ -324,10 +324,10 @@ func (m *Diff) Do_y_v_block() {
     p_rl := new(RLine)
 
     VL := m.ViewLine( pV, DL )
-    LL := pfb.LineLen( VL )
+    LL := pfb.LineLenR( VL )
 
     for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
-      p_rl.PushR( pfb.GetR( VL, P ) )
+      p_rl.PushR( pfb.GetR1( VL, P ) )
     }
     m_vis.reg.PushLP( p_rl )
   }
@@ -338,7 +338,7 @@ func (m *Diff) Do_y_v_block() {
   NUM_LINES := m.NumLines()
   ncl := old_v_st_line
   if( NUM_LINES <= ncl ) { ncl = NUM_LINES-1 }
-  NLL := pfb.LineLen( m.ViewLine( pV, ncl ) )
+  NLL := pfb.LineLenR( m.ViewLine( pV, ncl ) )
   ncc := 0
   if( 0 < NLL ) {
     ncc = old_v_st_char
@@ -362,7 +362,7 @@ func (m *Diff) Do_y_v_st_fn() {
 
       // Convert DL, which is diff line, to view line
       VL := m.ViewLine( pV, DL )
-      LL := pfb.LineLen( VL )
+      LL := pfb.LineLenR( VL )
       if( 0 < LL ) {
         P_st := 0
         if( DL == m.v_st_line ) { P_st = m.v_st_char }
@@ -370,7 +370,7 @@ func (m *Diff) Do_y_v_st_fn() {
         if( DL == m.v_fn_line ) { P_fn = Min_i(LL-1,m.v_fn_char) }
 
         for P := P_st; P <= P_fn; P++ {
-          p_rl.PushR( pfb.GetR( DL, P ) )
+          p_rl.PushR( pfb.GetR1( DL, P ) )
         }
       }
       m_vis.reg.PushLP( p_rl )
@@ -394,11 +394,11 @@ func (m *Diff) Do_Y_v_st_fn() {
 
       // Convert DL, which is diff line, to view line
       VL := m.ViewLine( pV, DL )
-      LL := pfb.LineLen( VL )
+      LL := pfb.LineLenR( VL )
 
       if( 0 < LL ) {
         for P := 0; P <= LL-1; P++ {
-          p_rl.PushR( pfb.GetR( VL, P ) )
+          p_rl.PushR( pfb.GetR1( VL, P ) )
         }
       }
       m_vis.reg.PushLP( p_rl )
@@ -419,7 +419,7 @@ func (m *Diff) Do_x_range_block( st_line, st_char, fn_line, fn_char int ) {
 
     p_rl := new(RLine)
 
-    LL := pfb.LineLen( VL )
+    LL := pfb.LineLenR( VL )
 
     for P := st_char; P<LL && P <= fn_char; P++ {
       p_rl.PushR( pfb.RemoveR( VL, st_char ) )
@@ -465,7 +465,7 @@ func (m *Diff) Do_D_v_line() {
       ncl = 0
       if( 0 < m.v_st_line ) { ncl = m.v_st_line-1 }
     }
-    NCLL := pfb.LineLen( ncl )
+    NCLL := pfb.LineLenR( ncl )
     ncc := 0
     if( 0 < NCLL ) {
       ncc = NCLL-1
@@ -484,7 +484,7 @@ func (m *Diff) Do_a_vb() {
 
   DL := m.CrsLine()
   VL := m.ViewLine( pV, DL ) // View line number
-  LL := pfb.LineLen( VL )
+  LL := pfb.LineLenR( VL )
 
   if( 0==LL ) { m.Do_i_vb(); return }
 
@@ -540,10 +540,10 @@ func (m *Diff) Do_Tilda_v_block() {
 
   for DL := m.v_st_line; DL<=m.v_fn_line; DL++ {
     VL := m.ViewLine( pV, DL )
-    LL := pfb.LineLen( VL )
+    LL := pfb.LineLenR( VL )
 
     for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
-      R := pfb.GetR( VL, P )
+      R := pfb.GetR1( VL, P )
       changed := false
       if       ( unicode.IsUpper( R ) ) { R = unicode.ToLower( R ); changed = true
       } else if( unicode.IsLower( R ) ) { R = unicode.ToUpper( R ); changed = true
@@ -560,14 +560,14 @@ func (m *Diff) Do_Tilda_v_st_fn() {
 
   for DL := m.v_st_line; DL<=m.v_fn_line; DL++ {
     VL := m.ViewLine( pV, DL )
-    LL := pfb.LineLen( VL )
+    LL := pfb.LineLenR( VL )
     P_st := 0
     if( DL==m.v_st_line ) { P_st = m.v_st_char }
     P_fn := LLM1( LL )
     if( DL==m.v_fn_line ) { P_fn = m.v_fn_char }
 
     for P := P_st; P <= P_fn; P++ {
-      R := pfb.GetR( VL, P )
+      R := pfb.GetR1( VL, P )
       changed := false
       if       ( unicode.IsUpper( R ) ) { R = unicode.ToLower( R ); changed = true
       } else if( unicode.IsLower( R ) ) { R = unicode.ToUpper( R ); changed = true
@@ -621,13 +621,13 @@ func (m *Diff) InsertAddChar_vb( R rune ) {
   N_REG_LINES := m_vis.reg.Len()
 
   for k:=0; k<N_REG_LINES; k++ {
-    LL := pfb.LineLen( VL+k )
+    LL := pfb.LineLenR( VL+k )
 
     if( LL < CP ) {
       // Fill in line with white space up to OCP:
       for i:=0; i<(CP-LL); i++ {
         // Insert at end of line so undo will be atomic:
-        NLL := pfb.LineLen( VL+k ) // New line length
+        NLL := pfb.LineLenR( VL+k ) // New line length
         pfb.InsertR( VL+k, NLL, ' ' )
       }
     }
@@ -657,10 +657,10 @@ func (m *Diff) GoToCrsPos_Write_VisualBlock( OCL, OCP, NCL, NCP int ) {
   for DL:=draw_box_top; DL<=draw_box_bot; DL++ {
     VL := m.ViewLine( pV, DL ); // View line number
 
-    LL := pfb.LineLen( VL )
+    LL := pfb.LineLenR( VL )
 
     for k:=draw_box_left; k<LL && k<=draw_box_rite; k++ {
-      R := pfb.GetR( VL, k )
+      R := pfb.GetR1( VL, k )
       var p_TS *tcell.Style = m.Get_Style( pV, DL, VL, k )
 
       m_console.SetR( m.Line_2_GL( pV, DL ), m.Char_2_GL( pV, k ), R, p_TS )
@@ -703,7 +703,7 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
 
   if( OCL == NCL ) { // Only one line:
     for k:=OCP; k<NCP; k++ {
-      R := pfb.GetR( OCLv, k )
+      R := pfb.GetR1( OCLv, k )
       var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
       m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
     }
@@ -711,10 +711,10 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
     // Write out first line:
     var FIRST_LINE_DIFF_TYPE Diff_Type = m.DiffType( pV, OCL )
     if( FIRST_LINE_DIFF_TYPE != DT_DELETED ) {
-      OCLL := pfb.LineLen( OCLv ) // Old cursor line length
+      OCLL := pfb.LineLenR( OCLv ) // Old cursor line length
       END_FIRST_LINE := Min_i( m.RightChar( pV )+1, OCLL )
       for k:=OCP; k<END_FIRST_LINE; k++ {
-        R := pfb.GetR( OCLv, k )
+        R := pfb.GetR1( OCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
         m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
@@ -725,10 +725,10 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
       if( LINE_DIFF_TYPE != DT_DELETED ) {
         // Convert OCL, which is diff line, to view line
         Vl := m.ViewLine( pV, l )
-        LL := pfb.LineLen( Vl ) // Line length
+        LL := pfb.LineLenR( Vl ) // Line length
         END_OF_LINE := Min_i( m.RightChar( pV )+1, LL )
         for k:=m.leftChar; k<END_OF_LINE; k++ {
-          R := pfb.GetR( Vl, k )
+          R := pfb.GetR1( Vl, k )
           var p_TS *tcell.Style = m.Get_Style( pV, l, Vl, k )
           m_console.SetR( m.Line_2_GL( pV, l ), m.Char_2_GL( pV, k ), R, p_TS )
         }
@@ -738,10 +738,10 @@ func (m *Diff) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
     var LAST_LINE_DIFF_TYPE Diff_Type = m.DiffType( pV, NCL )
     if( LAST_LINE_DIFF_TYPE != DT_DELETED ) {
       // Print from beginning of next line to new cursor position:
-      NCLL := pfb.LineLen( NCLv ) // Line length
+      NCLL := pfb.LineLenR( NCLv ) // Line length
       END_LAST_LINE := Min_i( NCLL, NCP )
       for k:=m.leftChar; k<END_LAST_LINE; k++ {
-        R := pfb.GetR( NCLv, k )
+        R := pfb.GetR1( NCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, NCL, NCLv, k )
         m_console.SetR( m.Line_2_GL( pV, NCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
@@ -761,7 +761,7 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
 
   if( OCL == NCL ) { // Only one line:
     for k:=OCP; NCP<k; k-- {
-      R := pfb.GetR( OCLv, k )
+      R := pfb.GetR1( OCLv, k )
       var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
       m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
     }
@@ -769,15 +769,15 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
     // Write out first line:
     var FIRST_LINE_DIFF_TYPE Diff_Type = m.DiffType( pV, OCL )
     if( FIRST_LINE_DIFF_TYPE != DT_DELETED ) {
-      OCLL := pfb.LineLen( OCLv ) // Old cursor line length
+      OCLL := pfb.LineLenR( OCLv ) // Old cursor line length
       RIGHT_MOST_POS := Min_i( OCP, LLM1(OCLL) )
       for k:=RIGHT_MOST_POS; m.leftChar<k; k-- {
-        R := pfb.GetR( OCLv, k )
+        R := pfb.GetR1( OCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, k )
         m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
       if( m.leftChar < OCLL ) {
-        R := pfb.GetR( OCLv, m.leftChar )
+        R := pfb.GetR1( OCLv, m.leftChar )
         var p_TS *tcell.Style = m.Get_Style( pV, OCL, OCLv, m.leftChar )
         m_console.SetR( m.Line_2_GL( pV, OCL ), m.Char_2_GL( pV, m.leftChar ), R, p_TS )
       }
@@ -788,10 +788,10 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
       if( LINE_DIFF_TYPE != DT_DELETED ) {
         // Convert l, which is diff line, to view line:
         Vl := m.ViewLine( pV, l )
-        LL := pfb.LineLen( Vl ) // Line length
+        LL := pfb.LineLenR( Vl ) // Line length
         END_OF_LINE := Min_i( m.RightChar( pV ), LLM1(LL) )
         for k:=END_OF_LINE; m.leftChar<k; k-- {
-          R := pfb.GetR( Vl, k )
+          R := pfb.GetR1( Vl, k )
           var p_TS *tcell.Style = m.Get_Style( pV, l, Vl, k )
           m_console.SetR( m.Line_2_GL( pV, l ), m.Char_2_GL( pV, k ), R, p_TS )
         }
@@ -801,15 +801,15 @@ func (m *Diff) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
     var LAST_LINE_DIFF_TYPE Diff_Type = m.DiffType( pV, NCL )
     if( LAST_LINE_DIFF_TYPE != DT_DELETED ) {
       // Print from end of last line to new cursor position:
-      NCLL := pfb.LineLen( NCLv ) // New cursor line length
+      NCLL := pfb.LineLenR( NCLv ) // New cursor line length
       END_LAST_LINE := Min_i( m.RightChar( pV ), LLM1(NCLL) )
       for k:=END_LAST_LINE; NCP<k; k-- {
-        R := pfb.GetR( NCLv, k )
+        R := pfb.GetR1( NCLv, k )
         var p_TS *tcell.Style = m.Get_Style( pV, NCL, NCLv, k )
         m_console.SetR( m.Line_2_GL( pV, NCL ), m.Char_2_GL( pV, k ), R, p_TS )
       }
       if( NCP < NCLL ) {
-        R := pfb.GetR( NCLv, NCP )
+        R := pfb.GetR1( NCLv, NCP )
         var p_TS *tcell.Style = m.Get_Style( pV, NCL, NCLv, NCP )
         m_console.SetR( m.Line_2_GL( pV, NCL ), m.Char_2_GL( pV, NCP ), R, p_TS )
       }

@@ -112,7 +112,7 @@ func (m *Vis) AddToBufferEditor( fname string ) {
 
     var CL int = p_V.CrsLine()
     var CP int = p_V.CrsChar()
-    var LL int = p_fb.LineLen( CL )
+    var LL int = p_V.LineLen( CL )
 
     if( LL <= CP ) {
       p_V.GoToCrsPos_NoWrite( CL, LL-1 )
@@ -753,7 +753,7 @@ func (m *Vis) FName_2_FNum( full_fname string, file_num *int ) bool {
 
 func (m *Vis) Exe_Colon_detab() {
 
-  if( 6 < m_rbuf.Len() ) {
+  if( 6 < m_rbuf.LenB() ) {
     S := m_rbuf.to_str()
     if tab_sz, err := strconv.Atoi( S[6:] ); err != nil {
       m.CmdLineMessage( fmt.Sprintf("Could not convert to int: %s", S[6:]) )
@@ -762,6 +762,14 @@ func (m *Vis) Exe_Colon_detab() {
         m.CV().p_fb.RemoveTabs_SpacesAtEOLs( tab_sz )
       }
     }
+  }
+}
+
+func (m *Vis) Exe_Colon_decoding() {
+
+  if( 4 <= m_rbuf.LenB() ) {
+    S := m_rbuf.to_str()
+    m.CV().Set_Decoding( S[4:] )
   }
 }
 
@@ -871,11 +879,11 @@ func (m *Vis) Set_Color_Scheme_4() {
 
 func (m *Vis) Exe_Colon_b() {
 
-  if( 1 == m_rbuf.Len() ) { // :b
+  if( 1 == m_rbuf.LenB() ) { // :b
     m.GoToPrevBuffer()
 
-  } else if( 2 <= m_rbuf.Len() ) {
-    var r1 rune = m_rbuf.GetR(1)
+  } else if( 2 <= m_rbuf.LenB() ) {
+    var r1 rune = rune(m_rbuf.GetB(1))
     if       ( '#' == r1 ) { m.GoToPoundBuffer(); // :b#
     } else if( 'c' == r1 ) { m.GoToCurrBuffer();  // :bc
     } else if( 'e' == r1 ) { m.GoToBufferEditor();// :be
@@ -890,7 +898,7 @@ func (m *Vis) Exe_Colon_b() {
 
 func (m *Vis) Set_Syntax() {
 
-  if( 4 < m_rbuf.Len() ) {
+  if( 4 < m_rbuf.LenB() ) {
     S := m_rbuf.to_str()
     m.CV().p_fb.Set_File_Type( S[4:] )
   }
@@ -1038,7 +1046,7 @@ func ( m *Vis) GetCWD() {
 func ( m *Vis) Ch_Dir() {
   var path string
 
-  if( 2 < m_rbuf.Len() ) {
+  if( 2 < m_rbuf.LenB() ) {
     // 1. First get path to chdir to:
     S := m_rbuf.to_str()
     path = S[2:] // :cd relative_path
@@ -1060,7 +1068,7 @@ func ( m *Vis ) Exe_Colon_e() {
 
   var p_cv *FileView = m.CV()
 
-  if( 1 == m_rbuf.Len() ) { // :e
+  if( 1 == m_rbuf.LenB() ) { // :e
     var p_fb *FileBuf = p_cv.p_fb
     p_fb.ReReadFile()
 
@@ -1319,7 +1327,7 @@ func ( m *Vis ) Handle_Colon_Cmd() {
   m_rbuf.RemoveSpaces()
   m.MapEnd()
 
-  if( 0 == m_rbuf.Len() ) {
+  if( 0 == m_rbuf.LenB() ) {
     m.CV().PrintCursor()
   } else {
     if       ( m_rbuf.EqualStr("q") )        { m.Quit()
@@ -1339,10 +1347,10 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("start") )    { m.StartCommand()
     } else if( m_rbuf.EqualStr("pwd") )      { m.GetCWD()
     } else if( m_rbuf.StartsWith("cd") )     { m.Ch_Dir()
-    } else if( IsDigit(m_rbuf.GetR(0)) )     { m.MoveToLine()
-    } else if( m_rbuf.GetR(0)=='b' )         { m.Exe_Colon_b()
-    } else if( m_rbuf.GetR(0)=='e' )         { m.Exe_Colon_e()
-    } else if( m_rbuf.GetR(0)=='w' )         { m.Exe_Colon_w()
+    } else if( IsDigit(rune(m_rbuf.GetB(0)))){ m.MoveToLine()
+    } else if( m_rbuf.GetB(0)=='b' )         { m.Exe_Colon_b()
+    } else if( m_rbuf.GetB(0)=='e' )         { m.Exe_Colon_e()
+    } else if( m_rbuf.GetB(0)=='w' )         { m.Exe_Colon_w()
     } else if( m_rbuf.EqualStr("map") )      { m.MapStart()
     } else if( m_rbuf.EqualStr("showmap") )  { m.MapShow()
     } else if( m_rbuf.EqualStr("dos2unix") ) { m.Exe_Colon_dos2unix()
@@ -1353,6 +1361,7 @@ func ( m *Vis ) Handle_Colon_Cmd() {
     } else if( m_rbuf.EqualStr("cs4") )      { m.Set_Color_Scheme_4()
     } else if( m_rbuf.StartsWith("syn=") )   { m.Set_Syntax()
     } else if( m_rbuf.StartsWith("detab=") ) { m.Exe_Colon_detab()
+    } else if( m_rbuf.StartsWith("dec=") )   { m.Exe_Colon_decoding()
     } else if( m_rbuf.EqualStr("strip") )    { m.Exe_Colon_strip_escape_seqs()
     } else if( m_rbuf.EqualStr("cover") )    { m.colon_view.Cover()
     } else if( m_rbuf.EqualStr("coverkey") ) { m.colon_view.CoverKey()
@@ -1390,7 +1399,7 @@ func ( m *Vis ) Do_Star_Update_Search_Editor() {
 
   // If last line in SLASH_BUFFER is blank, remove it:
   NUM_SE_LINES := pfb.NumLines(); // Number of search editor lines
-  if( 0<NUM_SE_LINES && 0 == pfb.LineLen( NUM_SE_LINES-1 ) ) {
+  if( 0<NUM_SE_LINES && 0 == pfb.LineLenB( NUM_SE_LINES-1 ) ) {
     pfb.RemoveLP( NUM_SE_LINES-1 )
     NUM_SE_LINES = pfb.NumLines()
   }

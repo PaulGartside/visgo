@@ -30,10 +30,10 @@ func (m *Highlight_Dir) Run_Range( st CrsPos, fn int ) {
 func (m *Highlight_Dir) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     if( 0<LL ) {
-      R_end := m.p_fb.GetR( l, LL-1 )
+      R_end := rune(m.p_fb.GetB( l, LL-1 ))
 
       if       ( R_end == DIR_DELIM ) { m.Hi_In_None_Dir( l, LL )
       } else if( 1<LL )               { m.Hi_In_None_File( l, LL )
@@ -48,8 +48,8 @@ func (m *Highlight_Dir) Hi_In_None_Dir( l, LL int ) {
 
   for k:=0; k<LL-1; k++ {
     // R0 is ahead of R1: (R1,R0)
-    var R1 rune = 0; if( 0<k ) { R1 = m.p_fb.GetR( l, k-1 ) }
-    var R0 rune =                     m.p_fb.GetR( l, k )
+    var R1 rune = 0; if( 0<k ) { R1 = rune(m.p_fb.GetB( l, k-1 )) }
+    var R0 rune =                     rune(m.p_fb.GetB( l, k ))
 
     if( R0 == '.' ) {
       m.p_fb.SetSyntaxStyle( l, k, HI_VARTYPE )
@@ -68,8 +68,8 @@ func (m *Highlight_Dir) Hi_In_None_Dir( l, LL int ) {
 func (m *Highlight_Dir) Hi_In_None_File( l, LL int ) {
 
   // P1 is ahead of P0: (P0,P1)
-  P0 := m.p_fb.GetR( l, 0 )
-  P1 := m.p_fb.GetR( l, 1 )
+  P0 := rune(m.p_fb.GetB( l, 0 ))
+  P1 := rune(m.p_fb.GetB( l, 1 ))
 
   if( P0=='.' && P1=='.' ) {
     m.p_fb.SetSyntaxStyle( l, 0, HI_DEFINE )
@@ -78,8 +78,8 @@ func (m *Highlight_Dir) Hi_In_None_File( l, LL int ) {
     found_sym_link := false
     for k:=0; k<LL; k++ {
       // R0 is ahead of R1: (R1,R0)
-      var R1 rune = 0; if( 0<k ) { R1 = m.p_fb.GetR( l, k-1 ) }
-      var R0 rune =                     m.p_fb.GetR( l, k )
+      var R1 rune = 0; if( 0<k ) { R1 = rune(m.p_fb.GetB( l, k-1 )) }
+      var R0 rune =                     rune(m.p_fb.GetB( l, k ))
 
       if( R0 == '.' ) {
         m.p_fb.SetSyntaxStyle( l, k, HI_VARTYPE )

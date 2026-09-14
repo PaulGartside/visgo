@@ -54,23 +54,23 @@ func (m *ChangeHist) UndoAll( p_V *FileView ) {
   }
 }
 
-func (m *ChangeHist) Save_Set( l_num, c_pos int,
-                               old_R rune,
-                               continue_last_update bool ) {
+func (m *ChangeHist) Save_SetB( l_num, b_pos int,
+                                old_B byte,
+                                continue_last_update bool ) {
 
   continuation_of_previous_replacement := false
 
   if( continue_last_update ) {
 
     NUM_CHANGES := m.changes.Len()
-    if( 0<NUM_CHANGES && 0<c_pos ) {
+    if( 0<NUM_CHANGES && 0<b_pos ) {
 
       plc := m.changes.GetP( NUM_CHANGES-1 )
       if( CT_REPLACE_TEXT == plc.change_t &&
           l_num           == plc.lnum &&
-          c_pos           == plc.cpos + plc.line.Len() ) {
+          b_pos           == plc.bpos + plc.line.LenB() ) {
 
-        plc.line.PushR( old_R )
+        plc.line.PushB( old_B )
         continuation_of_previous_replacement = true
       }
     }
@@ -80,8 +80,8 @@ func (m *ChangeHist) Save_Set( l_num, c_pos int,
     plc := new( LineChange )
     plc.change_t = CT_REPLACE_TEXT
     plc.lnum = l_num
-    plc.cpos = c_pos
-    plc.line.PushR( old_R )
+    plc.bpos = b_pos
+    plc.line.PushB( old_B )
 
     m.changes.Push( plc )
   }
@@ -96,20 +96,20 @@ func (m *ChangeHist) Save_InsertLine( l_num int ) {
   m.changes.Push( plc )
 }
 
-func (m *ChangeHist) Save_InsertRune( l_num, c_pos int ) {
+func (m *ChangeHist) Save_InsertByte( l_num, b_pos int ) {
 
   continuation_of_previous_insertion := false
 
   NUM_CHANGES := m.changes.Len()
 
-  if( 0<NUM_CHANGES  && 0<c_pos ) {
+  if( 0<NUM_CHANGES && 0<b_pos ) {
 
     plc := m.changes.GetP( NUM_CHANGES-1 )
     if( CT_INSERT_TEXT == plc.change_t &&
         l_num          == plc.lnum &&
-        c_pos          == ( plc.cpos + plc.line.Len() ) ) {
+        b_pos          == ( plc.bpos + plc.line.LenB() ) ) {
 
-      plc.line.PushR( 0 )
+      plc.line.PushB( 0 )
       continuation_of_previous_insertion = true
     }
   }
@@ -118,8 +118,8 @@ func (m *ChangeHist) Save_InsertRune( l_num, c_pos int ) {
     plc := new( LineChange )
     plc.change_t = CT_INSERT_TEXT
     plc.lnum = l_num
-    plc.cpos = c_pos
-    plc.line.PushR( 0 )
+    plc.bpos = b_pos
+    plc.line.PushB( 0 )
 
     m.changes.Push( plc )
   }
@@ -137,6 +137,35 @@ func (m *ChangeHist) Save_RemoveLine( l_num int, p_fl *FLine ) {
   m.changes.Push( plc )
 }
 
+func (m *ChangeHist) Save_RemoveByte( l_num, c_pos int, old_B byte ) {
+
+  continuation_of_previous_removal := false
+
+  NUM_CHANGES := m.changes.Len()
+
+  if( 0<NUM_CHANGES ) {
+
+    plc := m.changes.GetP( NUM_CHANGES-1 )
+    if( CT_REMOVE_TEXT == plc.change_t &&
+        l_num          == plc.lnum &&
+        c_pos          == plc.bpos ) {
+
+      plc.line.PushB( old_B )
+      continuation_of_previous_removal = true
+    }
+  }
+  if( !continuation_of_previous_removal ) {
+    // Start of new removal:
+    plc := new( LineChange )
+    plc.change_t = CT_REMOVE_TEXT
+    plc.lnum     = l_num
+    plc.bpos     = c_pos
+    plc.line.PushB( old_B )
+
+    m.changes.Push( plc )
+  }
+}
+
 func (m *ChangeHist) Save_RemoveRune( l_num, c_pos int, old_R rune ) {
 
   continuation_of_previous_removal := false
@@ -148,7 +177,7 @@ func (m *ChangeHist) Save_RemoveRune( l_num, c_pos int, old_R rune ) {
     plc := m.changes.GetP( NUM_CHANGES-1 )
     if( CT_REMOVE_TEXT == plc.change_t &&
         l_num          == plc.lnum &&
-        c_pos          == plc.cpos ) {
+        c_pos          == plc.bpos ) {
 
       plc.line.PushR( old_R )
       continuation_of_previous_removal = true
@@ -159,7 +188,7 @@ func (m *ChangeHist) Save_RemoveRune( l_num, c_pos int, old_R rune ) {
     plc := new( LineChange )
     plc.change_t = CT_REMOVE_TEXT
     plc.lnum     = l_num
-    plc.cpos     = c_pos
+    plc.bpos     = c_pos
     plc.line.PushR( old_R )
 
     m.changes.Push( plc )
@@ -175,7 +204,7 @@ func (m *ChangeHist) Undo_InsertLine( plc *LineChange, p_V *FileView ) {
   NUM_LINES := m.p_fb.NumLines()
   LINE_NUM  := Min_i( plc.lnum, NUM_LINES-1 )
 
-  p_V.GoToCrsPos_NoWrite( LINE_NUM, plc.cpos )
+  p_V.GoToCrsPos_NoWrite( LINE_NUM, plc.bpos )
 
   m.p_fb.Update()
 }
@@ -184,46 +213,46 @@ func (m *ChangeHist) Undo_RemoveLine( plc *LineChange, p_V *FileView ) {
   // Undo a removed line by inserting the removed line
   m.p_fb.InsertRLP( plc.lnum, &plc.line )
 
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.bpos )
 
   m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_InsertChar( plc *LineChange, p_V *FileView ) {
-  LINE_LEN := plc.line.Len()
+  LINE_LEN := plc.line.LenB()
 
   // Undo inserted chars by removing the inserted chars
   for k:=0; k<LINE_LEN; k++ {
-    m.p_fb.RemoveR( plc.lnum, plc.cpos )
+    m.p_fb.RemoveR( plc.lnum, plc.bpos )
   }
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.bpos )
 
   m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_RemoveChar( plc *LineChange, p_V *FileView ) {
-  LINE_LEN := plc.line.Len()
+  LINE_LEN := plc.line.LenB()
 
   // Undo removed chars by inserting the removed chars
   for k:=0; k<LINE_LEN; k++ {
-    R := plc.line.GetR(k)
+    B := plc.line.GetB(k)
 
-    m.p_fb.InsertR( plc.lnum, plc.cpos+k, R )
+    m.p_fb.InsertB( plc.lnum, plc.bpos+k, B )
   }
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.bpos )
 
   m.p_fb.Update()
 }
 
 func (m *ChangeHist) Undo_Set( plc *LineChange, p_V *FileView ) {
-  LINE_LEN := plc.line.Len()
+  LINE_LEN := plc.line.LenB()
 
   for k:=0; k<LINE_LEN; k++ {
-    R := plc.line.GetR(k)
+    B := plc.line.GetB(k)
 
-    m.p_fb.SetR( plc.lnum, plc.cpos+k, R, false )
+    m.p_fb.SetB( plc.lnum, plc.bpos+k, B, false )
   }
-  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
+  p_V.GoToCrsPos_NoWrite( plc.lnum, plc.bpos )
 
   m.p_fb.Update()
 }
@@ -235,14 +264,14 @@ func (m *ChangeHist) Undo_Set_Diff( plc *LineChange, p_V *FileView ) {
 //  for k:=0; k<LINE_LEN; k++ {
 //    R := plc.line.GetR(k)
 //
-//    m.p_fb.SetR( plc.lnum, plc.cpos+k, R, false )
+//    m.p_fb.SetR( plc.lnum, plc.bpos+k, R, false )
 //  }
 //  p_Diff := &m_vis.diff
 //
 //  DL := p_Diff.DiffLine( p_V, plc.lnum )
 //  p_Diff.Patch_Diff_Info_Changed( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.bpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
@@ -263,7 +292,7 @@ func (m *ChangeHist) Undo_InsertLine_Diff( plc *LineChange, p_V *FileView ) {
 //
 //  p_Diff.Patch_Diff_Info_Deleted( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.bpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
@@ -280,7 +309,7 @@ func (m *ChangeHist) Undo_RemoveLine_Diff( plc *LineChange, p_V *FileView ) {
 //
 //  p_Diff.Patch_Diff_Info_Inserted( p_V, DL, ODVL0 )
 //
-//  p_Diff.GoToCrsPos_NoWrite( plc.lnum, plc.cpos )
+//  p_Diff.GoToCrsPos_NoWrite( plc.lnum, plc.bpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
@@ -291,14 +320,14 @@ func (m *ChangeHist) Undo_InsertChar_Diff( plc *LineChange, p_V *FileView ) {
 //
 //  // Undo inserted chars by removing the inserted chars
 //  for k:=0; k<LINE_LEN; k++ {
-//    m.p_fb.RemoveR( plc.lnum, plc.cpos )
+//    m.p_fb.RemoveR( plc.lnum, plc.bpos )
 //  }
 //  p_Diff = &m_vis.diff
 //
 //  DL := p_Diff.DiffLine( p_V, plc.lnum )
 //  p_Diff.Patch_Diff_Info_Changed( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.bpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }
@@ -311,14 +340,14 @@ func (m *ChangeHist) Undo_RemoveChar_Diff( plc *LineChange, p_V *FileView ) {
 //  for k:=0; k<LINE_LEN; k++ {
 //    R := plc.line.GetR(k)
 //
-//    m.p_fb.InsertR( plc.lnum, plc.cpos+k, R )
+//    m.p_fb.InsertR( plc.lnum, plc.bpos+k, R )
 //  }
 //  p_Diff = &m_vis.diff
 //
 //  DL := p_Diff.DiffLine( p_V, plc.lnum )
 //  p_Diff.Patch_Diff_Info_Changed( p_V, DL )
 //
-//  p_Diff.GoToCrsPos_NoWrite( DL, plc.cpos )
+//  p_Diff.GoToCrsPos_NoWrite( DL, plc.bpos )
 //
 //  if( !p_Diff.ReDiff() ) { p_Diff.Update() }
 }

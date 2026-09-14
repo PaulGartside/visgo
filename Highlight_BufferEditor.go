@@ -32,10 +32,10 @@ func (m *Highlight_BufferEditor) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
     var p_fl *FLine = m.p_fb.GetLP( l )
-    var LL int   = m.p_fb.LineLen( l )
+    var LL int   = m.p_fb.LineLenB( l )
 
     if( 0<LL ) {
-      var c_end rune = m.p_fb.GetR( l, LL-1 )
+      var c_end rune = rune(m.p_fb.GetB( l, LL-1 ))
 
       if( p_fl.EqualStr( m_EDIT_BUF_NAME ) ||
           p_fl.EqualStr( m_HELP_BUF_NAME ) ||
@@ -48,7 +48,7 @@ func (m *Highlight_BufferEditor) Hi_In_None( l, p int ) (int,int) {
         }
       } else if( c_end == DIR_DELIM ) {
         for k:=0; k<LL; k++ {
-          var R rune = m.p_fb.GetR( l, k )
+          var R rune = rune(m.p_fb.GetB( l, k ))
           if( R == DIR_DELIM ) {
             m.p_fb.SetSyntaxStyle( l, k, HI_CONST )
           } else {
@@ -57,7 +57,7 @@ func (m *Highlight_BufferEditor) Hi_In_None( l, p int ) (int,int) {
         }
       } else {
         for k:=0; k<LL; k++ {
-          var R rune = m.p_fb.GetR( l, k )
+          var R rune = rune(m.p_fb.GetB( l, k ))
           if( R == DIR_DELIM ) {
             m.p_fb.SetSyntaxStyle( l, k, HI_CONST )
           }

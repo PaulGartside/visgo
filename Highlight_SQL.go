@@ -74,14 +74,14 @@ var HiPairs_SQL = [...]HiKeyVal {
 func (m *Highlight_SQL) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if       ( c1=='-' && c0=='-'  ) { m.state = m.Hi_Beg_Comment
       } else if(            c0=='\'' ) { m.state = m.Hi_In_SingleQuote
@@ -139,7 +139,7 @@ func (m *Highlight_SQL) Hi_Beg_Comment( l, p int ) (int,int) {
 }
 
 func (m *Highlight_SQL) Hi_In__Comment( l, p int ) (int,int) {
-  var LL int = m.p_fb.LineLen( l )
+  var LL int = m.p_fb.LineLenB( l )
   for ; p<LL; p++ {
     m.p_fb.SetSyntaxStyle( l, p, HI_COMMENT )
   }

@@ -29,12 +29,12 @@ func (m *Highlight_Text) Run_Range( st CrsPos, fn int ) {
 func (m *Highlight_Text) Hi_In_None( l, p int ) (int,int) {
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
-      var R rune = m.p_fb.GetR( l, p )
+      var R rune = rune(m.p_fb.GetB( l, p ))
 
       if( R == '#' ) {
         m.state = m.Hi_In_Define
@@ -50,7 +50,7 @@ func (m *Highlight_Text) Hi_In_None( l, p int ) (int,int) {
 
 func (m *Highlight_Text) Hi_In_Define( l, p int ) (int,int) {
 
-  LL := m.p_fb.LineLen( l )
+  LL := m.p_fb.LineLenB( l )
 
   for ; p<LL; p++ {
     m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE )

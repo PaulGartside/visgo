@@ -8,7 +8,7 @@ import (
 type LineChange struct {
   change_t ChangeType
   lnum     int
-  cpos     int
+  bpos     int
   line     RLine
 }
 

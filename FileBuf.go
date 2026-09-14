@@ -12,6 +12,7 @@ import (
   "regexp"
   "strings"
   "time"
+  "unicode/utf8"
 )
 
 type FileBuf struct {
@@ -592,42 +593,85 @@ func (m *FileBuf) NumLines() int {
   return m.lines.Len()
 }
 
-// Return number of runes in line:
-//
-func (m *FileBuf) LineLen( k int ) int {
-  if 0 <= k && k < m.lines.Len() {
-    return m.lines.LineLen( k )
-  }
-  return 0
-}
-
 // Return number of bytes in line:
 //
-func (m *FileBuf) LineSize( k int ) int {
+func (m *FileBuf) LineLenB( k int ) int {
   if 0 <= k && k < m.lines.Len() {
-    return m.lines.LineSize( k )
+    return m.lines.LineLenB( k )
   }
   return 0
 }
 
-func (m *FileBuf) GetB( l_num, r_num int ) byte {
-
-  return m.lines.GetB( l_num, r_num )
+// Return number of runes in line:
+//
+func (m *FileBuf) LineLenR( k int ) int {
+  if 0 <= k && k < m.lines.Len() {
+    return m.lines.LineLenR( k )
+  }
+  return 0
 }
 
-func (m *FileBuf) GetR( l_num, r_num int ) rune {
+//func (m *FileBuf) LineLenB( k int ) int {
+//  return m.LineLenB( k )
+//}
+
+//func (m *FileBuf) LineLenR( k int ) int {
+//  return m.LineLenR( k )
+//}
+
+func (m *FileBuf) GetB( l_num, b_num int ) byte {
+
+  return m.lines.GetB( l_num, b_num )
+}
+
+// Get byte in file at (l_num, b_num) but return as rune
+//
+//func (m *FileBuf) GetBR( l_num, b_num int ) rune {
+//
+//  B := m.lines.GetB( l_num, b_num )
+//  return rune(B)
+//}
+
+func (m *FileBuf) GetR( l_num, r_num int ) (rune, int, int) {
 
   return m.lines.GetR( l_num, r_num )
 }
 
+func (m *FileBuf) GetRatB( l_num, r_num int ) (rune, int) {
+
+  return m.lines.GetRatB( l_num, r_num )
+}
+
+func (m *FileBuf) GetR1( l_num, r_num int ) rune {
+
+  R,_,_ := m.lines.GetR( l_num, r_num )
+  return R
+}
+
+func (m *FileBuf) SetB( l_num, b_num int, B byte, continue_last_update bool ) {
+
+  old_B := m.lines.GetB( l_num, b_num )
+
+  if( old_B != B ) {
+    m.lines.SetB( l_num, b_num, B )
+    if( m.save_history ) {
+      m.history.Save_SetB( l_num, b_num, old_B, continue_last_update )
+    }
+  }
+}
+
 func (m *FileBuf) SetR( l_num, r_num int, R rune, continue_last_update bool ) {
 
-  old_R := m.lines.GetR( l_num, r_num )
+  old_R,_,_ := m.lines.GetR( l_num, r_num )
 
   if( old_R != R ) {
-    m.lines.SetR( l_num, r_num, R )
+    B_num := m.lines.SetR( l_num, r_num, R )
     if( m.save_history ) {
-      m.history.Save_Set( l_num, r_num, old_R, continue_last_update )
+      R_size := utf8.EncodeRune( _4_bytes[:], R )
+      for k:=0; k<R_size; k++ {
+        old_B := _4_bytes[k]
+        m.history.Save_SetB( l_num, B_num+k, old_B, continue_last_update )
+      }
     }
   }
 }
@@ -673,11 +717,20 @@ func (m *FileBuf) AppendLineToLine( l_num int, p_fl *FLine ) {
   m.lines.AppendLineToLine( l_num, p_fl )
 
   if( m.save_history ) {
-    NEW_LL := p_fl.Len()
-    first_insert := m.lines.LineLen( l_num ) - NEW_LL
+    NEW_LL := p_fl.LenB()
+    first_insert := m.lines.LineLenB( l_num ) - NEW_LL
     for k:=0; k<NEW_LL; k++ {
-      m.history.Save_InsertRune( l_num, first_insert + k )
+      m.history.Save_InsertByte( l_num, first_insert + k )
     }
+  }
+}
+
+func (m *FileBuf) InsertB( l_num, b_num int, B byte ) {
+
+  m.lines.InsertB( l_num, b_num, B )
+
+  if( m.save_history ) {
+    m.history.Save_InsertByte( l_num, b_num )
   }
 }
 
@@ -686,7 +739,20 @@ func (m *FileBuf) InsertR( l_num, r_num int, R rune ) {
   m.lines.InsertR( l_num, r_num, R )
 
   if( m.save_history ) {
-    m.history.Save_InsertRune( l_num, r_num )
+    m.history.Save_InsertByte( l_num, r_num )
+  }
+}
+
+// Add byter B to the end of line l_num
+//
+func (m *FileBuf) PushB( l_num int, B byte ) {
+
+  m.lines.PushB( l_num, B )
+
+  if( m.save_history ) {
+    pushed_pos := m.lines.LineLenB( l_num )-1
+
+    m.history.Save_InsertByte( l_num, pushed_pos )
   }
 }
 
@@ -697,8 +763,11 @@ func (m *FileBuf) PushR( l_num int, R rune ) {
   m.lines.PushR( l_num, R )
 
   if( m.save_history ) {
-    pushed_pos := m.lines.LineLen( l_num )-1
-    m.history.Save_InsertRune( l_num, pushed_pos )
+    pushed_pos := m.lines.LineLenB( l_num )-1
+    R_size := utf8.EncodeRune( _4_bytes[:], R )
+    for k:=0; k<R_size; k++ {
+      m.history.Save_InsertByte( l_num, pushed_pos+k )
+    }
   }
 }
 
@@ -724,7 +793,19 @@ func (m *FileBuf) RemoveLP( l_num int ) *FLine {
   return p_fl
 }
 
-// Remove from FileBuf and return the byte at line l_num and position c_num
+// Remove from FileBuf and return the rune at line l_num and position c_num
+//
+func (m *FileBuf) RemoveB( l_num, c_num int ) byte {
+
+  var B byte = m.lines.RemoveB( l_num, c_num )
+
+  if( m.save_history ) {
+    m.history.Save_RemoveByte( l_num, c_num, B )
+  }
+  return B
+}
+
+// Remove from FileBuf and return the rune at line l_num and position c_num
 //
 func (m *FileBuf) RemoveR( l_num, c_num int ) rune {
 
@@ -846,7 +927,7 @@ func (m *FileBuf) Update_Styles_Find_St( first_line int ) CrsPos {
   // CrsPos:
   var done bool = false
   for l:=first_line-1; !done && 0<=l; l-- {
-    var LL int = m.LineLen( l )
+    var LL int = m.LineLenB( l )
     for p:=LL-1; !done && 0<=p; p-- {
       var S byte = m.lines.GetLP(l).GetStyle(p)
       if( 0==S ) {
@@ -1078,7 +1159,7 @@ func (m *FileBuf) Find_Regexs_4_Line( line_num int ) {
           m.file_type == FT_DIR ) {
 
         if( m.Other_File_Has_My_Regex( lp.to_str() ) ) {
-          LL := lp.Len()
+          LL := lp.LenR()
           for k:=0; k<LL; k++ {
             lp.Set__StarInFStyle( k )
           }
@@ -1284,7 +1365,7 @@ func (m *FileBuf) Has_Regex( p_regex_obj *regexp.Regexp ) bool {
   for k:=0; k<NUM_LINES; k++ {
 
     var lp *FLine = m.lines.GetLP( k )
-    if( 0 < lp.Len() ) {
+    if( 0 < lp.LenB() ) {
       if( Bytes_Has_Regex( lp.to_SB(0), p_regex_obj ) ) {
         return true
       }
@@ -1294,7 +1375,7 @@ func (m *FileBuf) Has_Regex( p_regex_obj *regexp.Regexp ) bool {
 }
 
 func (m *FileBuf) Find_Regexs_4_Line_Plain( lp *FLine ) {
-  var LL int = lp.Len()
+  var LL int = lp.LenB()
   // Find the patterns for the line:
   var found bool = true
   for p:=0; found && p<LL; {
@@ -1454,20 +1535,20 @@ func (m *FileBuf) RemoveTabs_from_line( ln, tab_sz int ) int {
   tabs_removed := 0
 
   p_fl := m.lines.GetLP(ln)
-  LL := p_fl.Len()
+  LL := p_fl.LenB()
   cnum_t := 0 // char number with respect to tabs
 
   for p:=0; p<LL; p++ {
-    R := p_fl.GetR( p )
+    B := p_fl.GetB( p )
 
-    if( R != '\t' ) { cnum_t += 1
+    if( B != '\t' ) { cnum_t += 1
     } else {
       tabs_removed++
       num_spaces := tab_sz - ( cnum_t % tab_sz )
-      m.SetR( ln, p, ' ', false )
+      m.SetB( ln, p, ' ', false )
       for i:=1; i<num_spaces; i++ {
         p++
-        m.InsertR( ln, p, ' ')
+        m.InsertB( ln, p, ' ')
         LL++
       }
       cnum_t = 0
@@ -1481,18 +1562,18 @@ func (m *FileBuf) RemoveSpcs_from_EOL( ln int ) int {
   spaces_removed := 0
 
   p_fl := m.lines.GetLP(ln)
-  LL := p_fl.Len()
+  LL := p_fl.LenB()
 
   if( 0 < LL ) {
-    end_R := p_fl.GetR(LL-1)
+    end_R := p_fl.GetB(LL-1)
 
     logical_EOL := LL-1 // Unix line ending
     if( end_R == '\r' ) { logical_EOL = LL-2 // Windows line ending
     }
     done := false
     for p:=logical_EOL; !done && -1<p; p-- {
-      if( ' ' == p_fl.GetR( p ) ) {
-        m.RemoveR( ln, p )
+      if( ' ' == p_fl.GetB( p ) ) {
+        m.RemoveB( ln, p )
         spaces_removed++
       } else {
         done = true
@@ -1510,13 +1591,13 @@ func (m *FileBuf) dos2unix() {
 
   for ln:=0; ln<NUM_LINES; ln++ {
     p_fl := m.lines.GetLP(ln)
-    LL := p_fl.Len()
+    LL := p_fl.LenB()
 
     if( 0 < LL ) {
-      R := p_fl.GetR( LL-1 )
+      B := p_fl.GetB( LL-1 )
 
-      if( R == '\r' ) {
-        m.RemoveR( ln, LL-1 )
+      if( B == '\r' ) {
+        m.RemoveB( ln, LL-1 )
         num_CRs_removed++
       }
     }
@@ -1537,17 +1618,17 @@ func (m *FileBuf) unix2dos() {
 
   for ln:=0; ln<NUM_LINES; ln++ {
     p_fl := m.lines.GetLP(ln)
-    LL := p_fl.Len()
+    LL := p_fl.LenB()
 
     if( 0 < LL ) {
-      R := p_fl.GetR( LL-1 )
+      B := p_fl.GetB( LL-1 )
 
-      if( R != '\r' ) {
-        m.PushR( ln, '\r' )
+      if( B != '\r' ) {
+        m.PushB( ln, '\r' )
         num_CRs_added++
       }
     } else {
-      m.PushR( ln, '\r' )
+      m.PushB( ln, '\r' )
       num_CRs_added++
     }
   }
@@ -1627,25 +1708,25 @@ func (m* FileBuf) Strip_escape_seqs() {
   for k:=0; k<NUM_LINES; k++ {
 
     var p_l_k *FLine = m.lines.GetLP( k )
-    LL := p_l_k.Len()
+    LL := p_l_k.LenB()
 
     for p:=0; 2<LL && p<LL-2; p++ {
 
-      if( 27 == p_l_k.GetR(p) &&
-         '[' == p_l_k.GetR(p+1) ) {
+      if( 27 == p_l_k.GetB(p) &&
+         '[' == p_l_k.GetB(p+1) ) {
         st := p
 
         for fn:=p+2; (fn-st<10) && fn<LL; fn++ {
-          R_fn := p_l_k.GetR(fn)
+          B_fn := p_l_k.GetB(fn)
 
-          if( 'm' == R_fn ||
-              'K' == R_fn ) {
+          if( 'm' == B_fn ||
+              'K' == B_fn ) {
             // Remove from st to fn
             for i:=st; i<=fn; i++ {
-              m.RemoveR( k, st )
+              m.RemoveB( k, st )
               bytes_removed++;
             }
-            LL = p_l_k.Len()
+            LL = p_l_k.LenB()
             p--;
             esc_seqs_removed++;
             break;

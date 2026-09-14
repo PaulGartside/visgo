@@ -45,15 +45,15 @@ func (m *Highlight_JSON) Hi_In_None( l, p int ) (int,int) {
   m.const_style = HI_CONST
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       m.p_fb.ClearSyntaxStyles( l, p )
 
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
-      var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c2 rune = 0; if( 1<p ) { c2 = rune(m.p_fb.GetB( l, p-2 )) }
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( c0=='{' || c0=='}' ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
@@ -176,13 +176,13 @@ func (m *Highlight_JSON) Hi_Value( l, p int ) (int,int) {
   m.const_style = HI_DEFINE
   m.state = nil
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
-      var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c2 rune = 0; if( 1<p ) { c2 = rune(m.p_fb.GetB( l, p-2 )) }
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( c0 == '{' || c0 == '}' || c0 == ',') {
         m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
@@ -217,13 +217,13 @@ func (m *Highlight_JSON) Hi_Value_Array( l, p int ) (int,int) {
   m.state = nil
 
   for ; l<m.p_fb.NumLines(); l++ {
-    LL := m.p_fb.LineLen( l )
+    LL := m.p_fb.LineLenB( l )
 
     for ; p<LL; p++ {
       // c0 is ahead of c1 is ahead of c2: (c2,c1,c0)
-      var c2 rune = 0; if( 1<p ) { c2 = m.p_fb.GetR( l, p-2 ) }
-      var c1 rune = 0; if( 0<p ) { c1 = m.p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     m.p_fb.GetR( l, p )
+      var c2 rune = 0; if( 1<p ) { c2 = rune(m.p_fb.GetB( l, p-2 )) }
+      var c1 rune = 0; if( 0<p ) { c1 = rune(m.p_fb.GetB( l, p-1 )) }
+      var c0 rune =                     rune(m.p_fb.GetB( l, p ))
 
       if( c0 == '{' ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )

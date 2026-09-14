@@ -7,6 +7,7 @@ import (
 //"slices"
 //"hash/alder32"
 //"hash/crc32"
+  "unicode/utf8"
 )
 
 // File line
@@ -36,20 +37,26 @@ func (m *FLine) CopyP( p_src_ln *FLine ) {
   m.star_styles_valid = false
 }
 
+// Copy rune line pointer
 // Copy *p_src_ln into self
+//
 func (m *FLine) CopyPRL( p_src_ln *RLine ) {
   m.runes.Copy( *p_src_ln )
-  m.styles.SetLen( m.runes.Len() )
+  m.styles.SetLen( m.runes.LenB() )
   m.styles.Zeroize()
   m.star_styles_valid = false
 }
 
-func (m *FLine) Size() int {
-  return m.runes.Size()
+//func (m *FLine) Size() int {
+//  return m.runes.Size()
+//}
+
+func (m *FLine) LenB() int {
+  return m.runes.LenB()
 }
 
-func (m *FLine) Len() int {
-  return m.runes.Len()
+func (m *FLine) LenR() int {
+  return m.runes.LenR()
 }
 
 // Get byte
@@ -58,8 +65,12 @@ func (m *FLine) GetB( idx int ) byte {
 }
 
 // Get rune
-func (m *FLine) GetR( idx int ) rune {
-  return m.runes.GetR( idx )
+func (m *FLine) GetR( R_num int ) (rune, int, int) {
+  return m.runes.GetR( R_num )
+}
+
+func (m *FLine) GetRatB( B_num int ) (rune, int) {
+  return m.runes.GetRatB( B_num )
 }
 
 // Get style
@@ -67,22 +78,47 @@ func (m *FLine) GetStyle( idx int ) byte {
   return m.styles.GetB( idx )
 }
 
-// Set rune
-func (m *FLine) SetR( idx int, R rune ) {
-  m.runes.SetR( idx, R )
+func (m *FLine) SetB( idx int, B byte ) {
+  m.runes.SetB( idx, B )
   m.star_styles_valid = false
 }
+
+// Sets idx rune in m.runes to R.
+// Returns byte offset in m.runes of that rune
+//
+func (m *FLine) SetR( idx int, R rune ) int {
+  B_pos := m.runes.SetR( idx, R )
+  m.star_styles_valid = false
+  return B_pos
+}
+
+//func (m *FLine) SetRatB( ) {
+//  m.runes.SetRatB()
+//  m.star_styles_valid = false
+//}
 
 // Set style
 func (m *FLine) SetStyle( idx int, S byte ) {
   m.styles.SetB( idx, S )
 }
 
+func (m *FLine) RemoveB( idx int ) byte {
+
+  var B byte = m.runes.RemoveB( idx )
+               m.styles.RemoveB( idx )
+  m.star_styles_valid = false
+  return B
+}
+
 // Remove rune
 func (m *FLine) RemoveR( idx int ) rune {
 
   var R rune = m.runes.RemoveR( idx )
-               m.styles.RemoveB( idx )
+
+  R_size := utf8.RuneLen(R)
+  for k:=0; k<R_size; k++ {
+    m.styles.RemoveB( idx )
+  }
   m.star_styles_valid = false
   return R
 }
@@ -99,7 +135,11 @@ func (m *FLine) PushB( B byte ) {
 func (m *FLine) PushR( R rune ) {
 
   m.runes.PushR( R )
-  m.styles.PushB( 0 )
+
+  R_size := utf8.RuneLen(R)
+  for k:=0; k<R_size; k++ {
+    m.styles.PushB( 0 )
+  }
   m.star_styles_valid = false
 } 
 
@@ -137,11 +177,22 @@ func (m *FLine) PushLP( p_fl *FLine ) {
   m.star_styles_valid = false
 }
 
+func (m *FLine) InsertB( idx int, B byte ) {
+
+  m.runes.InsertB( idx, B )
+  m.styles.InsertB( idx, 0 )
+  m.star_styles_valid = false
+}
+
 // Insert rune
 func (m *FLine) InsertR( idx int, R rune ) {
 
   m.runes.InsertR( idx, R )
-  m.styles.InsertB( idx, 0 )
+
+  R_size := utf8.RuneLen(R)
+  for k:=0; k<R_size; k++ {
+    m.styles.InsertB( idx, 0 )
+  }
   m.star_styles_valid = false
 }
 
@@ -166,7 +217,7 @@ func (m *FLine) EqualStr( S string ) bool {
 func (m *FLine) from_str( S string ) {
   m.runes.from_str( S )
   m.styles.Clear()
-  m.styles.SetLen( m.runes.Len() )
+  m.styles.SetLen( m.runes.LenB() )
 }
 
 // Convert to string

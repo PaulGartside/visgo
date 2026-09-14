@@ -19,7 +19,7 @@ func Hi_FindKey_In_Range( p_fb *FileBuf, HiPairs []HiKeyVal, st CrsPos, fn int )
     var lp *FLine = p_fb.GetLP( l )
     var lr RLine = lp.runes
     var sr BLine = lp.styles
-    var LL int = lp.Len()
+    var LL int = lp.LenB()
 
     var st_pos int = True_1_else_2( st.crsLine==l, st.crsChar, 0 )
     var fn_pos int = LLM1( LL )
@@ -34,7 +34,7 @@ func Hi_FindKey_In_Range( p_fb *FileBuf, HiPairs []HiKeyVal, st CrsPos, fn int )
         KEY_LEN := len( key )
 
         for k:=0; matches && (p+k)<LL && k<KEY_LEN; k++ {
-          if( 0!=sr.GetB(p+k) || rune(key[k]) != lr.GetR(p+k) ) { matches = false
+          if( 0!=sr.GetB(p+k) || key[k] != lr.GetB(p+k) ) { matches = false
           } else {
             if( k+1 == KEY_LEN ) { // Found pattern
               matches = line_end_or_non_ident( lr, LL, p+k )
@@ -64,13 +64,13 @@ func Hi_In_SingleQuote_Base(
   p_fb.SetSyntaxStyle( l, p, hi_style )
   p++
   for ; l<p_fb.NumLines(); l++ {
-    LL := p_fb.LineLen( l )
+    LL := p_fb.LineLenB( l )
 
     var slash_escaped bool = false
     for ; p<LL; p++ {
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p ) { c1 = p_fb.GetR( l, p-1 ) }
-      var c0 rune =                     p_fb.GetR( l, p )
+      var c1 byte = 0; if( 0<p ) { c1 = p_fb.GetB( l, p-1 ) }
+      var c0 byte =                     p_fb.GetB( l, p )
 
       if( (c1==0    && c0=='\'') ||
           (c1!='\\' && c0=='\'') ||
@@ -102,13 +102,13 @@ func Hi_In_DoubleQuote_Base(
   p_fb.SetSyntaxStyle( l, p, hi_style )
   p++
   for ; l<p_fb.NumLines(); l++ {
-    LL := p_fb.LineLen( l )
+    LL := p_fb.LineLenB( l )
 
     var slash_escaped bool = false
     for ; p<LL; p++ {
       // c0 is ahead of c1: (c1,c0)
-      var c1 rune = 0; if( 0<p) { c1 = p_fb.GetR( l, p-1 ) }
-      var c0 rune =                    p_fb.GetR( l, p )
+      var c1 byte = 0; if( 0<p) { c1 = p_fb.GetB( l, p-1 ) }
+      var c0 byte =                    p_fb.GetB( l, p )
 
       if( (c1==0    && c0=='"') ||
           (c1!='\\' && c0=='"') ||
@@ -137,12 +137,12 @@ func Hi_NumberBeg_Base(
 
   p_fb.SetSyntaxStyle( l, p, HI_CONST )
 
-  var c1 rune = p_fb.GetR( l, p )
+  var c1 byte = p_fb.GetB( l, p )
   p++
 
-  LL := p_fb.LineLen( l )
+  LL := p_fb.LineLenB( l )
   if( '0' == c1 && (p+1)<LL ) {
-    var c0 rune = p_fb.GetR( l, p )
+    var c0 byte = p_fb.GetB( l, p )
     if( 'x' == c0 || 'X' == c0 ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       state = Hi_NumberHex
@@ -158,10 +158,10 @@ func Hi_NumberIn_Base(
       int,int,HiStateFunc) {
 
   var state HiStateFunc = Hi_NumberIn
-  LL := p_fb.LineLen( l )
+  LL := p_fb.LineLenB( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
-    var R1 rune = p_fb.GetR( l, p )
+    var R1 byte = p_fb.GetB( l, p )
 
     if( '.'==R1 ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
@@ -172,13 +172,13 @@ func Hi_NumberIn_Base(
       state = Hi_NumberExponent
       p++
       if( p<LL ) {
-        var R0 rune = p_fb.GetR( l, p )
+        var R0 byte = p_fb.GetB( l, p )
         if( '+' == R0 || '-' == R0 ) {
           p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
         }
       }
-    } else if( IsDigit(R1) ) {
+    } else if( IsDigit(rune(R1)) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       // Stay in Hi_NumberIn
       p++
@@ -195,11 +195,11 @@ func Hi_NumberHex_Base(
      int,int,HiStateFunc) {
 
   var state HiStateFunc = Hi_NumberHex
-  LL := p_fb.LineLen( l )
+  LL := p_fb.LineLenB( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
-    var c1 rune = p_fb.GetR( l, p )
-    if( IsXDigit(c1) ) {
+    var c1 byte = p_fb.GetB( l, p )
+    if( IsXDigit(rune(c1)) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       // Stay in Hi_NumberHex
       p++
@@ -216,11 +216,11 @@ func Hi_NumberFraction_Base(
      int,int,HiStateFunc) {
 
   var state HiStateFunc = Hi_NumberFraction
-  LL := p_fb.LineLen( l )
+  LL := p_fb.LineLenB( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
-    var c1 rune = p_fb.GetR( l, p )
-    if( IsDigit(c1) ) {
+    var c1 byte = p_fb.GetB( l, p )
+    if( IsDigit(rune(c1)) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       // stay in Hi_NumberFraction
       p++
@@ -229,7 +229,7 @@ func Hi_NumberFraction_Base(
       state = Hi_NumberExponent
       p++
       if( p<LL ) {
-        var c0 rune = p_fb.GetR( l, p )
+        var c0 byte = p_fb.GetB( l, p )
         if( '+' == c0 || '-' == c0 ) {
           p_fb.SetSyntaxStyle( l, p, HI_CONST )
           p++
@@ -248,11 +248,11 @@ func Hi_NumberExponent_Base(
       int,int,HiStateFunc) {
 
   var state HiStateFunc = Hi_NumberExponent
-  LL := p_fb.LineLen( l )
+  LL := p_fb.LineLenB( l )
   if( LL <= p ) { state = Hi_In_None
   } else {
-    var c1 rune = p_fb.GetR( l, p )
-    if( IsDigit(c1) ) {
+    var c1 byte = p_fb.GetB( l, p )
+    if( IsDigit(rune(c1)) ) {
       p_fb.SetSyntaxStyle( l, p, HI_CONST )
       // stay in Hi_NumberExponent
       p++
