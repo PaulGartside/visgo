@@ -14,6 +14,9 @@ import (
 type RLine struct {
   data []byte
 
+  last_R_idx int           // Index of rune last accessed
+  last_R_idx_B_offset int  // Byte offset of last_R_idx
+
   chksum_diff uint32
   chksum_diff_valid bool
 }
@@ -49,6 +52,9 @@ func (m *RLine) Cap() int {
 func (m *RLine) Clear() {
   m.data = m.data[:0]
 
+  m.last_R_idx = 0
+  m.last_R_idx_B_offset = 0
+
   m.chksum_diff_valid = false
 }
 
@@ -60,6 +66,10 @@ func (m *RLine) Zeroize() {
 //for k := range m.data {
 //  m.data[k] = 0
 //}
+  m.last_R_idx = 0
+  m.last_R_idx_B_offset = 0
+
+  m.chksum_diff_valid = false
 }
 
 // Increase capacity by N bytes and guarantees existing contents remain the same.
@@ -81,6 +91,10 @@ func (m *RLine) SetLen( length int ) {
     // Contents up to length-1 preserved:
     m.data = m.data[:length]
 
+    if( length <= m.last_R_idx_B_offset ) {
+      m.last_R_idx = 0
+      m.last_R_idx_B_offset = 0
+    }
   } else if( m.LenB() < length ) {
     if( length <= m.Cap() ) {
       // Contents preserved, zero values appended to end:
@@ -100,6 +114,9 @@ func (m *RLine) Copy( src_ln RLine ) {
 
   m.SetLen( src_ln.LenB() )
   copy( m.data[:], src_ln.data[:] )
+
+  m.last_R_idx = 0
+  m.last_R_idx_B_offset = 0
 
   m.chksum_diff_valid = false
 }
@@ -131,21 +148,81 @@ func (m *RLine) GetB( B_num int ) byte {
 //         (size in bytes of Rune) and
 //         (Byte position in line) of that Rune
 //
+//func (m *RLine) GetR( R_num int ) (rune, int, int) {
+//  var R rune = 0
+//  R_size := 0
+//  B_offset_data := 0 // Byte offset in m.data
+//  LEN := len(m.data)
+//  for R_index:=0; B_offset_data<LEN; R_index++ {
+//    var R_t rune
+//    R_t, R_size = utf8.DecodeRune( m.data[B_offset_data:] )
+//    if( R_num == R_index ) {
+//      R = R_t
+//      break
+//    }
+//    B_offset_data += R_size
+//  }
+//  return R, R_size, B_offset_data
+//}
+
+// Gets R_num rune in m.data.
+// Returns (Rune) and
+//         (size in bytes of Rune) and
+//         (Byte position in line) of that Rune
+//
 func (m *RLine) GetR( R_num int ) (rune, int, int) {
   var R rune = 0
-  R_size := 0
+  R_size_data := 0
   B_offset_data := 0 // Byte offset in m.data
   LEN := len(m.data)
-  for R_index:=0; B_offset_data<LEN; R_index++ {
-    var R_t rune
-    R_t, R_size = utf8.DecodeRune( m.data[B_offset_data:] )
-    if( R_num == R_index ) {
-      R = R_t
-      break
+
+  if( 0 < LEN ) {
+    if( R_num <= 0 ) {
+      R, R_size_data = utf8.DecodeRune( m.data[0:] )
+      m.last_R_idx = 0
+      m.last_R_idx_B_offset = 0
+
+    } else if( R_num == m.last_R_idx ) {
+      R, R_size_data = utf8.DecodeRune( m.data[m.last_R_idx_B_offset:] )
+      B_offset_data = m.last_R_idx_B_offset
+      // m.last_R_idx and m.last_R_idx_B_offset are unchanged
+
+    } else if( m.last_R_idx < R_num ) {
+      // Search forward for R_num
+      B_offset_data = m.last_R_idx_B_offset
+      for R_index:=m.last_R_idx; B_offset_data<LEN; R_index++ {
+        var R_t rune
+        R_t, R_size_data = utf8.DecodeRune( m.data[B_offset_data:] )
+        if( R_index == R_num ) {
+          R = R_t
+          m.last_R_idx = R_index
+          m.last_R_idx_B_offset = B_offset_data
+          break
+        }
+        B_offset_data += R_size_data
+      }
+    } else { // R_num < m.last_R_idx
+      if( m.last_R_idx == m.last_R_idx_B_offset ) {
+        R = rune(m.data[ R_num ])
+        R_size_data = 1
+        B_offset_data = R_num
+        // No multi-byte utf8 before m.last_R_idx, each rune is only one byte
+      } else {
+        // Search backwards for R_num
+        B_offset_data = m.last_R_idx_B_offset
+        for R_index:=m.last_R_idx-1; 0<=B_offset_data && B_offset_data<LEN; R_index-- {
+          B_offset_data = find_prior_rune_start_or_invalid_utf8( m.data, B_offset_data )
+          if( R_index == R_num ) {
+            R, R_size_data = utf8.DecodeRune( m.data[B_offset_data:] )
+            m.last_R_idx = R_index
+            m.last_R_idx_B_offset = B_offset_data
+            break
+          }
+        }
+      }
     }
-    B_offset_data += R_size
   }
-  return R, R_size, B_offset_data
+  return R, R_size_data, B_offset_data
 }
 
 // Gets rune in m.data at byte offset in m.data
@@ -173,6 +250,10 @@ func (m *RLine) to_SB( st int ) []byte {
 func (m *RLine) SetB( B_num int, B byte ) {
   m.data[ B_num ] = B
 
+  if( B_num < m.last_R_idx_B_offset ) {
+    m.last_R_idx = 0
+    m.last_R_idx_B_offset = 0
+  }
   m.chksum_diff_valid = false
 }
 
@@ -184,42 +265,139 @@ func (m *RLine) SetB( B_num int, B byte ) {
 // Sets R_num rune in m.data to R.
 // Returns rune size, and byte offset in m.data of that rune
 //
-func (m *RLine) SetR( R_num int, R rune ) int {
+//func (m *RLine) SetR( R_num int, R_in rune ) int {
+//  R_size_in := utf8.RuneLen(R_in)
+//  B_offset_data := 0 // Byte offset in m.data
+//
+//  if( 0 < R_size_in ) {
+//    LEN := len(m.data)
+//    // FIXME: use m.last_R_idx and m.last_R_idx_B_offset to speed up search:
+//    for R_index:=0; B_offset_data<LEN; R_index++ {
+//      _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+//
+//      if( R_num == R_index ) {
+//        m.last_R_idx = R_num
+//        m.last_R_idx_B_offset = B_offset_data
+//
+//        m.SetR_ReplaceRatB( R_in,B_offset_data, R_size_in,R_size_data )
+//        break
+//      }
+//      B_offset_data += R_size_data
+//    }
+//    m.chksum_diff_valid = false
+//  }
+//  return B_offset_data
+//}
 
-  R_size_in := utf8.RuneLen(R)
-  B_offset_data := 0 // Byte offset in m.data
+// Sets R_num rune in m.data to R_in.
+// Returns byte offset in m.data of set rune
+//
+//func (m *RLine) SetR( R_num int, R_in rune ) int {
+//  B_offset_data := 0 // Byte offset in m.data
+//  R_size_in := utf8.RuneLen(R_in)
+//  LEN := len(m.data)
+//
+//  if( 0 < LEN && 0 < R_size_in ) {
+//    if( R_num <= 0 ) {
+//      _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+//      m.SetR_ReplaceRatB( R_in,B_offset_data, R_size_in,R_size_data )
+//      m.last_R_idx = 0
+//      m.last_R_idx_B_offset = 0
+//
+//    } else if( R_num == m.last_R_idx ) {
+//      _, R_size_data := utf8.DecodeRune( m.data[m.last_R_idx_B_offset:] )
+//      B_offset_data = m.last_R_idx_B_offset
+//      m.SetR_ReplaceRatB( R_in,B_offset_data, R_size_in,R_size_data )
+//      // m.last_R_idx and m.last_R_idx_B_offset are unchanged
+//
+//    } else if( m.last_R_idx < R_num ) {
+//      // Search forward for R_num
+//      B_offset_data = m.last_R_idx_B_offset
+//      for R_index:=m.last_R_idx; B_offset_data<LEN; R_index++ {
+//        _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+//
+//        if( R_index == R_num ) {
+//          m.SetR_ReplaceRatB( R_in,B_offset_data, R_size_in,R_size_data )
+//          m.last_R_idx = R_index
+//          m.last_R_idx_B_offset = B_offset_data
+//          break
+//        }
+//        B_offset_data += R_size_data
+//      }
+//    } else { // R_num < m.last_R_idx
+//      // Search backwards for R_num
+//      B_offset_data = m.last_R_idx_B_offset
+//      for R_index:=m.last_R_idx-1; 0<=B_offset_data && B_offset_data<LEN; R_index-- {
+//        B_offset_data = find_prior_rune_start_or_invalid_utf8( m.data, B_offset_data )
+//        if( R_index == R_num ) {
+//          _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+//          m.SetR_ReplaceRatB( R_in,B_offset_data, R_size_in,R_size_data )
+//          m.last_R_idx = R_index
+//          m.last_R_idx_B_offset = B_offset_data
+//          break
+//        }
+//      }
+//    }
+//    m.chksum_diff_valid = false
+//  }
+//  return B_offset_data
+//}
 
-  if( 0 < R_size_in ) {
-    for R_index:=0; B_offset_data<len(m.data); R_index++ {
-      _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+// Sets R_num rune in m.data to R_in.
+// Returns byte offset in m.data of set rune
+//
+func (m *RLine) SetR( R_num int, R_in rune ) int {
 
-      if( R_num == R_index ) {
-        if( R_size_in == R_size_data ) {
-          utf8.EncodeRune( m.data[B_offset_data:], R )
+  _, R_size_data, B_offset_data := m.GetR( R_num ) 
 
-        } else if( R_size_in < R_size_data ) {
-          utf8.EncodeRune( m.data[B_offset_data:], R )
-          copy( m.data[(B_offset_data+R_size_in):], m.data[(B_offset_data+R_size_data):] )
-          size_diff := R_size_data - R_size_in
-          m.data = m.data[:len(m.data)-size_diff]
+  if( 0 < R_size_data ) {
+    // A rune was found, so R_num is not past end of m.data.
+    R_size_in := utf8.RuneLen(R_in)
+    m.SetR_ReplaceRatB( R_in,B_offset_data, R_size_in,R_size_data )
+    // m.last_R_idx and m.last_R_idx_B_offset were set in m.GetR()
+  } else {
+    // A rune was NOT found, so R_num is past end of m.data.
+    // Append R_in:
+    LEN := len(m.data)
+    if( LEN <= B_offset_data ) {
+      // (LEN == 0) or (m.LenR() <= R_num), so append R_in:
+      m.PushR( R_in ) //< This will increase m.data cap if needed
 
-        } else { // ( R_size_data < R_size_in )
-          size_diff := R_size_in - R_size_data
-          NEW_LEN := m.LenB() + size_diff
-          if( m.Cap() < NEW_LEN ) {
-            m.Inc_Cap( size_diff + 16 )
-          }
-          m.data = m.data[:NEW_LEN]
-          copy( m.data[(B_offset_data+R_size_in):], m.data[(B_offset_data+R_size_data):] )
-          utf8.EncodeRune( m.data[B_offset_data:], R )
-        }
-        break
-      }
-      B_offset_data += R_size_data
+      // When R_in is appended, m.last_R_idx and m.last_R_idx_B_offset
+      // dont need to change.
     }
-    m.chksum_diff_valid = false
   }
+  m.chksum_diff_valid = false
+
   return B_offset_data
+}
+
+// Helper function of SetR.
+// Replace rune at byte B_offset_data with R_in.
+// R_size_in = size of R_in
+// R_size_data = size of rune at byte B_offset_data
+//
+func (m *RLine) SetR_ReplaceRatB( R_in rune, B_offset_data int, R_size_in,R_size_data int ) {
+
+  if( R_size_in == R_size_data ) {
+    utf8.EncodeRune( m.data[B_offset_data:], R_in )
+
+  } else if( R_size_in < R_size_data ) {
+    utf8.EncodeRune( m.data[B_offset_data:], R_in )
+    copy( m.data[(B_offset_data+R_size_in):], m.data[(B_offset_data+R_size_data):] )
+    size_diff := R_size_data - R_size_in
+    m.data = m.data[:len(m.data)-size_diff]
+
+  } else { // ( R_size_data < R_size_in )
+    size_diff := R_size_in - R_size_data
+    NEW_LEN := m.LenB() + size_diff
+    if( m.Cap() < NEW_LEN ) {
+      m.Inc_Cap( size_diff + 16 )
+    }
+    m.data = m.data[:NEW_LEN]
+    copy( m.data[(B_offset_data+R_size_in):], m.data[(B_offset_data+R_size_data):] )
+    utf8.EncodeRune( m.data[B_offset_data:], R_in )
+  }
 }
 
 func (m *RLine) RemoveB( B_num int ) byte {
@@ -228,27 +406,55 @@ func (m *RLine) RemoveB( B_num int ) byte {
   copy( m.data[B_num:], m.data[B_num+1:] )
   m.data = m.data[:len(m.data)-1]
 
+  if( B_num < m.last_R_idx_B_offset ) {
+    m.last_R_idx = 0
+    m.last_R_idx_B_offset = 0
+  }
   m.chksum_diff_valid = false
 
   return B
 }
 
+//func (m *RLine) RemoveR( R_num int ) rune {
+//  var R rune = 0
+//
+//  B_offset_data := 0 // Byte offset in m.data
+//  LEN := len(m.data)
+//  // FIXME: use m.last_R_idx and m.last_R_idx_B_offset to speed up search:
+//  for R_index:=0; B_offset_data<LEN; R_index++ {
+//    R_t, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+//    if( R_num == R_index ) {
+//      R = R_t
+//      copy( m.data[B_offset_data:], m.data[B_offset_data+R_size_data:] )
+//      m.data = m.data[:LEN-R_size_data]
+//
+//      m.last_R_idx = R_index
+//      m.last_R_idx_B_offset = B_offset_data
+//      m.chksum_diff_valid = false
+//      break
+//    }
+//    B_offset_data += R_size_data
+//  }
+//  return R
+//}
+
 func (m *RLine) RemoveR( R_num int ) rune {
-  var R rune = 0
 
-  B_offset_data := 0 // Byte offset in m.data
-  LEN := len(m.data)
-  for R_index:=0; B_offset_data<LEN; R_index++ {
-    R_t, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
-    if( R_num == R_index ) {
-      R = R_t
-      copy( m.data[B_offset_data:], m.data[B_offset_data+R_size_data:] )
-      m.data = m.data[:LEN-R_size_data]
+  R, R_size_data, B_offset_data := m.GetR( R_num ) 
 
-      m.chksum_diff_valid = false
-      break
+  if( 0 < R_size_data ) {
+    // m.last_R_idx and m.last_R_idx_B_offset were set in m.GetR().
+    LEN := len(m.data)
+    copy( m.data[B_offset_data:], m.data[B_offset_data+R_size_data:] )
+    m.data = m.data[:LEN-R_size_data]
+
+    if( len(m.data) <= B_offset_data ) {
+      // R_num was last rune, and it was just removed,
+      // so clear m.last_R_idx and m.last_R_idx_B_offset:
+      m.last_R_idx = 0
+      m.last_R_idx_B_offset = 0
     }
-    B_offset_data += R_size_data
+    m.chksum_diff_valid = false
   }
   return R
 }
@@ -304,6 +510,10 @@ func (m *RLine) InsertB( B_num int, B byte ) {
   copy( m.data[B_num+1:], m.data[B_num:] )
   m.data[ B_num ] = B
 
+  if( B_num < m.last_R_idx_B_offset ) {
+    m.last_R_idx = 0
+    m.last_R_idx_B_offset = 0
+  }
   m.chksum_diff_valid = false
 }
 
@@ -358,30 +568,66 @@ func (m *RLine) InsertB( B_num int, B byte ) {
 //}
 
 // If R_pos is greater then
-func (m *RLine) InsertR( R_pos int, R rune ) {
+//func (m *RLine) InsertR( R_pos int, R rune ) {
+//
+//  R_size_in := utf8.RuneLen(R)
+//  if( 0 < R_size_in ) {
+//    inserted_R := false
+//    B_offset_data := 0 // Byte offset in m.data
+//    LEN := len(m.data)
+//    // FIXME: use m.last_R_idx and m.last_R_idx_B_offset to speed up search:
+//    for R_index:=0; B_offset_data<LEN; R_index++ {
+//      _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
+//      if( R_index == R_pos ) {
+//        // Insert R into m.data at B_offset_data
+//        m.PushR( R ) //< This will increase m.data cap if needed
+//        copy( m.data[B_offset_data+R_size_in:], m.data[B_offset_data:] )
+//        utf8.EncodeRune( m.data[B_offset_data:], R )
+//
+//        m.last_R_idx = R_index
+//        m.last_R_idx_B_offset = B_offset_data
+//        m.chksum_diff_valid = false
+//        inserted_R = true
+//        break
+//      }
+//      B_offset_data += R_size_data
+//    }
+//    if( !inserted_R ) {
+//      // (LEN == 0) or (m.LenR() <= R_pos), so append R:
+//      m.PushR( R ) //< This will increase m.data cap if needed
+//      m.chksum_diff_valid = false
+//    }
+//  }
+//}
 
-  R_size_in := utf8.RuneLen(R)
-  if( 0 < R_size_in ) {
-    inserted_R := false
-    B_offset_data := 0 // Byte offset in m.data
+// Insert rune R_in at R_pos.
+// If (m.LenR() <= R_pos), append R_in.
+//
+func (m *RLine) InsertR( R_num int, R_in rune ) {
+
+  _, R_size_data, B_offset_data := m.GetR( R_num ) 
+
+  if( 0 < R_size_data ) {
+    // A rune was found, so R_num is not past end of m.data.
+    // Insert R_in into m.data at B_offset_data
+    m.PushR( R_in ) //< This will increase m.data cap if needed
+    R_size_in := utf8.RuneLen(R_in)
+    copy( m.data[B_offset_data+R_size_in:], m.data[B_offset_data:] )
+    utf8.EncodeRune( m.data[B_offset_data:], R_in )
+
+    // m.last_R_idx and m.last_R_idx_B_offset were set in m.GetR()
+    m.chksum_diff_valid = false
+
+  } else {
+    // A rune was NOT found, so R_num is past end of m.data.
+    // Append R_in:
     LEN := len(m.data)
-    for R_index:=0; B_offset_data<LEN; R_index++ {
-      _, R_size_data := utf8.DecodeRune( m.data[B_offset_data:] )
-      if( R_index == R_pos ) {
-        // Insert R into m.data at B_offset_data
-        m.PushR( R ) //< This will increase m.data cap if needed
-        copy( m.data[B_offset_data+R_size_in:], m.data[B_offset_data:] )
-        utf8.EncodeRune( m.data[B_offset_data:], R )
+    if( LEN <= B_offset_data ) {
+      // (LEN == 0) or (m.LenR() <= R_num), so append R_in:
+      m.PushR( R_in ) //< This will increase m.data cap if needed
 
-        m.chksum_diff_valid = false
-        inserted_R = true
-        break
-      }
-      B_offset_data += R_size_data
-    }
-    if( !inserted_R ) {
-      // (LEN == 0) or (m.LenR() <= R_pos), so append R:
-      m.PushR( R ) //< This will increase m.data cap if needed
+      // When R_in is appended, m.last_R_idx and m.last_R_idx_B_offset
+      // dont need to change.
       m.chksum_diff_valid = false
     }
   }
@@ -468,6 +714,10 @@ func (m *RLine) to_str() string {
 
 func (m *RLine) from_str( S string ) {
   m.data = []byte(S)
+
+  m.last_R_idx = 0
+  m.last_R_idx_B_offset = 0
+  m.chksum_diff_valid = false
 }
 
 // This implementation avoids RLine.to_str(), which allocates a new string.
@@ -601,6 +851,9 @@ func (m *RLine) RemoveSpaces() {
       k--
       m.chksum_diff_valid = false
       LEN = len(m.data)
+
+      m.last_R_idx = 0
+      m.last_R_idx_B_offset = 0
     }
   }
 }

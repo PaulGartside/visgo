@@ -152,7 +152,7 @@ func (m *FileView) LineLen( l_num int ) int {
   return ll
 }
 
-// Get Byte or Rune at Byte or Rune position pos in line l_num depending on m.decoding.
+// Get Byte at Byte position pos, or Rune or Rune position pos, in line l_num depending on m.decoding.
 // Returns (Byte or Rune) and
 //         (size in bytes of Byte or Rune) and
 //         (Byte position in line) of that Byte or Rune
@@ -180,7 +180,7 @@ func (m *FileView) Get1( l_num, pos int ) rune {
   return R
 }
 
-// Get Btye or Rune at byte position b_pos in line l_num.
+// Get (Btye or Rune), at byte position b_pos, in line l_num.
 // Return (Byte or Rune) and (size in bytes of that Byte or Rune)
 //
 func (m *FileView) GetAtB( l_num, b_pos int ) (rune, int) {
@@ -195,15 +195,49 @@ func (m *FileView) GetAtB( l_num, b_pos int ) (rune, int) {
   return R, R_size
 }
 
-func (m *FileView) GetAtB1( l_num, b_pos int ) rune {
+//func (m *FileView) GetAtB1( l_num, b_pos int ) rune {
+//
+//  if( m.decoding == DEC_UTF8 ) {
+//    R,_ := m.p_fb.GetRatB( l_num, b_pos )
+//    return R
+//  }
+//  // m.decoding == DEC_BYTE
+//  R := rune(m.p_fb.GetB( l_num, b_pos ))
+//  return R
+//}
+
+func (m *FileView) Remove( l_num, pos int ) rune {
 
   if( m.decoding == DEC_UTF8 ) {
-    R,_ := m.p_fb.GetRatB( l_num, b_pos )
+    R := m.p_fb.RemoveR( l_num, pos )
     return R
   }
-  // m.decoding == DEC_BYTE
-  R := rune(m.p_fb.GetB( l_num, b_pos ))
+  R := rune(m.p_fb.RemoveB( l_num, pos ))
   return R
+}
+
+func (m *FileView) Insert( l_num, pos int, R rune ) {
+
+  if( m.decoding == DEC_UTF8 ) {
+    m.p_fb.InsertR( l_num, pos, R )
+  }
+  m.p_fb.InsertB( l_num, pos, byte(R) )
+}
+
+func (m *FileView) Push( l_num int, R rune ) {
+
+  if( m.decoding == DEC_UTF8 ) {
+    m.p_fb.PushR( l_num, R )
+  }
+  m.p_fb.PushB( l_num, byte(R) )
+}
+
+func (m *FileView) Set( l_num, pos int, R rune, continue_last_update bool ) {
+
+  if( m.decoding == DEC_UTF8 ) {
+    m.p_fb.SetR( l_num, pos, R, continue_last_update )
+  }
+  m.p_fb.SetB( l_num, pos, byte(R), continue_last_update )
 }
 
 func (m *FileView) PrintCursor() {
@@ -343,8 +377,10 @@ func (m *FileView) PrintStsLine() {
   if 0 < LL && CC < LL {
     R,_,_ := m.Get( CL, CC )
     fmt.Fprintf( &buf, "%x,%c", R, R )
+    fmt.Fprintf( &buf, " )" )
+  } else {
+    fmt.Fprintf( &buf, ")" )
   }
-  fmt.Fprintf( &buf, " )" )
 
   for k:=buf.Len(); k<WC; k++ {
     fmt.Fprintf( &buf, " " )
@@ -1208,17 +1244,17 @@ func (m *FileView) GoToCrsPos_Write_VisualBlockB( OCL, OCP, NCL, NCP int ) {
     for k:=draw_box_left; k<LL && k<=draw_box_rite; k++ {
       // On some terminals, the cursor on reverse video on white space does not
       // show up, so to prevent that, do not reverse video the cursor position:
-      B := m.p_fb.GetB( l, k )
+      R := m.Get1( l, k )
       style := m.Get_Style( l, k )
 
       if( NCL==l && NCP==k ) {
         if( RV_Style( style ) ) {
           NonRV_style := RV_Style_2_NonRV( style )
 
-          m_console.SetR( m.Line_2_GL( l ), m.Char_2_GL( k ), rune(B), NonRV_style )
+          m_console.SetR( m.Line_2_GL( l ), m.Char_2_GL( k ), R, NonRV_style )
         }
       } else {
-        m_console.SetR( m.Line_2_GL( l ), m.Char_2_GL( k ), rune(B), style )
+        m_console.SetR( m.Line_2_GL( l ), m.Char_2_GL( k ), R, style )
       }
     }
   }
@@ -1730,13 +1766,9 @@ func (m *FileView) GoToOppositeBracket_Forward( ST_R, FN_R rune ) {
     p_st := 0
     if( CL==l ) { p_st = CC+1 }
 
-    var R rune
-    var R_sz,B_pos int
     for p:=p_st; !found && p<LL; p++ {
-      if( p==p_st ) { R,R_sz,B_pos = m.Get( l, p_st )
-      } else        { R,R_sz       = m.GetAtB( l, B_pos )
-      }
-      B_pos += R_sz
+
+      var R rune = m.Get1( l, p )
 
       if       ( R==ST_R ) { level++
       } else if( R==FN_R ) {
@@ -1766,8 +1798,9 @@ func (m *FileView) GoToOppositeBracket_Backward( ST_R, FN_R rune ) {
 
     p_st := LL-1
     if( CL==l ) { p_st = CC-1 }
+
     for p:=p_st; !found && 0<=p; p-- {
-      // FIXME: Figure out how to make Get efficient for decrementing index
+
       R,_,_ := m.Get( l, p )
 
       if       ( R==ST_R ) { level++
@@ -1822,16 +1855,9 @@ func (m *FileView) GoToRightSquigglyBracket() {
 // Cursor is moving forward
 // Write out from (OCL,OCP) up to but not including (NCL,NCP)
 func (m *FileView) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
-  var R rune
-  var B_pos, R_size int
   if( OCL == NCL ) { // Only one line:
-    m_console.SetR( m.Line_2_GL( OCL ), m.Char_2_GL( OCP ), R, m.Get_Style(OCL,OCP) )
-
     for k:=OCP; k<NCP; k++ {
-      if( k == OCP ) { R, R_size, B_pos = m.Get( OCL, k )
-      } else         { R, R_size        = m.GetAtB( OCL, B_pos )
-      }
-      B_pos += R_size
+      R := m.Get1( OCL, k )
       m_console.SetR( m.Line_2_GL( OCL ), m.Char_2_GL( k ), R, m.Get_Style(OCL,k) )
     }
   } else { // Multiple lines
@@ -1839,10 +1865,7 @@ func (m *FileView) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
     OCLL := m.LineLen( OCL ) // Old cursor line length
     END_FIRST_LINE := Min_i( m.RightChar()+1, OCLL )
     for k:=OCP; k<END_FIRST_LINE; k++ {
-      if( k == OCP ) { R, R_size, B_pos = m.Get( OCL, k )
-      } else         { R, R_size        = m.GetAtB( OCL, B_pos )
-      }
-      B_pos += R_size
+      R := m.Get1( OCL, k )
       m_console.SetR( m.Line_2_GL( OCL ), m.Char_2_GL( k ), R, m.Get_Style(OCL,k) )
     }
     // Write out intermediate lines:
@@ -1850,10 +1873,7 @@ func (m *FileView) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
       LL := m.LineLen( l ) // Line length
       END_OF_LINE := Min_i( m.RightChar()+1, LL )
       for k:=m.leftChar; k<END_OF_LINE; k++ {
-        if( k == OCP ) { R, R_size, B_pos = m.Get( l, k )
-        } else         { R, R_size        = m.GetAtB( l, B_pos )
-        }
-        B_pos += R_size
+        R := m.Get1( l, k )
         m_console.SetR( m.Line_2_GL( l ), m.Char_2_GL( k ), R, m.Get_Style(l,k) )
       }
     }
@@ -1862,10 +1882,7 @@ func (m *FileView) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
     NCLL := m.LineLen( NCL ) // Line length
     END := Min_i( NCLL, NCP )
     for k:=m.leftChar; k<END; k++ {
-      if( k == OCP ) { R, R_size, B_pos = m.Get( NCL, k )
-      } else         { R, R_size        = m.GetAtB( NCL, B_pos )
-      }
-      B_pos += R_size
+      R := m.Get1( NCL, k )
       m_console.SetR( m.Line_2_GL( NCL ), m.Char_2_GL( k ), R, m.Get_Style(NCL,k)  )
     }
   }
@@ -1874,17 +1891,12 @@ func (m *FileView) GoToCrsPos_WV_Forward( OCL, OCP, NCL, NCP int ) {
 // Cursor is moving backwards
 // Write out from (OCL,OCP) back to but not including (NCL,NCP)
 func (m *FileView) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
-  var R rune
-  var B_pos, R_size int
   if( OCL == NCL ) { // Only one line:
     LL := m.LineLen( OCL ) // Line length
     if( 0 < LL ) {
       START := Min_i( OCP, LL-1 )
       for k:=START; NCP<k; k-- {
-        if( k == OCP ) { R, R_size, B_pos = m.Get( OCL, k )
-        } else         { R, R_size        = m.GetAtB( OCL, B_pos )
-        }
-        B_pos += R_size
+        R := m.Get1( OCL, k )
         m_console.SetR( m.Line_2_GL( OCL ) , m.Char_2_GL( k ), R, m.Get_Style(OCL,k) )
       }
     }
@@ -1893,10 +1905,7 @@ func (m *FileView) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
     OCLL := m.LineLen( OCL ) // Old cursor line length
     if( 0 < OCLL ) {
       for k:=Min_i(OCP,OCLL-1); m.leftChar<=k; k-- {
-        if( k == OCP ) { R, R_size, B_pos = m.Get( OCL, k )
-        } else         { R, R_size        = m.GetAtB( OCL, B_pos )
-        }
-        B_pos += R_size
+        R := m.Get1( OCL, k )
         m_console.SetR( m.Line_2_GL( OCL ), m.Char_2_GL( k ), R, m.Get_Style(OCL,k) )
       }
     }
@@ -1906,10 +1915,7 @@ func (m *FileView) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
       if( 0 < LL ) {
         END_OF_LINE := Min_i( m.RightChar(), LL-1 )
         for k:=END_OF_LINE; m.leftChar<=k; k-- {
-          if( k == OCP ) { R, R_size, B_pos = m.Get( l, k )
-          } else         { R, R_size        = m.GetAtB( l, B_pos )
-          }
-          B_pos += R_size
+          R := m.Get1( l, k )
           m_console.SetR( m.Line_2_GL( l ), m.Char_2_GL( k ), R, m.Get_Style(l,k) )
         }
       }
@@ -1922,10 +1928,7 @@ func (m *FileView) GoToCrsPos_WV_Backward( OCL, OCP, NCL, NCP int ) {
 
       // Print from beginning of next line to new cursor position:
       for k:=END_LAST_LINE; NCP<=k; k-- {
-        if( k == OCP ) { R, R_size, B_pos = m.Get( NCL, k )
-        } else         { R, R_size = m.GetAtB( NCL, B_pos )
-        }
-        B_pos += R_size
+        R := m.Get1( NCL, k )
         m_console.SetR( m.Line_2_GL( NCL ), m.Char_2_GL( k ), R, m.Get_Style(NCL,k) )
       }
     }
@@ -2255,7 +2258,7 @@ func (m *FileView) Do_x_i() {
       if( LL-1 < m.CrsChar() ) {
         m.GoToCrsPos_Write( CL, LL-1 )
       }
-      var R rune = m.p_fb.RemoveR( CL, m.CrsChar() )
+      var R rune = m.Remove( CL, m.CrsChar() )
 
       // Put char x'ed into register:
       var nlp *RLine = new( RLine )
@@ -2315,11 +2318,11 @@ func (m *FileView) Do_dw_get_fn( st_line, st_char int,
                                  fn_line, fn_char *int ) bool {
 
   var LL int  = m.LineLen( st_line )
-  R, R_size, B_pos := m.Get( st_line, st_char )
+  var R  rune = m.Get1( st_line, st_char )
 
   if( IsSpace( R ) ||         // On white space
       ( st_char < LLM1(LL) && // On non-white space before white space
-        IsSpace( m.GetAtB1( st_line, B_pos+R_size ) ) ) ) {
+        IsSpace( m.Get1( st_line, st_char+1 ) ) ) ) {
     // w:
     ncp_w := CrsPos{ 0, 0 }
     var ok bool = m.GoToNextWord_GetPosition( &ncp_w )
@@ -2418,7 +2421,7 @@ func (m *FileView) Do_D_i() {
     var nlp *RLine = new( RLine )
 
     for k:=OCP; k<OLL; k++ {
-      var R rune = m.p_fb.RemoveR( OCL, OCP )
+      var R rune = m.Remove( OCL, OCP )
       nlp.PushR( R )
     }
     m_vis.reg.Clear()
@@ -2482,7 +2485,7 @@ func (m *FileView) Do_x_range_single( L, st_char, fn_char int ) {
     // Dont remove a single line, or else Q wont work right
     for P := P_st; P_st < LL && P <= P_fn; P++ {
 
-      nlp.PushR( m.p_fb.RemoveR( L, P_st ) )
+      nlp.PushR( m.Remove( L, P_st ) )
 
       LL = m.LineLen( L ); // Removed a char, so re-calculate LL
     }
@@ -2514,7 +2517,7 @@ func (m *FileView) Do_x_range_multiple( st_line, st_char, fn_line, fn_char int )
 
     var LL int = OLL
     for P := P_st; P_st < LL && P <= P_fn; P++ {
-      nlp.PushR( m.p_fb.RemoveR( L, P_st ) )
+      nlp.PushR( m.Remove( L, P_st ) )
       LL = m.LineLen( L ); // Removed a char, so re-calculate LL
     }
     if( LL==0 ) { // Removed entire line
@@ -2670,22 +2673,21 @@ func (m *FileView) Do_Star_GetNewPattern_i() string {
       m.MoveInBounds_Line()
       var CC int = m.CrsChar()
 
-      R, R_size, B_offset := m.Get( CL,  CC )
+    var R rune = m.Get1( CL,  CC )
 
       if( IsAlnum( R ) || R=='_' ) {
         pattern += string( R )
 
         // Search forward:
         for k:=CC+1; k<LL; k++ {
-          B_offset += R_size
-          R, R_size = m.GetAtB( CL, B_offset )
+          R = m.Get1( CL, k )
           if( IsAlnum( R ) || R=='_' ) { pattern += string( R )
           } else                       { break
           }
         }
         // Search backward:
         for k:=CC-1; 0<=k; k-- {
-          R,_,_ = m.Get( CL, k )
+          R = m.Get1( CL, k )
           if( IsAlnum( R ) || R=='_' ) { pattern = string(R) + pattern
           } else                       { break
           }
@@ -3110,11 +3112,8 @@ func (m *FileView) Do_yw_i() {
     if( m.Do_dw_get_fn( st_line, st_char, &fn_line, &fn_char ) ) {
       var nlp *RLine = new( RLine )
       // st_line and fn_line should be the same
-      R,R_size,B_offset := m.Get( st_line, st_char )
-      nlp.PushR( R )
-      for k:=st_char+1; k<=fn_char; k++ {
-        B_offset += R_size
-        R,R_size = m.GetAtB( st_line, B_offset )
+      for k:=st_char; k<=fn_char; k++ {
+        R := m.Get1( st_line, k )
         nlp.PushR( R )
       }
       m_vis.reg.Clear()
@@ -3167,30 +3166,24 @@ func (m *FileView) Do_p_or_P_st_fn( paste_pos Paste_Pos ) {
       forward := 0
       if( (0 < OLL) && (paste_pos==PP_After) ) { forward = 1 }
 
-      R,R_sz,B_pos := m_vis.reg.GetLP(k).GetR(0)
-      m.p_fb.InsertR( OCL, OCP+0+forward, R )
-      for i:=1; i<NLL; i++ {
-        B_pos += R_sz
-        R,R_sz = m_vis.reg.GetLP(k).GetRatB(B_pos)
-        m.p_fb.InsertR( OCL, OCP+i+forward, R )
+      for i:=0; i<NLL; i++ {
+        R,_,_ := m_vis.reg.GetLP(k).GetR(i)
+        m.Insert( OCL, OCP+i+forward, R )
       }
       if( 1 < N_REG_LINES && OCP+forward < OLL ) { // Move rest of first line onto new line below
         m.p_fb.InsertLE( OCL+1 )
         for i:=0; i<(OLL-OCP-forward); i++ {
-          R := m.p_fb.RemoveR( OCL, OCP + NLL+forward )
-          m.p_fb.PushR( OCL+1, R )
+          R := m.Remove( OCL, OCP + NLL+forward )
+          m.Push( OCL+1, R )
         }
       }
     } else if( N_REG_LINES-1 == k ) {
       // Insert a new line if at end of file:
       if( m.p_fb.NumLines() == OCL+k ) { m.p_fb.InsertLE( OCL+k ) }
 
-      R,R_sz,B_pos := m_vis.reg.GetLP(k).GetR(0)
-      m.p_fb.InsertR( OCL+k, 0, R )
-      for i:=1; i<NLL; i++ {
-        B_pos += R_sz
-        R,R_sz = m_vis.reg.GetLP(k).GetRatB(B_pos)
-        m.p_fb.InsertR( OCL+k, i, R )
+      for i:=0; i<NLL; i++ {
+        R,_,_ := m_vis.reg.GetLP(k).GetR(i)
+        m.Insert( OCL+k, i, R )
       }
     } else {
       // Put reg on line below:
@@ -3220,17 +3213,15 @@ func (m *FileView) Do_p_block() {
       for i:=0; i<(ISP-LL); i++ {
         // Insert at end of line so undo will be atomic:
         NLL := m.LineLen( OCL+k ) // New line length
-        m.p_fb.InsertR( OCL+k, NLL, ' ' )
+        m.Insert( OCL+k, NLL, ' ' )
       }
     }
     var p_reg_line *RLine = m_vis.reg.GetLP(k)
     RLL := p_reg_line.LenR()
 
-    R,R_sz,B_pos := p_reg_line.GetR(0)
-    for i:=1; i<RLL; i++ {
-      B_pos += R_sz
-      R,R_sz = p_reg_line.GetRatB(B_pos)
-      m.p_fb.InsertR( OCL+k, ISP+i, R )
+    for i:=0; i<RLL; i++ {
+      R,_,_ := p_reg_line.GetR(i)
+      m.Insert( OCL+k, ISP+i, R )
     }
   }
   m.p_fb.Update()
@@ -3283,17 +3274,15 @@ func (m *FileView) Do_P_block() {
     if( LL < OCP ) {
       // Fill in line with white space up to OCP:
       for i:=0; i<(OCP-LL); i++ {
-        m.p_fb.InsertR( OCL+k, LL, ' ' )
+        m.Insert( OCL+k, LL, ' ' )
       }
     }
     var p_reg_line *RLine = m_vis.reg.GetLP(k)
     RLL := p_reg_line.LenR()
 
-    R,R_sz,B_pos := p_reg_line.GetR(0)
-    for i:=1; i<RLL; i++ {
-      B_pos += R_sz
-      R,R_sz = p_reg_line.GetRatB(B_pos)
-      m.p_fb.InsertR( OCL+k, OCP+i, R )
+    for i:=0; i<RLL; i++ {
+      R,_,_ := p_reg_line.GetR(i)
+      m.Insert( OCL+k, OCP+i, R )
     }
   }
   m.p_fb.Update()
@@ -3336,7 +3325,7 @@ func (m *FileView) Do_r_i() {
       for i:=0; i<(ISP-LL); i++ {
         // Insert at end of line so undo will be atomic:
         NLL := m.LineLen( OCL+k )  // New line length
-        m.p_fb.InsertR( OCL+k, NLL, ' ' )
+        m.Insert( OCL+k, NLL, ' ' )
       }
     }
     m.Do_r_replace_white_space_with_register_line( k, OCL, ISP )
@@ -3360,26 +3349,17 @@ func (m *FileView) Do_r_replace_white_space_with_register_line( k, OCL, ISP int 
 
   continue_last_update := false
 
-  var R_reg, R_old rune
-  var R_reg_sz, B_reg_pos, R_old_sz, B_old_pos int
   for i:=0; i<RLL; i++ {
-
-    if( i==0 ) { R_reg,R_reg_sz,B_reg_pos = p_reg_line.GetR(i)
-    } else     { R_reg,R_reg_sz           = p_reg_line.GetRatB(B_reg_pos)
-    }
-    B_reg_pos += R_reg_sz
+    R_reg,_,_ := p_reg_line.GetR(i)
 
     replaced_space := false
 
     if( ISP+i < OLL ) {
-      if( i==0 ) { R_old,R_old_sz,B_old_pos = m.Get( OCL+k, ISP+i )
-      } else     { R_old,R_old_sz           = m.GetAtB( OCL+k, B_old_pos )
-      }
-      B_old_pos += R_old_sz
+      R_old := m.Get1( OCL+k, ISP+i )
 
       if( R_old == ' ' ) {
         // Replace ' ' with R_reg:
-        m.p_fb.SetR( OCL+k, ISP+i, R_reg, continue_last_update )
+        m.Set( OCL+k, ISP+i, R_reg, continue_last_update )
         replaced_space = true
         continue_last_update = true
       }
@@ -3458,22 +3438,22 @@ func (m *FileView) Do_Tilda_i() {
     LL  := m.LineLen( OCL )
 
     if( 0 < LL && OCP < LL ) {
-      R,_,_ := m.Get( m.CrsLine(), m.CrsChar() )
+      R := m.Get1( m.CrsLine(), m.CrsChar() )
       changed := false
       if       ( unicode.IsUpper( R ) ) { R = unicode.ToLower( R ); changed = true
       } else if( unicode.IsLower( R ) ) { R = unicode.ToUpper( R ); changed = true
       }
       if( m.crsCol < Min_i( LL-1, m.WorkingCols()-1 ) ) {
-        if( changed ) { m.p_fb.SetR( m.CrsLine(), m.CrsChar(), R, true ) }
+        if( changed ) { m.Set( m.CrsLine(), m.CrsChar(), R, true ) }
         // Need to move cursor right:
         m.crsCol++
       } else if( m.RightChar() < LL-1 ) {
         // Need to scroll window right:
-        if( changed ) { m.p_fb.SetR( m.CrsLine(), m.CrsChar(), R, true ) }
+        if( changed ) { m.Set( m.CrsLine(), m.CrsChar(), R, true ) }
         m.leftChar++
       } else { // m.RightChar() == LL-1
         // At end of line so cant move or scroll right:
-        if( changed ) { m.p_fb.SetR( m.CrsLine(), m.CrsChar(), R, true ) }
+        if( changed ) { m.Set( m.CrsLine(), m.CrsChar(), R, true ) }
       }
       m.p_fb.Update()
     }
@@ -3651,30 +3631,6 @@ func (m *FileView) Do_Tilda_v() {
   m.Undo_v() //<- This will cause the tilda'ed characters to be redrawn
 }
 
-//func (m *FileView) Do_v_Handle_gf() {
-//
-//  if( m.v_st_line == m.v_fn_line ) {
-//    m.Swap_Visual_St_Fn_If_Needed()
-//
-//    fname := make( []rune, m.v_fn_char - m.v_st_char + 1 )
-//
-//    var R_sz, B_pos int
-//    fname[0],R_sz,B_pos = m.Get( m.v_st_line, m.v_st_char )
-//
-//    for P := m.v_st_char+1; P<=m.v_fn_char; P++ {
-//      B_pos += R_sz
-//      fname[P-m.v_st_char],R_sz = m.GetAtB( m.v_st_line, B_pos )
-//    }
-//    went_to_file := m_vis.GoToBuffer_Fname( string(fname) )
-//
-//    if( went_to_file ) {
-//      // If we made it to buffer indicated by fname, no need to Undo_v() or
-//      // Remove_Banner() because the whole view pane will be redrawn
-//      m.Set_Visual_Mode( false )
-//    }
-//  }
-//}
-
 func (m *FileView) Do_v_Handle_gf() {
 
   if( m.v_st_line == m.v_fn_line ) {
@@ -3682,14 +3638,8 @@ func (m *FileView) Do_v_Handle_gf() {
 
     fname := make( []rune, m.v_fn_char - m.v_st_char + 1 )
 
-    var R_sz, B_pos int
-    P := m.v_st_char
-    if( P<=m.v_fn_char ) {
-      fname[0],R_sz,B_pos = m.Get( m.v_st_line, P )
-    }
-    for P = m.v_st_char+1; P<=m.v_fn_char; P++ {
-      B_pos += R_sz
-      fname[P-m.v_st_char],R_sz = m.GetAtB( m.v_st_line, B_pos )
+    for P := m.v_st_char; P<=m.v_fn_char; P++ {
+      fname[P-m.v_st_char] = m.Get1( m.v_st_line, P )
     }
     went_to_file := m_vis.GoToBuffer_Fname( string(fname) )
 
@@ -3708,12 +3658,8 @@ func (m *FileView) Do_v_Handle_gp() {
 
     r_pattern := make( []rune, m.v_fn_char - m.v_st_char + 1 )
 
-    var R_sz, B_pos int
-    r_pattern[0],R_sz,B_pos = m.Get( m.v_st_line, m.v_st_char )
-
-    for P := m.v_st_char+1; P<=m.v_fn_char; P++ {
-      B_pos += R_sz
-      r_pattern[P-m.v_st_char],R_sz = m.GetAtB( m.v_st_line, B_pos )
+    for P := m.v_st_char; P<=m.v_fn_char; P++ {
+      r_pattern[P-m.v_st_char] = m.Get1( m.v_st_line, P )
     }
     s_pattern := string(r_pattern)
     s_pattern_literal := regexp.QuoteMeta( s_pattern )
@@ -3737,11 +3683,8 @@ func (m *FileView) Do_y_v_block() {
 
     LL := m.LineLen( L )
 
-    R,R_sz,B_pos := m.Get( L, m.v_st_char )
-    p_rl.PushR( R )
-    for P := m.v_st_char+1; P<LL && P <= m.v_fn_char; P++ {
-      B_pos += R_sz
-      R,R_sz = m.GetAtB( L, B_pos )
+    for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
+      R := m.Get1( L, P )
       p_rl.PushR( R )
     }
     m_vis.reg.PushLP( p_rl )
@@ -3776,11 +3719,8 @@ func (m *FileView) Do_y_v_st_fn() {
       P_fn := LL-1
       if( L == m.v_fn_line ) { P_fn = Min_i(LL-1,m.v_fn_char) }
 
-      R,R_sz,B_pos := m.Get( L, P_st )
-      p_rl.PushR( R )
-      for P := P_st+1; P <= P_fn; P++ {
-        B_pos += R_sz
-        R,R_sz = m.GetAtB( L, B_pos )
+      for P := P_st; P <= P_fn; P++ {
+        R := m.Get1( L, P )
         p_rl.PushR( R )
       }
     }
@@ -3799,11 +3739,8 @@ func (m *FileView) Do_Y_v_st_fn() {
     LL := m.LineLen(L)
 
     if( 0 < LL ) {
-      R,R_sz,B_pos := m.Get( L, 0 )
-      p_rl.PushR( R )
-      for P := 1; P <= LL-1; P++ {
-        B_pos += R_sz
-        R,R_sz = m.GetAtB( L, B_pos )
+      for P := 0; P <= LL-1; P++ {
+        R := m.Get1( L, P )
         p_rl.PushR( R )
       }
     }
@@ -3826,17 +3763,12 @@ func (m *FileView) Do_r_v_block() {
 
     continue_last_update := false
 
-    P := m.v_st_char
-    R,R_sz,B_pos := m.Get( L, P )
-    p_rl.PushR( R )
-    m.p_fb.SetR( L, P, ' ', continue_last_update )
-    continue_last_update = true
-
-    for P := m.v_st_char+1; P<LL && P <= m.v_fn_char; P++ {
-      B_pos += R_sz
-      R,R_sz = m.GetAtB( L, B_pos )
+    for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
+      R := m.Get1( L, P )
       p_rl.PushR( R )
-      m.p_fb.SetR( L, P, ' ', continue_last_update )
+      m.Set( L, P, ' ', continue_last_update )
+
+      continue_last_update = true
     }
     m_vis.reg.PushLP( p_rl )
   }
@@ -3875,17 +3807,11 @@ func (m *FileView) Do_r_v_st_fn() {
 
       continue_last_update := false
 
-      P := P_st
-      R,R_sz,B_pos := m.Get( L, P )
-      p_rl.PushR( R )
-      m.p_fb.SetR( L, P, ' ', continue_last_update )
-      continue_last_update = true
+      for P := P_st; P <= P_fn; P++ {
+        p_rl.PushR( m.Get1( L, P ) )
+        m.Set( L, P, ' ', continue_last_update )
 
-      for P := P_st+1; P <= P_fn; P++ {
-        B_pos += R_sz
-        R,R_sz = m.GetAtB( L, B_pos )
-        p_rl.PushR( R )
-        m.p_fb.SetR( L, P, ' ', continue_last_update )
+        continue_last_update = true
       }
     }
     m_vis.reg.PushLP( p_rl )
@@ -3918,17 +3844,11 @@ func (m *FileView) Do_R_v_st_fn() {
     if( 0 < LL ) {
       continue_last_update := false
 
-      P := 0
-      R,R_sz,B_pos := m.Get( L, P )
-      p_rl.PushR( R )
-      m.p_fb.SetR( L, P, ' ', continue_last_update )
-      continue_last_update = true
+      for P := 0; P <= LL-1; P++ {
+        p_rl.PushR( m.Get1( L, P ) )
+        m.Set( L, P, ' ', continue_last_update )
 
-      for P := 1; P <= LL-1; P++ {
-        B_pos += R_sz
-        R,R_sz = m.GetAtB( L, B_pos )
-        p_rl.PushR( R )
-        m.p_fb.SetR( L, P, ' ', continue_last_update )
+        continue_last_update = true
       }
     }
     m_vis.reg.PushLP( p_rl )
@@ -3946,7 +3866,7 @@ func (m *FileView) Do_x_range_block( st_line, st_char, fn_line, fn_char int ) {
     LL := m.LineLen( L )
 
     for P := st_char; P<LL && P <= fn_char; P++ {
-      p_rl.PushR( m.p_fb.RemoveR( L, st_char ) )
+      p_rl.PushR( m.Remove( L, st_char ) )
     }
     m_vis.reg.PushLP( p_rl )
   }
@@ -4050,18 +3970,13 @@ func (m *FileView) Do_Tilda_v_block() {
   for L := m.v_st_line; L<=m.v_fn_line; L++ {
     LL := m.LineLen( L )
 
-    var R rune
-    var R_sz,B_pos int
     for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
-      if( P == m.v_st_char ) { R,R_sz,B_pos = m.Get( L, P )
-      } else                 { R,R_sz       = m.GetAtB( L, B_pos )
-      }
-      B_pos += R_sz
+      R := m.Get1( L, P )
       changed := false
       if       ( unicode.IsUpper( R ) ) { R = unicode.ToLower( R ); changed = true
       } else if( unicode.IsLower( R ) ) { R = unicode.ToUpper( R ); changed = true
       }
-      if( changed ) { m.p_fb.SetR( L, P, R, true ) }
+      if( changed ) { m.Set( L, P, R, true ) }
     }
   }
 }
@@ -4075,18 +3990,13 @@ func (m *FileView) Do_Tilda_v_st_fn() {
     P_fn := LL-1
     if( L==m.v_fn_line ) { P_fn = m.v_fn_char }
 
-    var R rune
-    var R_sz,B_pos int
     for P := P_st; P <= P_fn; P++ {
-      if( P == m.v_st_char ) { R,R_sz,B_pos = m.Get( L, P )
-      } else                 { R,R_sz       = m.GetAtB( L, B_pos )
-      }
-      B_pos += R_sz
+      R := m.Get1( L, P )
       changed := false
       if       ( unicode.IsUpper( R ) ) { R = unicode.ToLower( R ); changed = true
       } else if( unicode.IsLower( R ) ) { R = unicode.ToUpper( R ); changed = true
       }
-      if( changed ) { m.p_fb.SetR( L, P, R, true ) }
+      if( changed ) { m.Set( L, P, R, true ) }
     }
   }
 }
@@ -4103,7 +4013,7 @@ func (m *FileView) InsertAddR( R rune ) {
 
   if( m.p_fb.NumLines()==0 ) { m.p_fb.PushLE(); }
 
-  m.p_fb.InsertR( m.CrsLine(), m.CrsChar(), R )
+  m.Insert( m.CrsLine(), m.CrsChar(), R )
 
   if( m.WorkingCols() <= m.crsCol+1 ) {
     // On last working column, need to scroll right:
@@ -4122,7 +4032,7 @@ func (m *FileView) InsertAddReturn() {
   var OCP int = m.CrsChar();                    // Old cursor position
 
   for k:=OCP; k<OLL; k++ {
-    var C rune = m.p_fb.RemoveR( m.CrsLine(), OCP )
+    var C rune = m.Remove( m.CrsLine(), OCP )
     p_nl.PushR( C )
   }
   // Truncate the rest of the old line:
@@ -4142,7 +4052,7 @@ func (m *FileView) InsertAddReturn() {
 
 func (m *FileView) InsertBackspace_RmC( OCL, OCP int ) {
 
-  m.p_fb.RemoveR( OCL, OCP-1 )
+  m.Remove( OCL, OCP-1 )
 
   if( 0 < m.crsCol ) { m.crsCol -= 1
   } else             { m.leftChar -= 1; }
@@ -4200,7 +4110,7 @@ func (m *FileView) InsertBackspace_vb() {
     N_REG_LINES := m_vis.reg.Len()
 
     for k:=0; k<N_REG_LINES; k++ {
-      m.p_fb.RemoveR( OCL+k, OCP-1 )
+      m.Remove( OCL+k, OCP-1 )
     }
     m.GoToCrsPos_NoWrite( OCL, OCP-1 )
   }
@@ -4221,103 +4131,13 @@ func (m *FileView) InsertAddChar_vb( R rune ) {
       for i:=0; i<(OCP-LL); i++ {
         // Insert at end of line so undo will be atomic:
         NLL := m.LineLen( OCL+k ) // New line length
-        m.p_fb.InsertR( OCL+k, NLL, ' ' )
+        m.Insert( OCL+k, NLL, ' ' )
       }
     }
-    m.p_fb.InsertR( OCL+k, OCP, R )
+    m.Insert( OCL+k, OCP, R )
   }
   m.GoToCrsPos_NoWrite( OCL, OCP+1 )
 }
-
-//func (m *FileView) GetFileName_PartialLine() (string, bool) {
-//
-//  var fname RLine
-//  var got_filename bool = false
-//
-//  var CL int = m.CrsLine()
-//  var LL int = m.LineLen( CL )
-//
-//  if( 0 < LL ) {
-//    m.MoveInBounds_Line()
-//    var CP int = m.CrsChar()
-//    var R rune = m.p_fb.GetR( CL, CP )
-//
-//    if( IsFileNameChar( R ) ) {
-//      // Get the file name:
-//      got_filename = true
-//
-//      fname.PushR( R )
-//
-//      // Search backwards, until non-filename char found:
-//      for k:=CP-1; 0<=k; k-- {
-//        R = m.p_fb.GetR( CL, k )
-//
-//        if( !IsFileNameChar( R ) ) { break
-//        } else { fname.InsertR( 0, R )
-//        }
-//      }
-//      // Search forwards, until non-filename char found:
-//      for k:=CP+1; k<LL; k++ {
-//        R = m.p_fb.GetR( CL, k )
-//
-//        if( !IsFileNameChar( R ) ) { break
-//        } else { fname.PushR( R )
-//        }
-//      }
-//      // Trim white space off beginning and ending of fname:
-//      Trim( fname )
-//    }
-//  }
-//  return fname.to_str(), got_filename
-//}
-
-//func (m *FileView) GetFileName_PartialLine() (string, bool) {
-//
-//  var fname RLine
-//  var got_filename bool = false
-//
-//  var CL int = m.CrsLine()
-//  var LL int = m.LineLen( CL )
-//
-//  if( 0 < LL ) {
-//    m.MoveInBounds_Line()
-//    var CP int = m.CrsChar()
-//    R,R_sz,B_pos := m.Get( CL, CP )
-//
-//    if( IsFileNameChar( R ) ) {
-//      // Get the file name:
-//      got_filename = true
-//
-//      fname.PushR( R )
-//
-//      // Search forwards, until non-filename char found:
-//      done := false
-//
-//      f1 := func() {
-//        if( !IsFileNameChar( R ) ) { done = true
-//        } else { fname.PushR( R )
-//        }
-//        B_pos += R_sz
-//      }
-//      B_pos += R_sz
-//      for k:=CP+1; !done && k<LL; k++ {
-//        R,R_sz = m.GetAtB( CL, B_pos )
-//        f1()
-//      }
-//      // Search backwards, until non-filename char found:
-//      for k:=CP-1; 0<=k; k-- {
-//        R,_,_ = m.p_fb.GetR( CL, k )
-//
-//        if( !IsFileNameChar( R ) ) { break
-//        } else { fname.InsertR( 0, R )
-//        }
-//      }
-//      // Trim white space off beginning and ending of fname:
-//      Trim( fname )
-//    }
-//  }
-//  return fname.to_str(), got_filename
-//}
 
 func (m *FileView) GetFileName_PartialLine() (string, bool) {
 
@@ -4330,9 +4150,7 @@ func (m *FileView) GetFileName_PartialLine() (string, bool) {
   if( 0 < LL ) {
     m.MoveInBounds_Line()
     var CP int = m.CrsChar()
-
-    R,R_sz,B_pos := m.Get( CL, CP )
-    B_pos += R_sz
+    var R rune = m.Get1( CL, CP )
 
     if( IsFileNameChar( R ) ) {
       // Get the file name:
@@ -4340,21 +4158,20 @@ func (m *FileView) GetFileName_PartialLine() (string, bool) {
 
       fname.PushR( R )
 
-      // Search forwards, until non-filename char found:
-      for k:=CP+1; k<LL; k++ {
-        R,R_sz = m.GetAtB( CL, B_pos )
-        B_pos += R_sz
-
-        if( !IsFileNameChar( R ) ) { break
-        } else { fname.PushR( R )
-        }
-      }
       // Search backwards, until non-filename char found:
       for k:=CP-1; 0<=k; k-- {
-        R,_,_ = m.p_fb.GetR( CL, k )
+        R = m.Get1( CL, k )
 
         if( !IsFileNameChar( R ) ) { break
         } else { fname.InsertR( 0, R )
+        }
+      }
+      // Search forwards, until non-filename char found:
+      for k:=CP+1; k<LL; k++ {
+        R = m.Get1( CL, k )
+
+        if( !IsFileNameChar( R ) ) { break
+        } else { fname.PushR( R )
         }
       }
       // Trim white space off beginning and ending of fname:
@@ -4404,13 +4221,13 @@ func (m *FileView) ReplaceAddChars( R rune ) {
 
   if( EOL < CP ) {
     // Extend line out to where cursor is:
-    for k:=LL; k<CP; k++ {  m.p_fb.PushR( CL, ' ' ) }
+    for k:=LL; k<CP; k++ {  m.Push( CL, ' ' ) }
   }
   // Put char back in file buffer
   continue_last_update := false
-  if( CP < LL ) { m.p_fb.SetR( CL, CP, R, continue_last_update )
+  if( CP < LL ) { m.Set( CL, CP, R, continue_last_update )
   } else {
-    m.p_fb.PushR( CL, R )
+    m.Push( CL, R )
   }
   if( m.crsCol < m.WorkingCols()-1 ) {
     m.crsCol++
@@ -4430,7 +4247,7 @@ func (m *FileView) ReplaceAddReturn() {
   p_new_line := new( RLine )
 
   for k:=OCP; k<OLL; k++ {
-    R := m.p_fb.RemoveR( OCL, OCP )
+    R := m.Remove( OCL, OCP )
     p_new_line.PushR( R )
   }
   // Truncate the rest of the old line:
@@ -4455,7 +4272,7 @@ func (m *FileView) Replace_Crs_Char( p_S *tcell.Style ) {
   LL := m.LineLen( m.CrsLine() ) // Line length
 
   if( 0 < LL ) {
-    R,_,_ := m.Get( m.CrsLine(), m.CrsChar() )
+    R := m.Get1( m.CrsLine(), m.CrsChar() )
 
     GL_ROW := m.Row_Win_2_GL( m.crsRow )
     GL_COL := m.Col_Win_2_GL( m.crsCol )

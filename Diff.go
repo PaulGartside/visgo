@@ -1533,7 +1533,7 @@ func (m *Diff) Do_Star_GetNewPattern() string {
     m.MoveInBounds_Line()
     var CC int = m.CrsChar()
 
-    R := pfb.GetR1( CLv,  CC )
+    R := pfb.GetR1( CLv, CC )
 
     if( IsAlnum( R ) || R=='_' ) {
       pattern += string( R )

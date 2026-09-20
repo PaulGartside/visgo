@@ -12,6 +12,7 @@ import (
   "regexp"
   "time"
   "unicode"
+  "unicode/utf8"
 )
 
 // Log( fmt.Sprintf("", ) )
@@ -683,5 +684,21 @@ func get_last_dir_of( dir_name string ) string {
     for k:=start_idx; k<=finish_idx; k++ { last_dir.WriteByte( dir_name[k] ) }
   }
   return last_dir.String()
+}
+
+func can_be_UTF8( B byte ) bool {
+  // Valid UTF-8 bytes are (0 to 0xBF) and (0xC2 to 0xF4)
+  return (B <= 0xBF) || (0xC2 <= B && B <= 0xF4)
+}
+
+// Searches backwards from st_pos in sb for rune start or invalid utf8 byte.
+// Returns byte index of first found rune start or first found invalid utf8 byte.
+//
+func find_prior_rune_start_or_invalid_utf8( sb []byte, st_pos int ) int {
+  index := st_pos - 1
+  for 0 < index && can_be_UTF8(sb[index]) && !utf8.RuneStart( sb[index] ) {
+    index--
+  }
+  return index
 }
 
