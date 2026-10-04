@@ -162,8 +162,7 @@ func Handle_v( m *Vis ) {
   }
   var p_cv *FileView = m.CV()
 
-  copy_vis_buf_2_dot_buf_n := false
-  copy_vis_buf_2_dot_buf_n = p_cv.Do_v()
+  copy_vis_buf_2_dot_buf_n := p_cv.Do_v()
 
   if( !m_key.get_from_dot_buf_n ) {
     m_key.save_2_vis_buf = false
@@ -183,8 +182,7 @@ func Handle_V( m *Vis ) {
   }
   var p_cv *FileView = m.CV()
 
-  copy_vis_buf_2_dot_buf_n := false
-  copy_vis_buf_2_dot_buf_n = p_cv.Do_V()
+  copy_vis_buf_2_dot_buf_n := p_cv.Do_V()
 
   if( !m_key.get_from_dot_buf_n ) {
     m_key.save_2_vis_buf = false

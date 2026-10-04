@@ -220,24 +220,27 @@ func (m *FileView) Insert( l_num, pos int, R rune ) {
 
   if( m.decoding == DEC_UTF8 ) {
     m.p_fb.InsertR( l_num, pos, R )
+  } else {
+    m.p_fb.InsertB( l_num, pos, byte(R) )
   }
-  m.p_fb.InsertB( l_num, pos, byte(R) )
 }
 
 func (m *FileView) Push( l_num int, R rune ) {
 
   if( m.decoding == DEC_UTF8 ) {
     m.p_fb.PushR( l_num, R )
+  } else {
+    m.p_fb.PushB( l_num, byte(R) )
   }
-  m.p_fb.PushB( l_num, byte(R) )
 }
 
 func (m *FileView) Set( l_num, pos int, R rune, continue_last_update bool ) {
 
   if( m.decoding == DEC_UTF8 ) {
     m.p_fb.SetR( l_num, pos, R, continue_last_update )
+  } else {
+    m.p_fb.SetB( l_num, pos, byte(R), continue_last_update )
   }
-  m.p_fb.SetB( l_num, pos, byte(R), continue_last_update )
 }
 
 func (m *FileView) PrintCursor() {
@@ -380,6 +383,11 @@ func (m *FileView) PrintStsLine() {
     fmt.Fprintf( &buf, " )" )
   } else {
     fmt.Fprintf( &buf, ")" )
+  }
+  if m.decoding == DEC_UTF8 {
+    buf.WriteString(" (utf8)")
+  } else {
+    buf.WriteString(" (byte)")
   }
 
   for k:=buf.Len(); k<WC; k++ {
@@ -2123,7 +2131,7 @@ func (m *FileView) Do_i_i() {
     // For user friendlyness, move cursor to new position immediately:
     m.GoToCrsPos_Write( m.CrsLine(), LL )
   }
-  var count int
+  var count int //< num runes inserted
   for kr := m_key.In(); ! kr.IsESC(); kr = m_key.In() {
     if kr.IsEndOfLineDelim() {
       m.InsertAddReturn()
@@ -3685,7 +3693,9 @@ func (m *FileView) Do_y_v_block() {
 
     for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
       R := m.Get1( L, P )
-      p_rl.PushR( R )
+      if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+      } else                       { p_rl.PushB( byte(R) )
+      }
     }
     m_vis.reg.PushLP( p_rl )
   }
@@ -3721,7 +3731,9 @@ func (m *FileView) Do_y_v_st_fn() {
 
       for P := P_st; P <= P_fn; P++ {
         R := m.Get1( L, P )
-        p_rl.PushR( R )
+        if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+        } else                       { p_rl.PushB( byte(R) )
+        }
       }
     }
     m_vis.reg.PushLP( p_rl )
@@ -3741,7 +3753,9 @@ func (m *FileView) Do_Y_v_st_fn() {
     if( 0 < LL ) {
       for P := 0; P <= LL-1; P++ {
         R := m.Get1( L, P )
-        p_rl.PushR( R )
+        if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+        } else                       { p_rl.PushB( byte(R) )
+        }
       }
     }
     m_vis.reg.PushLP( p_rl )
@@ -3765,7 +3779,9 @@ func (m *FileView) Do_r_v_block() {
 
     for P := m.v_st_char; P<LL && P <= m.v_fn_char; P++ {
       R := m.Get1( L, P )
-      p_rl.PushR( R )
+      if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+      } else                       { p_rl.PushB( byte(R) )
+      }
       m.Set( L, P, ' ', continue_last_update )
 
       continue_last_update = true
@@ -3808,7 +3824,10 @@ func (m *FileView) Do_r_v_st_fn() {
       continue_last_update := false
 
       for P := P_st; P <= P_fn; P++ {
-        p_rl.PushR( m.Get1( L, P ) )
+        R := m.Get1( L, P )
+        if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+        } else                       { p_rl.PushB( byte(R) )
+        }
         m.Set( L, P, ' ', continue_last_update )
 
         continue_last_update = true
@@ -3845,7 +3864,10 @@ func (m *FileView) Do_R_v_st_fn() {
       continue_last_update := false
 
       for P := 0; P <= LL-1; P++ {
-        p_rl.PushR( m.Get1( L, P ) )
+        R := m.Get1( L, P )
+        if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+        } else                       { p_rl.PushB( byte(R) )
+        }
         m.Set( L, P, ' ', continue_last_update )
 
         continue_last_update = true
@@ -3866,7 +3888,10 @@ func (m *FileView) Do_x_range_block( st_line, st_char, fn_line, fn_char int ) {
     LL := m.LineLen( L )
 
     for P := st_char; P<LL && P <= fn_char; P++ {
-      p_rl.PushR( m.Remove( L, st_char ) )
+      R := m.Remove( L, st_char )
+      if( m.decoding == DEC_UTF8 ) { p_rl.PushR( R )
+      } else                       { p_rl.PushB( byte(R) )
+      }
     }
     m_vis.reg.PushLP( p_rl )
   }
