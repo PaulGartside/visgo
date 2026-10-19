@@ -1487,7 +1487,7 @@ func (m *LineView) Do_p_line() {
   for k:=0; k<NUM_LINES; k++ {
     // Put reg on line below:
     p_rl := new( RLine )
-    p_rl.Copy( *m_vis.reg.GetLP(k) )
+    p_rl.CopyP( m_vis.reg.GetLP(k) )
     m.p_fb.InsertRLP( OCL+k+1, p_rl )
   }
   // Update current view after other views,
@@ -1512,7 +1512,7 @@ func (m *LineView) Do_P_line() {
   for k:=0; k<NUM_LINES; k++ {
     // Put reg on line above:
     p_rl := new( RLine )
-    p_rl.Copy( *m_vis.reg.GetLP(k) )
+    p_rl.CopyP( m_vis.reg.GetLP(k) )
     m.p_fb.InsertRLP( OCL+k, p_rl )
   }
   m.p_fb.UpdateCmd()

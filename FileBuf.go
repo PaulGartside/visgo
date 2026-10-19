@@ -248,6 +248,20 @@ func (m *FileBuf) Find_File_Type_Python() bool {
   return false
 }
 
+func (m *FileBuf) Find_File_Type_Rust() bool {
+
+  if( strings.HasSuffix(m.path_name, ".rs") ||
+      strings.HasSuffix(m.path_name, ".rs.new") ||
+      strings.HasSuffix(m.path_name, ".rs.old") ) {
+
+    m.file_type = FT_RUST
+    m.Hi = new( Highlight_Rust )
+    m.Hi.Init( m )
+    return true
+  }
+  return false
+}
+
 func (m *FileBuf) Find_File_Type_SQL() bool {
 
   if( strings.HasSuffix(m.path_name, ".sql") ||
@@ -300,6 +314,7 @@ func (m *FileBuf) Find_File_Type_Suffix() {
              m.Find_File_Type_Java() ||
              m.Find_File_Type_JSON() ||
              m.Find_File_Type_Python() ||
+             m.Find_File_Type_Rust() ||
              m.Find_File_Type_SQL() ||
              m.Find_File_Type_XML() ) {
     // File type found
@@ -1674,6 +1689,11 @@ func (m *FileBuf) Set_File_Type( syn string ) {
                (syn == "python") ) {
       m.file_type = FT_PY
       m.Hi = new( Highlight_Python )
+
+    } else if( (syn == "rs") ||
+               (syn == "rust") ) {
+      m.file_type = FT_RUST
+      m.Hi = new( Highlight_Rust )
 
     } else if( syn == "sql" ) {
       m.file_type = FT_SQL

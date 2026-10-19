@@ -11,8 +11,12 @@ type FLineList struct {
 }
 
 // Create slice of length filled with empty FLine's
+//
 func (m *FLineList) Init( length int ) {
   m.lines = make( []*FLine, length )
+  for k:=0; k<length; k++ {
+    m.lines[k] = new(FLine)
+  }
 }
 
 func (m *FLineList) Clear() {
@@ -84,28 +88,60 @@ func (m *FLineList) GetCursorByte( CL, CC int ) int {
 
 // Copy *p_src into self
 func (m *FLineList) CopyP( p_src *FLineList ) {
-  m.SetLen( p_src.Len() )
-  copy( m.lines[:], p_src.lines[:] )
+  LEN := p_src.Len()
+  m.SetLen( LEN )
+
+  for k:=0; k<LEN; k++ {
+    m.lines[k].CopyP( p_src.lines[k] )
+  }
   m.LF_at_EOF = p_src.LF_at_EOF
 
   m.ChangedLine( 0 )
 }
 
 // Set m.lines len to length.
-// If capacity is increased, existing contents of m.lines is lost.
+// If capacity is increased, existing contents of m.lines are lost.
+//
+//func (m *FLineList) SetLen( length int ) {
+//
+//  if( length < m.Len() ) {
+//    m.lines = m.lines[:length]
+//
+//  } else if( m.Len() < length ) {
+//    if( length <= m.Cap() ) {
+//      for ; m.Len() < length; {
+//        p_fl := new(FLine)
+//        m.lines = append( m.lines, p_fl )
+//      }
+//    } else {
+//      m.Init( length )
+//    }
+//  }
+//}
+
+// Set length while guaranteeing existing contents remain the same:
 //
 func (m *FLineList) SetLen( length int ) {
+  LEN_OLD := m.Len()
 
-  if( length < m.Len() ) {
+  if( length < LEN_OLD ) {
     m.lines = m.lines[:length]
-  } else if( m.Len() < length ) {
+
+  } else if( LEN_OLD < length ) {
     if( length <= m.Cap() ) {
       for ; m.Len() < length; {
         p_fl := new(FLine)
         m.lines = append( m.lines, p_fl )
       }
     } else {
-      m.Init( length )
+      var lines_old []*FLine = m.lines
+      m.lines = make( []*FLine, length )
+      for k:=0; k<LEN_OLD; k++ {
+        m.lines[k] = lines_old[k]
+      }
+      for k:=LEN_OLD; k<length; k++ {
+        m.lines[k] = new(FLine)
+      }
     }
   }
 }

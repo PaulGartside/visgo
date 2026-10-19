@@ -132,7 +132,7 @@ func (m *ChangeHist) Save_RemoveLine( l_num int, p_fl *FLine ) {
   plc.lnum     = l_num
 
   // Copy p_fl into plc.line:
-  plc.line.Copy( p_fl.runes )
+  plc.line.CopyP( &p_fl.runes )
 
   m.changes.Push( plc )
 }

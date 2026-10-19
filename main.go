@@ -74,6 +74,7 @@ const (
   FT_JAVA
   FT_JSON
   FT_PY
+  FT_RUST
   FT_SQL
   FT_TEXT
   FT_XML

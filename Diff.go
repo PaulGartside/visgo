@@ -1883,7 +1883,7 @@ func (m *Diff) Do_yy() {
 
       var flp *FLine = pfb.GetLP( VL )
       var rl RLine
-      rl.Copy( flp.runes )
+      rl.CopyP( &flp.runes )
 
       m_vis.reg.Clear();
       m_vis.reg.PushLP( &rl );

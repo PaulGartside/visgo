@@ -32,7 +32,7 @@ func (m *FLine) Clear() {
 
 // Copy *p_src_ln into self
 func (m *FLine) CopyP( p_src_ln *FLine ) {
-  m.runes.Copy( p_src_ln.runes )
+  m.runes.CopyP( &p_src_ln.runes )
   m.styles.Copy( p_src_ln.styles )
   m.star_styles_valid = false
 }
@@ -41,7 +41,7 @@ func (m *FLine) CopyP( p_src_ln *FLine ) {
 // Copy *p_src_ln into self
 //
 func (m *FLine) CopyPRL( p_src_ln *RLine ) {
-  m.runes.Copy( *p_src_ln )
+  m.runes.CopyP( p_src_ln )
   m.styles.SetLen( m.runes.LenB() )
   m.styles.Zeroize()
   m.star_styles_valid = false

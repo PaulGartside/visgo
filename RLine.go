@@ -110,10 +110,22 @@ func (m *RLine) SetLen( length int ) {
 }
 
 // Copy src_ln.data into m.data
-func (m *RLine) Copy( src_ln RLine ) {
+//func (m *RLine) Copy( src_ln RLine ) {
+//
+//  m.SetLen( src_ln.LenB() )
+//  copy( m.data[:], src_ln.data[:] )
+//
+//  m.last_R_idx = 0
+//  m.last_R_idx_B_offset = 0
+//
+//  m.chksum_diff_valid = false
+//}
 
-  m.SetLen( src_ln.LenB() )
-  copy( m.data[:], src_ln.data[:] )
+// Copy *p_src_ln into self
+func (m *RLine) CopyP( p_src_ln *RLine ) {
+
+  m.SetLen( p_src_ln.LenB() )
+  copy( m.data[:], p_src_ln.data[:] )
 
   m.last_R_idx = 0
   m.last_R_idx_B_offset = 0

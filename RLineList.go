@@ -5,9 +5,13 @@ type RLineList struct {
   lines []*RLine
 }
 
-// Create slice of length filled with nil pointers to RLine's
+// Create slice of length filled with empty RLine's
+//
 func (m *RLineList) Init( length int ) {
   m.lines = make( []*RLine, length )
+  for k:=0; k<length; k++ {
+    m.lines[k] = new(RLine)
+  }
 }
 
 func (m *RLineList) Clear() {
@@ -24,20 +28,37 @@ func (m *RLineList) Cap() int {
 
 // Copy *p_src into self
 func (m *RLineList) CopyP( p_src *RLineList ) {
-  m.SetLen( p_src.Len() )
-  copy( m.lines[:], p_src.lines[:] )
+  LEN := p_src.Len()
+  m.SetLen( LEN )
+
+  for k:=0; k<LEN; k++ {
+    m.lines[k].CopyP( p_src.lines[k] )
+  }
 }
 
+// Set length while guaranteeing existing contents remain the same:
+//
 func (m *RLineList) SetLen( length int ) {
+  LEN_OLD := m.Len()
 
   if( length < m.Len() ) {
     m.lines = m.lines[:length]
-  } else if( m.Len() < length ) {
+
+  } else if( LEN_OLD < length ) {
     if( length <= m.Cap() ) {
-      p_rl := new(RLine)
-      for ; m.Len() < length; { m.lines = append( m.lines, p_rl ) }
+      for ; m.Len() < length; {
+        p_rl := new(RLine)
+        m.lines = append( m.lines, p_rl )
+      }
     } else {
-      m.Init( length )
+      var lines_old []*RLine = m.lines
+      m.lines = make( []*RLine, length )
+      for k:=0; k<LEN_OLD; k++ {
+        m.lines[k] = lines_old[k]
+      }
+      for k:=LEN_OLD; k<length; k++ {
+        m.lines[k] = new(RLine)
+      }
     }
   }
 }
