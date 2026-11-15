@@ -263,13 +263,6 @@ func (m *Highlight_Rust) Hi_NumberBeg( l, p int ) (int,int) {
   return l,p
 }
 
-// Need to add highlighting for:
-//   L = long
-//   U = unsigned
-//   UL = unsigned long
-//   ULL = unsigned long long
-//   F = float
-// at the end of numbers
 func (m *Highlight_Rust) Hi_NumberIn( l, p int ) (int,int) {
   LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.Hi_In_None
@@ -296,11 +289,11 @@ func (m *Highlight_Rust) Hi_NumberIn( l, p int ) (int,int) {
       p++
     } else if( c1=='L' || c1=='F' || c1=='U' ) {
       m.state = m.Hi_NumberTypeSpec
-    } else if( c1=='\'' && (p+1)<LL ) {
-      // ' is followed by another digit on line
+    } else if( c1=='_' && (p+1)<LL ) {
       var c0 rune = rune(m.p_fb.GetB( l, p+1 ))
 
       if( IsDigit( c0 ) ) {
+        // _ is followed by another digit on line
         m.p_fb.SetSyntaxStyle( l, p  , HI_CONST )
         m.p_fb.SetSyntaxStyle( l, p+1, HI_CONST )
         p += 2
@@ -348,6 +341,10 @@ func (m *Highlight_Rust) Hi_NumberFraction( l, p int ) (int,int) {
           p++
         }
       }
+    } else if( c1=='F' ) {
+      m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
+      p++;
+      m.state = m.Hi_In_None
     } else {
       m.state = m.Hi_In_None
     }
@@ -370,15 +367,27 @@ func (m *Highlight_Rust) Hi_NumberExponent( l, p int ) (int,int) {
   return l,p
 }
 
+// L = long
+// LL = long long
+// U = unsigned
+// UL = unsigned long
+// ULL = unsigned long long
+// F = float
+//
 func (m *Highlight_Rust) Hi_NumberTypeSpec( l, p int ) (int,int) {
   LL := m.p_fb.LineLenB( l )
 
   if( p < LL ) {
     var c0 rune = rune(m.p_fb.GetB( l, p ))
 
-    if( c0=='L' ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
-      p++
+    if( c0=='L' ) { // L
+      m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE ); p++
+      if( p<LL ) {
+        var c1 rune = rune(m.p_fb.GetB( l, p ))
+        if( c1=='L' ) { // LL
+          m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE ); p++;
+        }
+      }
       m.state = m.Hi_In_None
     } else if( c0=='F' ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
@@ -463,23 +472,27 @@ var HiPairs_Rust = [...]HiKeyVal {
   { "yield"              , HI_CONTROL },
 
   // Types
+  { "array"              , HI_VARTYPE },
+  { "bool"               , HI_VARTYPE },
+  { "char"               , HI_VARTYPE },
+  { "f16"                , HI_VARTYPE },
+  { "f32"                , HI_VARTYPE },
+  { "f64"                , HI_VARTYPE },
+  { "f128"               , HI_VARTYPE },
   { "i8"                 , HI_VARTYPE },
   { "i16"                , HI_VARTYPE },
   { "i32"                , HI_VARTYPE },
   { "i64"                , HI_VARTYPE },
   { "i128"               , HI_VARTYPE },
   { "isize"              , HI_VARTYPE },
+  { "str"                , HI_VARTYPE },
+  { "tup"                , HI_VARTYPE },
   { "u8"                 , HI_VARTYPE },
   { "u16"                , HI_VARTYPE },
   { "u32"                , HI_VARTYPE },
   { "u64"                , HI_VARTYPE },
   { "u128"               , HI_VARTYPE },
   { "usize"              , HI_VARTYPE },
-  { "f32"                , HI_VARTYPE },
-  { "f64"                , HI_VARTYPE },
-  { "bool"               , HI_VARTYPE },
-  { "char"               , HI_VARTYPE },
-  { "tup"                , HI_VARTYPE },
   { "String"             , HI_VARTYPE }, // String is a standard struct, not a built in type
 
   // Constants

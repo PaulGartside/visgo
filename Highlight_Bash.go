@@ -45,10 +45,6 @@ func (m *Highlight_Bash) Hi_In_None( l, p int ) (int,int) {
       var r1 rune = 0; if( 0<p ) { r1 = rune(m.p_fb.GetB( l, p-1 )) }
       var r0 rune =                     rune(m.p_fb.GetB( l, p ))
 
-    //var r2 rune = c2
-    //var r1 rune = c1
-    //var r0 rune = c0
-
       comment := r0=='#' && (0==p || r1!='$')
 
       if       ( comment )                    { m.state = m.Hi_In_Comment
@@ -66,6 +62,8 @@ func (m *Highlight_Bash) Hi_In_None( l, p int ) (int,int) {
         m.p_fb.SetSyntaxStyle( l, p, HI_CONTROL )
       } else if( r0 < 32 || 126 < r0 ) {
         m.p_fb.SetSyntaxStyle( l, p, HI_NONASCII )
+      } else if( LL-1 == p && r0=='\\') {
+        m.p_fb.SetSyntaxStyle( l, p, HI_DEFINE );
       }
       if( nil != m.state ) { return l,p }
     }

@@ -236,13 +236,6 @@ func (m *Highlight_Code) Hi_NumberBeg( l, p int ) (int,int) {
   return l,p
 }
 
-// Need to add highlighting for:
-//   L = long
-//   U = unsigned
-//   UL = unsigned long
-//   ULL = unsigned long long
-//   F = float
-// at the end of numbers
 func (m *Highlight_Code) Hi_NumberIn( l, p int ) (int,int) {
   LL := m.p_fb.LineLenB( l )
   if( LL <= p ) { m.state = m.Hi_In_None
@@ -321,6 +314,10 @@ func (m *Highlight_Code) Hi_NumberFraction( l, p int ) (int,int) {
           p++
         }
       }
+    } else if( c1=='F' ) {
+      m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
+      p++;
+      m.state = m.Hi_In_None
     } else {
       m.state = m.Hi_In_None
     }
@@ -343,15 +340,27 @@ func (m *Highlight_Code) Hi_NumberExponent( l, p int ) (int,int) {
   return l,p
 }
 
+// L = long
+// LL = long long
+// U = unsigned
+// UL = unsigned long
+// ULL = unsigned long long
+// F = float
+//
 func (m *Highlight_Code) Hi_NumberTypeSpec( l, p int ) (int,int) {
   LL := m.p_fb.LineLenB( l )
 
   if( p < LL ) {
     var c0 rune = rune(m.p_fb.GetB( l, p ))
 
-    if( c0=='L' ) {
-      m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
-      p++
+    if( c0=='L' ) { // L
+      m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE ); p++
+      if( p<LL ) {
+        var c1 rune = rune(m.p_fb.GetB( l, p ))
+        if( c1=='L' ) { // LL
+          m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE ); p++;
+        }
+      }
       m.state = m.Hi_In_None
     } else if( c0=='F' ) {
       m.p_fb.SetSyntaxStyle( l, p, HI_VARTYPE )
